@@ -11,7 +11,8 @@ SRC = src/main.cpp \
  src/server/requestHandler/PostRequest.cpp \
  src/server/requestHandler/GetRequest.cpp \
  src/server/requestHandler/DeleteRequest.cpp \
- src/server/requestHandler/PutRequest.cpp
+ src/server/requestHandler/PutRequest.cpp \
+ src/server/requestHandler/responses.cpp
 
 
 OBJ_DIR = obj

@@ -27,23 +27,25 @@ public:
         NO_CONTENT = 204,
         MOVED_PERMANENTLY = 301,
         BAD_REQUEST = 400,
+        FORBIDDEN = 403,
+        CONFLICT = 409,
         NOT_FOUND = 404,
         METHOD_NOT_ALLOWED = 405,
         INTERNAL_SERVER_ERROR = 500,
-        NOT_IMPLEMENTED = 501
+        NOT_IMPLEMENTED = 501,
     };
 
     HttpResponse(int statusCode = StatusCode::OK);
 
-    void setStatus(int code, const std::string& message = "");
+    void setStatus(int code, const std::string &message = "");
 
-    void setHeader(const std::string& name, const std::string& value);
+    void setHeader(const std::string &name, const std::string &value);
 
-    void setBody(const std::string& body);
+    void setBody(const std::string &body);
 
     void enableChunkedEncoding();
 
-    void addChunk(const std::string& chunk);
+    void addChunk(const std::string &chunk);
 
     std::string toString() const;
 

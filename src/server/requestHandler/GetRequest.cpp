@@ -34,21 +34,14 @@ static std::string getMimeType(const std::string &path) {
     return "application/octet-stream";
 }
 
-static HttpResponse notFoundResponse() {
-    HttpResponse response(HttpResponse::StatusCode::NOT_FOUND);
-    response.setBody("404 Not Found");
-    response.setHeader("Content-Type", "text/plain");
-    return response;
-}
-
 static HttpResponse handleServeFile(const std::string &path) {
     struct stat fileStat;
     if (stat(path.c_str(), &fileStat) != 0 || S_ISDIR(fileStat.st_mode))
-        return notFoundResponse();
+        return Response::notFoundResponse();
 
     std::ifstream file(path, std::ios::binary);
     if (!file)
-        return notFoundResponse();
+        return Response::notFoundResponse();
 
     std::ostringstream ss;
     ss << file.rdbuf();
@@ -63,7 +56,7 @@ static HttpResponse handleServeFile(const std::string &path) {
 static HttpResponse handleAutoIndex(const std::string &path) {
     DIR *dir = opendir(path.c_str());
     if (!dir)
-        return notFoundResponse();
+        return Response::notFoundResponse();
 
     std::vector<std::string> entries;
     struct dirent *entry;
@@ -93,7 +86,7 @@ static HttpResponse handleAutoIndex(const std::string &path) {
 HttpResponse RequestHandler::handleGet() {
     struct stat fileStat;
     if (stat(routePath.c_str(), &fileStat) != 0)
-        return notFoundResponse();
+        return Response::notFoundResponse();
 
     if (S_ISDIR(fileStat.st_mode)) {
         if (!matchedRoute->index.empty() || !serverConfig.index.empty())
@@ -101,7 +94,7 @@ HttpResponse RequestHandler::handleGet() {
                 routePath + (!matchedRoute->index.empty() ? matchedRoute->index : serverConfig.index));
 
         if (!matchedRoute->autoindex)
-            return notFoundResponse();
+            return Response::notFoundResponse();
         return handleAutoIndex(routePath);
     }
 

@@ -10,6 +10,12 @@
 #include <server/ClientConnection.h>
 #include <server/response/HttpResponse.h>
 
+namespace Response {
+    HttpResponse notFoundResponse();
+    HttpResponse customResponse(int statusCode, const std::string &body,
+                            const std::string &contentType = "text/plain");
+}
+
 class RequestHandler {
   private:
     std::optional<RouteConfig> matchedRoute;
@@ -31,7 +37,6 @@ private:
     HttpResponse handlePost();
     HttpResponse handlePut();
     HttpResponse handleDelete();
-
 };
 
 
