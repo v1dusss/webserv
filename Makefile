@@ -1,6 +1,19 @@
 CC = c++
 CFLAGS = -Wall -Wextra -Werror -std=c++17
-SRC = src/main.cpp src/common/Logger.cpp src/server/Server.cpp src/server/ServerPool.cpp src/server/ClientConnection.cpp src/parser/http/HttpParser.cpp src/server/response/HttpResponse.cpp
+SRC = src/main.cpp \
+ src/common/Logger.cpp \
+ src/server/Server.cpp \
+ src/server/ServerPool.cpp \
+ src/server/ClientConnection.cpp \
+ src/parser/http/HttpParser.cpp \
+ src/server/response/HttpResponse.cpp \
+ src/server/requestHandler/RequestHandler.cpp \
+ src/server/requestHandler/PostRequest.cpp \
+ src/server/requestHandler/GetRequest.cpp \
+ src/server/requestHandler/DeleteRequest.cpp \
+ src/server/requestHandler/PutRequest.cpp
+
+
 OBJ_DIR = obj
 INCLUDE_DIR = src
 OBJ = $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(SRC))
