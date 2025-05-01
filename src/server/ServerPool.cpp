@@ -25,7 +25,7 @@ void ServerPool::loadConfig(const std::string &configFile) {
     // TODO: Parse the configuration file and populate serverConfigs
     std::vector<ServerConfig> serverConfigs;
     ServerConfig testConfig;
-    testConfig.port = 8082;
+    testConfig.port = 8080;
     testConfig.host = "localhost";
     testConfig.server_names.emplace_back("localhost");
     testConfig.root = "./www";

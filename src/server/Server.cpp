@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include "ServerPool.h"
+#include "response/HttpResponse.h"
 
 Server::Server(ServerConfig config) : config(config) {
     Logger::log(LogLevel::INFO, "Server created with config: " + config.host + ":" + std::to_string(config.port));
@@ -91,8 +92,6 @@ void Server::handleNewConnections(ServerPool *pool) {
 }
 
 void Server::handleClientInput(ClientConnection &clientConnection, ServerPool *pool) {
-    std::cout << clientConnection.clientAddr.sin_addr.s_addr << std::endl;
-
     char buffer[1024];
     ssize_t bytesRead = read(clientConnection.clientFd.fd, buffer, sizeof(buffer));
     if (bytesRead < 0) {
@@ -110,10 +109,16 @@ void Server::handleClientInput(ClientConnection &clientConnection, ServerPool *p
     if (clientConnection.parser.parse(buffer, bytesRead)) {
         auto request = clientConnection.parser.getRequest();
 
-        std::cout << "parsed request:" << std::endl;
-        request->printRequest();
+        HttpResponse response;
+        response.setStatus(HttpResponse::OK);
+        response.setHeader("Server", "test/1.0");
+        response.setHeader("Content-Type", "text/html");
+        response.setBody("<html><body><h1>It works!</h1></body></html>");
 
-        // Reset parser for next request
+        std::string responseStr = response.toString();
+        Logger::log(LogLevel::DEBUG, "Response: " + responseStr);
+        write(clientConnection.clientFd.fd, responseStr.c_str(), responseStr.length());
+
         clientConnection.parser.reset();
     }
 }
