@@ -1,6 +1,6 @@
 CC = c++
-CFLAGS = -Wall -Wextra -Werror -std=c++17
-SRC = src/main.cpp src/common/Logger.cpp src/server/Server.cpp src/server/ServerPool.cpp
+CFLAGS = -Wall -Wextra -Werror -std=c++17 -g -fsanitize=address
+SRC = src/main.cpp src/common/Logger.cpp src/server/Server.cpp src/server/ServerPool.cpp src/server/ClientConnection.cpp
 OBJ_DIR = obj
 INCLUDE_DIR = src
 OBJ = $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(SRC))

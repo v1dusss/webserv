@@ -5,30 +5,41 @@
 #ifndef SERVERPOOL_H
 #define SERVERPOOL_H
 
-#include <poll.h>
-
 #include <string>
 #include <vector>
 #include "Server.h"
+#include <unordered_map>
+#include <atomic>
+#include <memory>
 
 class ServerPool {
-  private:
-    std::vector<Server> servers;
+private:
+    std::vector<std::shared_ptr<Server> > servers;
+    std::unordered_map<int, Server *> serverFds;
+
     std::atomic<bool> running;
     std::vector<struct pollfd> fds;
 
 public:
     ServerPool();
+
     ~ServerPool();
 
+    void registerFdToServer(int fd, Server *server, short events);
+
+    void unregisterFdFromServer(int fd);
+
     void loadConfig(const std::string &configFile);
-    void start(void);
-    void stop(void);
+
+    void start();
+
+    void stop();
 
 private:
-  void serverLoop(void);
-};
+    void serverLoop();
 
+    void cleanUp();
+};
 
 
 #endif //SERVERPOOL_H
