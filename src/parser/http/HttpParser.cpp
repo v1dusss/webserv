@@ -118,9 +118,6 @@ bool HttpParser::parseHeaders() {
 
         value.erase(0, value.find_first_not_of(" \t"));
 
-        std::transform(name.begin(), name.end(), name.begin(),
-                       [](unsigned char c) { return std::tolower(c); });
-
         request->headers[name] = value;
     }
 }
