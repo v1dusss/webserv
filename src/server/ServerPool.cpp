@@ -33,6 +33,8 @@ void ServerPool::loadConfig(const std::string &configFile) {
     RouteConfig routeConfig;
     routeConfig.allowedMethods.push_back(HttpMethod::GET);
     routeConfig.path = "/";
+    routeConfig.autoindex = true;
+    routeConfig.index = "test.html";
     testConfig.routes.emplace_back(routeConfig);
 
     serverConfigs.emplace_back(testConfig);
