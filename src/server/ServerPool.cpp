@@ -7,6 +7,10 @@
 
 #include <iostream>
 #include <unistd.h>
+#include <poll.h>
+#include <cerrno>
+#include <cstring>
+#include <algorithm>
 
 ServerPool::ServerPool() : running(false) {
 }
