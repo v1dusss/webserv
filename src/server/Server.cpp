@@ -98,18 +98,23 @@ void Server::handleClientInput(ClientConnection &clientConnection, ServerPool *p
     if (bytesRead < 0) {
         Logger::log(LogLevel::ERROR, "Failed to read from client");
         return;
-    } else if (bytesRead == 0) {
+    }
+
+    if (bytesRead == 0) {
         Logger::log(LogLevel::INFO, "Client disconnected");
         pool->unregisterFdFromServer(clientConnection.clientFd.fd);
         close(clientConnection.clientFd.fd);
         clients.erase(clientConnection.clientFd.fd);
         return;
     }
-    std::cout << "Received data: " << std::string(buffer, bytesRead) << std::endl;
-    ssize_t bytesWritten = write(clientConnection.clientFd.fd, buffer, bytesRead);
-    if (bytesWritten < 0) {
-        Logger::log(LogLevel::ERROR, "Failed to write to client");
-        return;
+    if (clientConnection.parser.parse(buffer, bytesRead)) {
+        auto request = clientConnection.parser.getRequest();
+
+        std::cout << "parsed request:" << std::endl;
+        request->printRequest();
+
+        // Reset parser for next request
+        clientConnection.parser.reset();
     }
 }
 

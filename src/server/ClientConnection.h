@@ -7,11 +7,13 @@
 
 #include <poll.h>
 #include <netinet/in.h>
+#include <parser/http/HttpParser.h>
 
 class ClientConnection {
 public:
     pollfd clientFd{};
     struct sockaddr_in clientAddr{};
+    HttpParser parser{};
 
 public:
     ClientConnection() = default;
