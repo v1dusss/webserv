@@ -33,6 +33,7 @@ public:
 private:
     void handleNewConnections(ServerPool* pool);
     void handleClientInput(ClientConnection &client,  ServerPool* pool);
+    void handleClientOutput(ClientConnection &client);
 };
 
 

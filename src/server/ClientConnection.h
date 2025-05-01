@@ -5,23 +5,46 @@
 #ifndef CLIENTCONNECTION_H
 #define CLIENTCONNECTION_H
 
-#include <poll.h>
 #include <netinet/in.h>
 #include <parser/http/HttpParser.h>
 
 class ClientConnection {
 public:
-    pollfd clientFd{};
+    int fd{};
     struct sockaddr_in clientAddr{};
     HttpParser parser{};
 
+private:
+    std::string rawResponse;
+    bool hasResponse = false;
+
 public:
     ClientConnection() = default;
-    ClientConnection(int clientFd, struct sockaddr_in clientAddr);
-    ClientConnection(const ClientConnection &other);
-    ClientConnection &operator=(const ClientConnection &other);
-};
 
+    ClientConnection(int clientFd, struct sockaddr_in clientAddr);
+
+    ClientConnection(const ClientConnection &other);
+
+    ClientConnection &operator=(const ClientConnection &other);
+
+    void setResponse(const std::string &response) {
+        rawResponse = response;
+        hasResponse = true;
+    }
+
+    void clearResponse() {
+        rawResponse.clear();
+        hasResponse = false;
+    }
+
+    bool hasPendingResponse() const {
+        return hasResponse;
+    }
+
+    std::string getResponse() {
+        return rawResponse;
+    }
+};
 
 
 #endif //CLIENTCONNECTION_H

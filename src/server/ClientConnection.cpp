@@ -4,20 +4,20 @@
 
 #include "ClientConnection.h"
 
+#include <unistd.h>
+
 ClientConnection::ClientConnection(int clientFd, struct sockaddr_in clientAddr) {
-    this->clientFd.fd = clientFd;
-    this->clientFd.events = POLLIN;
+    this->fd = clientFd;
     this->clientAddr = clientAddr;
 }
 
 ClientConnection::ClientConnection(const ClientConnection &other) {
-    this->clientFd = other.clientFd;
-    this->clientAddr = other.clientAddr;
+    *this = other;
 }
 
 ClientConnection &ClientConnection::operator=(const ClientConnection &other) {
     if (this != &other) {
-        this->clientFd = other.clientFd;
+        this->fd = other.fd;
         this->clientAddr = other.clientAddr;
     }
     return *this;

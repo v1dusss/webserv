@@ -70,9 +70,10 @@ void Server::handleFdEvent(int fd, ServerPool *pool, short events) {
     }
 
     ClientConnection &clientConnection = clients[fd];
-    if (events & POLLIN) {
+    if (events & POLLIN)
         handleClientInput(clientConnection, pool);
-    }
+    if (events & POLLOUT)
+        handleClientOutput(clientConnection);
 }
 
 void Server::handleNewConnections(ServerPool *pool) {
@@ -86,14 +87,13 @@ void Server::handleNewConnections(ServerPool *pool) {
 
     Logger::log(LogLevel::INFO, "Accepted new client connection");
     Logger::log(LogLevel::DEBUG, "Client fd: " + std::to_string(clientFd));
-    ClientConnection clientConnection(clientFd, clientAddr);
-    clients[clientFd] = clientConnection;
-    pool->registerFdToServer(clientFd, this, POLLIN);
+    clients[clientFd] = ClientConnection(clientFd, clientAddr);
+    pool->registerFdToServer(clientFd, this, POLLIN | POLLOUT);
 }
 
 void Server::handleClientInput(ClientConnection &clientConnection, ServerPool *pool) {
     char buffer[1024];
-    ssize_t bytesRead = read(clientConnection.clientFd.fd, buffer, sizeof(buffer));
+    ssize_t bytesRead = read(clientConnection.fd, buffer, sizeof(buffer));
     if (bytesRead < 0) {
         Logger::log(LogLevel::ERROR, "Failed to read from client");
         return;
@@ -101,9 +101,9 @@ void Server::handleClientInput(ClientConnection &clientConnection, ServerPool *p
 
     if (bytesRead == 0) {
         Logger::log(LogLevel::INFO, "Client disconnected");
-        pool->unregisterFdFromServer(clientConnection.clientFd.fd);
-        close(clientConnection.clientFd.fd);
-        clients.erase(clientConnection.clientFd.fd);
+        pool->unregisterFdFromServer(clientConnection.fd);
+        close(clientConnection.fd);
+        clients.erase(clientConnection.fd);
         return;
     }
     if (clientConnection.parser.parse(buffer, bytesRead)) {
@@ -117,11 +117,20 @@ void Server::handleClientInput(ClientConnection &clientConnection, ServerPool *p
 
         std::string responseStr = response.toString();
         Logger::log(LogLevel::DEBUG, "Response: " + responseStr);
-        write(clientConnection.clientFd.fd, responseStr.c_str(), responseStr.length());
 
+        clientConnection.setResponse(responseStr);
         clientConnection.parser.reset();
     }
 }
+
+void Server::handleClientOutput(ClientConnection &client) {
+    if (client.hasPendingResponse()) {
+        std::cout << "Sending response to client" << std::endl;
+        write(client.fd, client.getResponse().c_str(), client.getResponse().size());
+        client.clearResponse();
+    }
+}
+
 
 void Server::stop() {
     if (serverFd >= 0) {
