@@ -46,6 +46,8 @@ public:
     void addChunk(const std::string& chunk);
 
     std::string toString() const;
+
+    std::string getBody() const;
 };
 
 

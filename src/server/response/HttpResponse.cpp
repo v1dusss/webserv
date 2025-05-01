@@ -76,3 +76,7 @@ std::string HttpResponse::getStatusMessage(int code) const {
         default: return "Unknown";
     }
 }
+
+std::string HttpResponse::getBody() const {
+    return body;
+}

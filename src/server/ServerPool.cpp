@@ -29,6 +29,12 @@ void ServerPool::loadConfig(const std::string &configFile) {
     testConfig.host = "localhost";
     testConfig.server_names.emplace_back("localhost");
     testConfig.root = "./www";
+
+    RouteConfig routeConfig;
+    routeConfig.allowedMethods.push_back(HttpMethod::GET);
+    routeConfig.path = "/";
+    testConfig.routes.emplace_back(routeConfig);
+
     serverConfigs.emplace_back(testConfig);
 
     for (const auto &server_config: serverConfigs) {
