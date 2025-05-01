@@ -1,8 +1,11 @@
 CC = c++
 CFLAGS = -Wall -Wextra -Werror -std=c++17
-SRC = src/main.cpp
+SRC = src/main.cpp src/common/Logger.cpp src/server/Server.cpp src/server/ServerPool.cpp
 OBJ_DIR = obj
+INCLUDE_DIR = src
 OBJ = $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(SRC))
+OBJ_DIRS = $(dir $(OBJ))
+
 NAME = webserv
 
 all: $(NAME)
@@ -17,7 +20,7 @@ $(OBJ_DIR)/%.o: %.cpp
 	@$(eval PROGRESS := $(shell echo $$(($(PROGRESS)+1))))
 	@$(eval PERCENT := $(shell echo $$(($(PROGRESS)*100/$(TOTAL)))))
 	@$(call progress_bar,$(PERCENT))
-	@$(CC) $(CFLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS)   -I$(INCLUDE_DIR) -c $< -o $@
 
 clean:
 	@rm -rf $(OBJ_DIR)
