@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include "ServerPool.h"
+#include "requestHandler/RequestHandler.h"
 #include "response/HttpResponse.h"
 
 Server::Server(ServerConfig config) : config(config) {
@@ -109,16 +110,18 @@ void Server::handleClientInput(ClientConnection &clientConnection, ServerPool *p
     if (clientConnection.parser.parse(buffer, bytesRead)) {
         auto request = clientConnection.parser.getRequest();
 
-        HttpResponse response;
-        response.setStatus(HttpResponse::OK);
-        response.setHeader("Server", "test/1.0");
-        response.setHeader("Content-Type", "text/html");
-        response.setBody("<html><body><h1>It works!</h1></body></html>");
+        if (clientConnection.parser.hasError()) {
+            HttpResponse response(HttpResponse::StatusCode::BAD_REQUEST);
+            response.setBody("Bad Request");
+            clientConnection.setResponse(response.toString());
+            clientConnection.parser.reset();
+            return;
+        }
 
-        std::string responseStr = response.toString();
-        Logger::log(LogLevel::DEBUG, "Response: " + responseStr);
+        RequestHandler requestHandler(clientConnection, *request, config);
+        HttpResponse response = requestHandler.handleRequest();
 
-        clientConnection.setResponse(responseStr);
+        clientConnection.setResponse(response.toString());
         clientConnection.parser.reset();
     }
 }
@@ -126,7 +129,14 @@ void Server::handleClientInput(ClientConnection &clientConnection, ServerPool *p
 void Server::handleClientOutput(ClientConnection &client) {
     if (client.hasPendingResponse()) {
         std::cout << "Sending response to client" << std::endl;
-        write(client.fd, client.getResponse().c_str(), client.getResponse().size());
+        std::string response = client.getResponse();
+        ssize_t bytesWritten = write(client.fd, response.c_str(), response.size());
+
+        if (static_cast<size_t>(bytesWritten) < response.size()) {
+            client.setResponse(response.substr(bytesWritten));
+            return;
+        }
+
         client.clearResponse();
     }
 }
