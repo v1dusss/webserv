@@ -6,7 +6,7 @@
 /*   By: eebert <eebert@student.42heilbronn.de>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/01 13:19:13 by eebert            #+#    #+#             */
-/*   Updated: 2025/05/01 19:34:06 by eebert           ###   ########.fr       */
+/*   Updated: 2025/05/01 19:34:18 by eebert           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,7 +33,6 @@ typedef enum {
 typedef struct {
     std::string path;
     std::vector<HttpMethod> allowedMethods;
-    std::string location;
     std::string root; // Override server root
     std::string cgiBin;
     bool autoindex; // Directory listing
