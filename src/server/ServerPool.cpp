@@ -32,6 +32,8 @@ void ServerPool::loadConfig(const std::string &configFile) {
 
     RouteConfig routeConfig;
     routeConfig.allowedMethods.push_back(HttpMethod::GET);
+    routeConfig.allowedMethods.push_back(HttpMethod::DELETE);
+    routeConfig.allowedMethods.push_back(HttpMethod::POST);
     routeConfig.path = "/";
     routeConfig.autoindex = true;
     testConfig.routes.emplace_back(routeConfig);

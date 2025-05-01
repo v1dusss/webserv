@@ -107,6 +107,7 @@ void Server::handleClientInput(ClientConnection &clientConnection, ServerPool *p
         clients.erase(clientConnection.fd);
         return;
     }
+
     if (clientConnection.parser.parse(buffer, bytesRead)) {
         auto request = clientConnection.parser.getRequest();
 
@@ -128,7 +129,6 @@ void Server::handleClientInput(ClientConnection &clientConnection, ServerPool *p
 
 void Server::handleClientOutput(ClientConnection &client) {
     if (client.hasPendingResponse()) {
-        std::cout << "Sending response to client" << std::endl;
         std::string response = client.getResponse();
         ssize_t bytesWritten = write(client.fd, response.c_str(), response.size());
 
