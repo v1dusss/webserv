@@ -12,31 +12,52 @@
 
 namespace Response {
     HttpResponse notFoundResponse();
+
     HttpResponse customResponse(int statusCode, const std::string &body,
-                            const std::string &contentType = "text/plain");
+                                const std::string &contentType = "text/plain");
 }
 
 class RequestHandler {
-  private:
+private:
     std::optional<RouteConfig> matchedRoute;
     const HttpRequest request;
-    ClientConnection& connection;
-    ServerConfig& serverConfig;
+    ClientConnection &connection;
+    ServerConfig &serverConfig;
     std::string routePath;
+    std::string cgiPath;
+    bool isFile;
+    bool hasValidIndexFile = false;
+    std::string indexFilePath;
 
 public:
-    RequestHandler(ClientConnection& connection, const HttpRequest& request,
-                   ServerConfig& serverConfig);
+    RequestHandler(ClientConnection &connection, const HttpRequest &request,
+                   ServerConfig &serverConfig);
+
     HttpResponse handleRequest();
+
+    static std::string getMimeType(const std::string &path);
+
+    static std::string getFileExtension(const std::string &path);
 
 private:
     void findRoute();
+
     void setRoutePath();
 
+    void validateTargetPath();
+
+    bool isCgiRequest();
+
+
     HttpResponse handleGet();
+
     HttpResponse handlePost();
+
     HttpResponse handlePut();
+
     HttpResponse handleDelete();
+
+    std::optional<HttpResponse> handleCgi();
 };
 
 

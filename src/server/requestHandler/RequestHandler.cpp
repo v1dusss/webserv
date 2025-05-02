@@ -3,6 +3,11 @@
 //
 
 #include "RequestHandler.h"
+
+#include <sys/stat.h>
+#include <__filesystem/filesystem_error.h>
+#include <__filesystem/operations.h>
+
 #include "common/Logger.h"
 
 RequestHandler::RequestHandler(ClientConnection &connection, const HttpRequest &request,
@@ -16,15 +21,20 @@ void RequestHandler::findRoute() {
     size_t longestMatch = 0;
     for (const RouteConfig &route: serverConfig.routes) {
         if (request.uri.find(route.path) == 0) {
+            Logger::log(LogLevel::DEBUG, "Found route: " + route.path);
             if (std::find(route.allowedMethods.begin(), route.allowedMethods.end(), request.method) != route.
                 allowedMethods.end() && route.path.length() > longestMatch) {
                 matchedRoute = route;
                 longestMatch = route.path.length();
                 Logger::log(LogLevel::DEBUG, "Matched route: " + route.path);
-                return;
             }
         }
     }
+    if (longestMatch > 0) {
+        Logger::log(LogLevel::DEBUG, "Longest matching route: " + matchedRoute->path);
+        return;
+    }
+
     matchedRoute.reset();
     Logger::log(LogLevel::WARNING, "No matching route found for URI: " + request.uri);
 }
@@ -57,11 +67,58 @@ void RequestHandler::setRoutePath() {
     Logger::log(LogLevel::DEBUG, "set path to " + routePath);
 }
 
+void RequestHandler::validateTargetPath() {
+    isFile = std::filesystem::is_regular_file(routePath);
+    if (isFile)
+        return;
+
+    RouteConfig route = matchedRoute.value();
+    if (route.index.empty() && serverConfig.index.empty())
+        return;
+
+    std::string indexFilePath = routePath + "/" +
+                                (!route.index.empty() ? route.index : serverConfig.index);
+
+    hasValidIndexFile = std::filesystem::exists(indexFilePath) && std::filesystem::is_regular_file(indexFilePath) &&
+                        static_cast<bool>(std::filesystem::status(indexFilePath).permissions() &
+                                          std::filesystem::perms::owner_read);
+    if (hasValidIndexFile)
+        this->indexFilePath = indexFilePath;
+}
+
+bool RequestHandler::isCgiRequest() {
+    if (matchedRoute->cgi_params.empty())
+        return false;
+
+    const std::string fileExtension = getFileExtension(routePath);
+    if (fileExtension.empty())
+        return false;
+
+    if (matchedRoute->cgi_params.count(fileExtension) == 0)
+        return false;
+
+    const std::string cgiPath = matchedRoute->cgi_params.at(fileExtension);
+    if (cgiPath.empty())
+        return false;
+
+    this->cgiPath = cgiPath;
+    return true;
+}
+
 HttpResponse RequestHandler::handleRequest() {
     if (!matchedRoute.has_value()) {
         HttpResponse response(HttpResponse::StatusCode::NOT_FOUND);
         response.setBody("404 Not Found");
         return response;
+    }
+
+    validateTargetPath();
+
+    if (isCgiRequest()) {
+        std::optional<HttpResponse> cgiResponse = handleCgi();
+
+        if (cgiResponse.has_value())
+            return cgiResponse.value();
     }
 
     switch (request.method) {
@@ -74,8 +131,6 @@ HttpResponse RequestHandler::handleRequest() {
         case DELETE:
             return handleDelete();
         default:
-            HttpResponse response(HttpResponse::StatusCode::METHOD_NOT_ALLOWED);
-            response.setBody("405 Method Not Allowed");
-            return response;
+            return Response::customResponse(HttpResponse::StatusCode::METHOD_NOT_ALLOWED, "405 Method Not Allowed");
     }
 }

@@ -8,32 +8,6 @@
 #include <algorithm>
 #include <iostream>
 
-static std::map<std::string, std::string> mimeTypes = {
-    {".html", "text/html"},
-    {".htm", "text/html"},
-    {".txt", "text/plain"},
-    {".css", "text/css"},
-    {".js", "application/javascript"},
-    {".json", "application/json"},
-    {".png", "image/png"},
-    {".jpg", "image/jpeg"},
-    {".jpeg", "image/jpeg"},
-    {".gif", "image/gif"},
-    {".svg", "image/svg+xml"}
-};
-
-static std::string getFileExtension(const std::string &path) {
-    size_t dot = path.find_last_of('.');
-    if (dot == std::string::npos) return "";
-    return path.substr(dot);
-}
-
-static std::string getMimeType(const std::string &path) {
-    std::string ext = getFileExtension(path);
-    if (mimeTypes.count(ext)) return mimeTypes[ext];
-    return "application/octet-stream";
-}
-
 static HttpResponse handleServeFile(const std::string &path) {
     struct stat fileStat;
     if (stat(path.c_str(), &fileStat) != 0 || S_ISDIR(fileStat.st_mode))
@@ -49,7 +23,7 @@ static HttpResponse handleServeFile(const std::string &path) {
 
     HttpResponse response(HttpResponse::StatusCode::OK);
     response.setBody(body);
-    response.setHeader("Content-Type", getMimeType(path));
+    response.setHeader("Content-Type", RequestHandler::getMimeType(path));
     return response;
 }
 
@@ -88,10 +62,9 @@ HttpResponse RequestHandler::handleGet() {
     if (stat(routePath.c_str(), &fileStat) != 0)
         return Response::notFoundResponse();
 
-    if (S_ISDIR(fileStat.st_mode)) {
-        if (!matchedRoute->index.empty() || !serverConfig.index.empty())
-            return handleServeFile(
-                routePath + (!matchedRoute->index.empty() ? matchedRoute->index : serverConfig.index));
+    if (!isFile) {
+        if (hasValidIndexFile)
+            return handleServeFile(indexFilePath);
 
         if (!matchedRoute->autoindex)
             return Response::notFoundResponse();

@@ -38,6 +38,14 @@ void ServerPool::loadConfig(const std::string &configFile) {
     routeConfig.autoindex = true;
     testConfig.routes.emplace_back(routeConfig);
 
+    RouteConfig routeConfig2;
+    routeConfig2.allowedMethods.push_back(HttpMethod::GET);
+    routeConfig2.path = "/moin";
+    routeConfig2.autoindex = true;
+    routeConfig2.index = "index.html";
+    routeConfig2.root = "./www/test";
+    testConfig.routes.emplace_back(routeConfig2);
+
     serverConfigs.emplace_back(testConfig);
 
     for (const auto &server_config: serverConfigs) {
