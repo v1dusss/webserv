@@ -35,6 +35,7 @@ void ServerPool::loadConfig(const std::string &configFile) {
     routeConfig.allowedMethods.push_back(HttpMethod::DELETE);
     routeConfig.allowedMethods.push_back(HttpMethod::POST);
     routeConfig.path = "/";
+    routeConfig.cgi_params[".py"] = "/usr/bin/python3";
     routeConfig.autoindex = true;
     testConfig.routes.emplace_back(routeConfig);
 

@@ -4,6 +4,7 @@
 
 #include "RequestHandler.h"
 
+#include <unistd.h>
 #include <sys/stat.h>
 #include <__filesystem/filesystem_error.h>
 #include <__filesystem/operations.h>
@@ -79,10 +80,7 @@ void RequestHandler::validateTargetPath() {
     std::string indexFilePath = routePath + "/" +
                                 (!route.index.empty() ? route.index : serverConfig.index);
 
-    hasValidIndexFile = std::filesystem::exists(indexFilePath) && std::filesystem::is_regular_file(indexFilePath) &&
-                        static_cast<bool>(std::filesystem::status(indexFilePath).permissions() &
-                                          std::filesystem::perms::owner_read);
-    if (hasValidIndexFile)
+    hasValidIndexFile = std::filesystem::exists(indexFilePath) && std::filesystem::is_regular_file(indexFilePath) && access(indexFilePath.c_str(), X_OK) == 0;
         this->indexFilePath = indexFilePath;
 }
 

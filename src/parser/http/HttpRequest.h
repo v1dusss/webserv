@@ -21,6 +21,18 @@ public:
     HttpRequest() : method(GET) {
     }
 
+    std::string getMethodString() const {
+        switch (method) {
+            case GET: return "GET";
+            case POST: return "POST";
+            case PUT: return "PUT";
+            case DELETE: return "DELETE";
+            case PATCH: return "PATCH";
+            case OPTIONS: return "OPTIONS";
+            default: return "UNKNOWN";
+        }
+    }
+
     std::string getHeader(const std::string &name) const {
         auto it = headers.find(name);
         return it != headers.end() ? it->second : "";
