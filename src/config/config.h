@@ -6,7 +6,7 @@
 /*   By: eebert <eebert@student.42heilbronn.de>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/01 13:19:13 by eebert            #+#    #+#             */
-/*   Updated: 2025/05/01 23:40:33 by eebert           ###   ########.fr       */
+/*   Updated: 2025/05/02 10:37:09 by eebert           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,6 @@ typedef struct {
     std::string path;
     std::vector<HttpMethod> allowedMethods;
     std::string root; // Override server root
-    std::string cgiBin;
     bool autoindex; // Directory listing
     std::string index; // Override server index
     std::string alias; // Path substitution
@@ -42,7 +41,7 @@ typedef struct {
     std::map<int, std::string> error_pages; // Status code to page path
     std::vector<std::string> try_files; // Ordered list of files to try
     bool deny_all; // Access control
-    std::map<std::string, std::string> fastcgi_params; // FastCGI parameters
+    std::map<std::string, std::string> cgi_params;
     std::map<std::string, std::string> return_directive; // Redirects
 } RouteConfig;
 
