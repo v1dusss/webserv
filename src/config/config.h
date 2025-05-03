@@ -37,7 +37,6 @@ typedef struct {
     bool autoindex; // Directory listing
     std::string index; // Override server index
     std::string alias; // Path substitution
-    int client_max_body_size; // In bytes, override server setting
     std::map<int, std::string> error_pages; // Status code to page path
     std::vector<std::string> try_files; // Ordered list of files to try
     bool deny_all; // Access control

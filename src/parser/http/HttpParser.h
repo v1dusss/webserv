@@ -25,9 +25,11 @@ private:
     std::string buffer;
     size_t contentLength;
     bool chunkedTransfer;
+    int client_max_body_size;
+    int client_header_buffer_size;
 
 public:
-    HttpParser();
+    HttpParser(int client_max_body_size, int client_header_buffer_size);
 
     bool parseRequestLine();
 

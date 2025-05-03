@@ -14,7 +14,7 @@ ConfigParser::ConfigParser() : rootBlock{"root", {}, {}}, currentLine(0), curren
     };
 
     locationDirectives = {
-        "root", "index", "autoindex", "client_max_body_size", "alias",
+        "root", "index", "autoindex", "alias",
         "deny", "allowed_methods", "error_page", "return"
     };
 
@@ -148,7 +148,6 @@ RouteConfig ConfigParser::parseRouteBlock(const ConfigBlock& block, const Server
 
     route.autoindex = false;
     route.deny_all = false;
-    route.client_max_body_size = serverConfig.client_max_body_size;
 
     auto params = block.getDirective("_parameters");
     if (!params.empty()) {
@@ -158,7 +157,6 @@ RouteConfig ConfigParser::parseRouteBlock(const ConfigBlock& block, const Server
     route.root = block.getStringValue("root", serverConfig.root);
     route.index = block.getStringValue("index", serverConfig.index);
     route.autoindex = (block.getStringValue("autoindex", "off") == "on");
-    route.client_max_body_size = block.getIntValue("client_max_body_size", serverConfig.client_max_body_size);
     route.alias = block.getStringValue("alias");
     route.deny_all = (block.getStringValue("deny", "") == "all");
     route.try_files = block.getDirective("try_files");

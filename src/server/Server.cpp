@@ -122,7 +122,7 @@ void Server::handleClientInput(ClientConnection &clientConnection, ServerPool *p
         std::cout << std::endl;
 
         RequestHandler requestHandler(clientConnection, *request, config);
-        HttpResponse response = requestHandler.handleRequest();
+        const HttpResponse response = requestHandler.handleRequest();
 
         clientConnection.setResponse(response.toString());
         clientConnection.parser.reset();
