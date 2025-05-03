@@ -58,6 +58,9 @@ private:
     HttpResponse handleDelete();
 
     std::optional<HttpResponse> handleCgi();
+    bool validateCgiEnvironment() const;
+    void configureCgiChildProcess(int input_pipe[2], int output_pipe[2]) const;
+
 };
 
 

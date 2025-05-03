@@ -29,7 +29,7 @@ public:
 
     void unregisterFdFromServer(int fd);
 
-    void loadConfig(const std::string &configFile);
+    bool loadConfig(const std::string &configFile);
 
     void start();
 

@@ -34,6 +34,7 @@ private:
     void handleNewConnections(ServerPool* pool);
     void handleClientInput(ClientConnection &client,  ServerPool* pool);
     void handleClientOutput(ClientConnection &client);
+    void closeClientConnection(const ClientConnection &client, ServerPool* pool);
 };
 
 

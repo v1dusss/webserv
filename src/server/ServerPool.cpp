@@ -11,6 +11,7 @@
 #include <cerrno>
 #include <cstring>
 #include <algorithm>
+#include <parser/config/ConfigParser.h>
 
 ServerPool::ServerPool() : running(false) {
 }
@@ -19,35 +20,17 @@ ServerPool::~ServerPool() {
     stop();
 }
 
-void ServerPool::loadConfig(const std::string &configFile) {
+bool ServerPool::loadConfig(const std::string &configFile) {
     Logger::log(LogLevel::INFO, "Loading configuration from file: " + configFile);
 
-    // TODO: Parse the configuration file and populate serverConfigs
-    std::vector<ServerConfig> serverConfigs;
-    ServerConfig testConfig;
-    testConfig.port = 8080;
-    testConfig.host = "localhost";
-    testConfig.server_names.emplace_back("localhost");
-    testConfig.root = "./www";
+    ConfigParser parser;
 
-    RouteConfig routeConfig;
-    routeConfig.allowedMethods.push_back(HttpMethod::GET);
-    routeConfig.allowedMethods.push_back(HttpMethod::DELETE);
-    routeConfig.allowedMethods.push_back(HttpMethod::POST);
-    routeConfig.path = "/";
-    routeConfig.cgi_params[".py"] = "/usr/bin/python3";
-    routeConfig.autoindex = true;
-    testConfig.routes.emplace_back(routeConfig);
+    if (!parser.parse(configFile)) {
+        Logger::log(LogLevel::ERROR, "Failed to parse configuration file: " + configFile);
+        return false;
+    }
 
-    RouteConfig routeConfig2;
-    routeConfig2.allowedMethods.push_back(HttpMethod::GET);
-    routeConfig2.path = "/moin";
-    routeConfig2.autoindex = true;
-    routeConfig2.index = "index.html";
-    routeConfig2.root = "./www/test";
-    testConfig.routes.emplace_back(routeConfig2);
-
-    serverConfigs.emplace_back(testConfig);
+   std::vector<ServerConfig> serverConfigs = parser.getServerConfigs();
 
     for (const auto &server_config: serverConfigs) {
         auto server = std::make_shared<Server>(server_config);
@@ -57,6 +40,7 @@ void ServerPool::loadConfig(const std::string &configFile) {
 
         servers.emplace_back(server);
     }
+    return true;
 }
 
 void ServerPool::start() {

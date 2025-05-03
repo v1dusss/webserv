@@ -101,29 +101,50 @@ void Server::handleClientInput(ClientConnection &clientConnection, ServerPool *p
     }
 
     if (bytesRead == 0) {
-        Logger::log(LogLevel::INFO, "Client disconnected");
-        pool->unregisterFdFromServer(clientConnection.fd);
-        close(clientConnection.fd);
-        clients.erase(clientConnection.fd);
+        closeClientConnection(clientConnection, pool);
         return;
     }
+
+
+    clientConnection.buffer += std::string(buffer, bytesRead);
+    //std::cout << clientConnection.buffer << std::endl;
+  //  std::cout << "-------------------------" << std::endl;
+
+
 
     if (clientConnection.parser.parse(buffer, bytesRead)) {
         auto request = clientConnection.parser.getRequest();
 
-        if (clientConnection.parser.hasError()) {
-            HttpResponse response(HttpResponse::StatusCode::BAD_REQUEST);
-            response.setBody("Bad Request");
-            clientConnection.setResponse(response.toString());
-            clientConnection.parser.reset();
-            return;
-        }
+        Logger::log(LogLevel::INFO, "Request Parsed");
+        request->printRequest();
+        std::cout << std::endl;
 
         RequestHandler requestHandler(clientConnection, *request, config);
         HttpResponse response = requestHandler.handleRequest();
 
         clientConnection.setResponse(response.toString());
         clientConnection.parser.reset();
+        clientConnection.buffer.clear();
+
+        std::string connectionHeader = request->getHeader("Connection");
+        if (connectionHeader == "close") {
+            closeClientConnection(clientConnection, pool);
+        } else if (connectionHeader != "keep-alive") {
+            clientConnection.setResponse(Response::customResponse(
+                HttpResponse::StatusCode::BAD_REQUEST, "Bad Request, connection type is not supported").toString());
+            closeClientConnection(clientConnection, pool);
+        }
+        return;
+    }
+
+    if (clientConnection.parser.hasError()) {
+        std::cout << "Error in parser" << std::endl;
+        std::cout << clientConnection.buffer << std::endl;
+
+        clientConnection.setResponse(Response::customResponse(
+            HttpResponse::StatusCode::BAD_REQUEST, "Bad Request").toString());
+        clientConnection.parser.reset();
+        closeClientConnection(clientConnection, pool);
     }
 }
 
@@ -139,6 +160,13 @@ void Server::handleClientOutput(ClientConnection &client) {
 
         client.clearResponse();
     }
+}
+
+void Server::closeClientConnection(const ClientConnection &client, ServerPool *pool) {
+    pool->unregisterFdFromServer(client.fd);
+    close(client.fd);
+    clients.erase(client.fd);
+    Logger::log(LogLevel::INFO, "Closed client connection");
 }
 
 
