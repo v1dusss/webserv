@@ -36,7 +36,7 @@ bool Server::createSocket() {
         return false;
     }
 
-    struct sockaddr_in serverAddr{};
+    sockaddr_in serverAddr{};
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_addr.s_addr = INADDR_ANY;
     serverAddr.sin_port = htons(config.port);
@@ -84,7 +84,7 @@ void Server::handleFdEvent(int fd, ServerPool *pool, short events) {
 void Server::handleNewConnections(ServerPool *pool) {
     struct sockaddr_in clientAddr{};
     socklen_t addrLen = sizeof(clientAddr);
-    int clientFd = accept(serverFd, reinterpret_cast<struct sockaddr *>(&clientAddr), &addrLen);
+    const int clientFd = accept(serverFd, reinterpret_cast<struct sockaddr *>(&clientAddr), &addrLen);
     if (clientFd < 0) {
         Logger::log(LogLevel::ERROR, "Failed to accept client connection");
         return;
@@ -98,7 +98,7 @@ void Server::handleNewConnections(ServerPool *pool) {
 
 void Server::handleClientInput(ClientConnection &clientConnection, ServerPool *pool) {
     char buffer[1024];
-    ssize_t bytesRead = read(clientConnection.fd, buffer, sizeof(buffer));
+    const ssize_t bytesRead = read(clientConnection.fd, buffer, sizeof(buffer));
     if (bytesRead < 0) {
         Logger::log(LogLevel::ERROR, "Failed to read from client");
         return;
@@ -112,9 +112,7 @@ void Server::handleClientInput(ClientConnection &clientConnection, ServerPool *p
 
     clientConnection.buffer += std::string(buffer, bytesRead);
     //std::cout << clientConnection.buffer << std::endl;
-  //  std::cout << "-------------------------" << std::endl;
-
-
+    //  std::cout << "-------------------------" << std::endl;
 
     if (clientConnection.parser.parse(buffer, bytesRead)) {
         auto request = clientConnection.parser.getRequest();
@@ -154,10 +152,10 @@ void Server::handleClientInput(ClientConnection &clientConnection, ServerPool *p
 
 void Server::handleClientOutput(ClientConnection &client) {
     if (client.hasPendingResponse()) {
-        std::string response = client.getResponse();
-        ssize_t bytesWritten = write(client.fd, response.c_str(), response.size());
+        const std::string response = client.getResponse();
+        const size_t bytesWritten = write(client.fd, response.c_str(), response.size());
 
-        if (static_cast<size_t>(bytesWritten) < response.size()) {
+        if (bytesWritten < response.size()) {
             client.setResponse(response.substr(bytesWritten));
             return;
         }
@@ -176,9 +174,9 @@ void Server::closeClientConnection(const ClientConnection &client, ServerPool *p
 
 void Server::stop() {
     if (serverFd >= 0) {
-        for (auto client: clients) {
-            close(client.first);
-            Logger::log(LogLevel::DEBUG, "closed client fd: " + std::to_string(client.first));
+        for (const auto &[fd, _]: clients) {
+            close(fd);
+            Logger::log(LogLevel::DEBUG, "closed client fd: " + std::to_string(fd));
         }
         clients.clear();
 
