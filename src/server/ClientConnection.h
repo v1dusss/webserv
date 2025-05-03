@@ -14,6 +14,9 @@ public:
     struct sockaddr_in clientAddr{};
     HttpParser parser{};
 
+    // used for debugging
+    std::string buffer = "";
+
 private:
     std::string rawResponse;
     bool hasResponse = false;

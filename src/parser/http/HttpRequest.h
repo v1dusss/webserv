@@ -17,6 +17,7 @@ public:
     std::string version;
     std::unordered_map<std::string, std::string> headers;
     std::string body;
+    // TODO implement this in paring
 
     HttpRequest() : method(GET) {
     }
@@ -31,6 +32,22 @@ public:
             case OPTIONS: return "OPTIONS";
             default: return "UNKNOWN";
         }
+    }
+
+    std::string getQueryString() const {
+        size_t pos = uri.find('?');
+        if (pos != std::string::npos) {
+            return uri.substr(pos + 1);
+        }
+        return "";
+    }
+
+    std::string getPath() const {
+        size_t pos = uri.find('?');
+        if (pos != std::string::npos) {
+            return uri.substr(0, pos);
+        }
+        return uri;
     }
 
     std::string getHeader(const std::string &name) const {

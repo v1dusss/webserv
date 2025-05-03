@@ -19,7 +19,7 @@ void signalHandler(int signum) {
 void setupSignalHandler() {
     struct sigaction sa{};
     sa.sa_handler = signalHandler;
-    sa.sa_flags = SA_RESTART;  // Auto-restart interrupted system calls
+    sa.sa_flags = SA_RESTART;
     sigemptyset(&sa.sa_mask);
 
     if (sigaction(SIGINT, &sa, nullptr) == -1) {
@@ -29,8 +29,9 @@ void setupSignalHandler() {
 }
 
 int main() {
-    setupSignalHandler();  // Instead of signal(SIGINT, signalHandler);
+    setupSignalHandler();
 
-    serverPool.loadConfig("config.json");
+    if (!serverPool.loadConfig("config.yaml"))
+        return 1;
     serverPool.start();
 }

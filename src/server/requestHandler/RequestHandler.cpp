@@ -6,8 +6,12 @@
 
 #include <unistd.h>
 #include <sys/stat.h>
-#include <__filesystem/filesystem_error.h>
-#include <__filesystem/operations.h>
+#include <filesystem>
+#include <fcntl.h>
+#include <algorithm>
+#include <string>
+
+
 
 #include <sys/types.h>
 #include <arpa/inet.h>
@@ -30,17 +34,17 @@ RequestHandler::RequestHandler(ClientConnection &connection, const HttpRequest &
 void RequestHandler::findRoute() {
     size_t longestMatch = 0;
     for (const RouteConfig &route: serverConfig.routes) {
-        if (request.getPath().find(route.path) == 0) {
-            Logger::log(LogLevel::DEBUG, "Found route: " + route.path);
+        if (request.getPath().find(route.location) == 0) {
+            Logger::log(LogLevel::DEBUG, "Found route: " + route.location);
             if (std::find(route.allowedMethods.begin(), route.allowedMethods.end(), request.method) != route.
-                allowedMethods.end() && route.path.length() > longestMatch) {
+                allowedMethods.end() && route.location.length() > longestMatch) {
                 matchedRoute = route;
-                longestMatch = route.path.length();
+                longestMatch = route.location.length();
             }
         }
     }
     if (longestMatch > 0) {
-        Logger::log(LogLevel::DEBUG, "Matched route: " + matchedRoute->path);
+        Logger::log(LogLevel::DEBUG, "Matched route: " + matchedRoute->location);
         return;
 
     }
@@ -66,7 +70,7 @@ void RequestHandler::setRoutePath() {
         basePath = serverConfig.root;
     }
 
-    std::string uriSuffix = request.getPath().substr(route.path.length());
+    std::string uriSuffix = request.getPath().substr(route.location.length());
     if (!uriSuffix.empty() && uriSuffix[0] == '/') {
         uriSuffix.erase(0, 1);
     }

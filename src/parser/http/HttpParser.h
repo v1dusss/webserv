@@ -8,6 +8,7 @@
 #include "HttpRequest.h"
 #include <memory>
 #include <string>
+#include <optional>
 
 enum class ParseState {
     REQUEST_LINE,
@@ -34,7 +35,7 @@ public:
 
     bool parseBody();
 
-    HttpMethod stringToMethod(const std::string &method);
+    static std::optional<HttpMethod> stringToMethod(const std::string &method);
 
 
     bool parse(const char *data, size_t length);
@@ -45,6 +46,8 @@ public:
 
     bool isComplete() const { return state == ParseState::COMPLETE; }
     bool hasError() const { return state == ParseState::ERROR; }
+
+    const std::string &getBuffer() const { return buffer; }
 };
 
 
