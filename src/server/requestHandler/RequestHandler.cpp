@@ -9,11 +9,20 @@
 #include <__filesystem/filesystem_error.h>
 #include <__filesystem/operations.h>
 
+#include <sys/types.h>
+#include <arpa/inet.h>
+
 #include "common/Logger.h"
 
 RequestHandler::RequestHandler(ClientConnection &connection, const HttpRequest &request,
                                ServerConfig &serverConfig): request(request), connection(connection),
                                                             serverConfig(serverConfig) {
+    char ipStr[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &(connection.clientAddr.sin_addr), ipStr, INET_ADDRSTRLEN);
+    Logger::log(LogLevel::DEBUG, "IP: " + std::string(ipStr) +
+                                 " Port: " + std::to_string(ntohs(connection.clientAddr.sin_port)) + " request: " +
+                                 request.getMethodString() + " at " + request.uri);
+
     findRoute();
     setRoutePath();
 }
@@ -21,19 +30,19 @@ RequestHandler::RequestHandler(ClientConnection &connection, const HttpRequest &
 void RequestHandler::findRoute() {
     size_t longestMatch = 0;
     for (const RouteConfig &route: serverConfig.routes) {
-        if (request.uri.find(route.path) == 0) {
+        if (request.getPath().find(route.path) == 0) {
             Logger::log(LogLevel::DEBUG, "Found route: " + route.path);
             if (std::find(route.allowedMethods.begin(), route.allowedMethods.end(), request.method) != route.
                 allowedMethods.end() && route.path.length() > longestMatch) {
                 matchedRoute = route;
                 longestMatch = route.path.length();
-                Logger::log(LogLevel::DEBUG, "Matched route: " + route.path);
             }
         }
     }
     if (longestMatch > 0) {
-        Logger::log(LogLevel::DEBUG, "Longest matching route: " + matchedRoute->path);
+        Logger::log(LogLevel::DEBUG, "Matched route: " + matchedRoute->path);
         return;
+
     }
 
     matchedRoute.reset();
@@ -57,7 +66,7 @@ void RequestHandler::setRoutePath() {
         basePath = serverConfig.root;
     }
 
-    std::string uriSuffix = request.uri.substr(route.path.length());
+    std::string uriSuffix = request.getPath().substr(route.path.length());
     if (!uriSuffix.empty() && uriSuffix[0] == '/') {
         uriSuffix.erase(0, 1);
     }
@@ -77,11 +86,12 @@ void RequestHandler::validateTargetPath() {
     if (route.index.empty() && serverConfig.index.empty())
         return;
 
-    std::string indexFilePath = routePath + "/" +
-                                (!route.index.empty() ? route.index : serverConfig.index);
+    std::string indexFilePath = std::filesystem::path(routePath) / (!route.index.empty() ? route.index : serverConfig.index);
 
-    hasValidIndexFile = std::filesystem::exists(indexFilePath) && std::filesystem::is_regular_file(indexFilePath) && access(indexFilePath.c_str(), X_OK) == 0;
-        this->indexFilePath = indexFilePath;
+    hasValidIndexFile = std::filesystem::exists(indexFilePath) && std::filesystem::is_regular_file(indexFilePath) &&
+                        access(indexFilePath.c_str(), R_OK) == 0;
+
+    this->indexFilePath = indexFilePath;
 }
 
 bool RequestHandler::isCgiRequest() {
@@ -113,6 +123,7 @@ HttpResponse RequestHandler::handleRequest() {
     validateTargetPath();
 
     if (isCgiRequest()) {
+        Logger::log(LogLevel::DEBUG, "request is a CGI request");
         std::optional<HttpResponse> cgiResponse = handleCgi();
 
         if (cgiResponse.has_value())
