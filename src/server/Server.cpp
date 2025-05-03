@@ -7,6 +7,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <arpa/inet.h>
+
 #include "ServerPool.h"
 #include "requestHandler/RequestHandler.h"
 #include "response/HttpResponse.h"
@@ -38,6 +40,8 @@ bool Server::createSocket() {
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_addr.s_addr = INADDR_ANY;
     serverAddr.sin_port = htons(config.port);
+    serverAddr.sin_addr.s_addr = inet_addr(config.host.c_str());
+
 
     if (bind(serverFd, reinterpret_cast<struct sockaddr *>(&serverAddr), sizeof(serverAddr)) < 0) {
         Logger::log(LogLevel::ERROR, "Failed to bind socket");
