@@ -7,6 +7,7 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <common/Logger.h>
 
 static HttpResponse handleServeFile(const std::string &path) {
     struct stat fileStat;
@@ -28,6 +29,7 @@ static HttpResponse handleServeFile(const std::string &path) {
 }
 
 static HttpResponse handleAutoIndex(const std::string &path) {
+    Logger::log(LogLevel::DEBUG, "Auto indexing path: " + path);
     DIR *dir = opendir(path.c_str());
     if (!dir)
         return Response::notFoundResponse();
@@ -63,11 +65,16 @@ HttpResponse RequestHandler::handleGet() {
         return Response::notFoundResponse();
 
     if (!isFile) {
-        if (hasValidIndexFile)
+        Logger::log(LogLevel::DEBUG, "Route is a directory");
+        if (hasValidIndexFile) {
+            Logger::log(LogLevel::DEBUG, "Serving index file: " + indexFilePath);
             return handleServeFile(indexFilePath);
+        }
 
-        if (!matchedRoute->autoindex)
+        if (!matchedRoute->autoindex) {
+            Logger::log(LogLevel::DEBUG, "Route Autoindex is disabled");
             return Response::notFoundResponse();
+        }
         return handleAutoIndex(routePath);
     }
 
