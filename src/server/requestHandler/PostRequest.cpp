@@ -9,6 +9,11 @@ HttpResponse RequestHandler::handlePost() {
     std::string contentType = request.getHeader("Content-Type");
     std::smatch match;
 
+    if (contentType.find("multipart/form-data") == std::string::npos) {
+        return Response::customResponse(HttpResponse::StatusCode::BAD_REQUEST,
+                                        "400 Bad Request: Invalid Content-Type");
+    }
+
     std::regex boundaryRegex("boundary\\s*=\\s*([^;]+)");
     if (!std::regex_search(contentType, match, boundaryRegex)) {
         return Response::customResponse(HttpResponse::StatusCode::BAD_REQUEST,
