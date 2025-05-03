@@ -6,7 +6,7 @@
 /*   By: eebert <eebert@student.42heilbronn.de>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/01 13:19:13 by eebert            #+#    #+#             */
-/*   Updated: 2025/05/02 10:37:09 by eebert           ###   ########.fr       */
+/*   Updated: 2025/05/03 15:56:24 by eebert           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@ typedef enum {
 } HttpMethod;
 
 typedef struct {
-    std::string path;
+    std::string location;
     std::vector<HttpMethod> allowedMethods;
     std::string root; // Override server root
     bool autoindex; // Directory listing
