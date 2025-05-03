@@ -20,6 +20,8 @@ struct ConfigBlock {
 
     int getIntValue(const std::string& key, int defaultValue = 0) const;
 
+    size_t getSizeValue(const std::string& key, size_t defaultValue = 0) const;
+
     std::vector<ConfigBlock*> findBlocks(const std::string& blockName);
 };
 

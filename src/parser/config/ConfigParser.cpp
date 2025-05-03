@@ -116,9 +116,9 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock& block) const {
 
     config.root = block.getStringValue("root", "/var/www/html");
     config.index = block.getStringValue("index", "index.html");
-    config.client_max_body_size = block.getIntValue("client_max_body_size", 1 * 1024 * 1024);
+    config.client_max_body_size = block.getSizeValue("client_max_body_size", 1 * 1024 * 1024);
     config.timeout = block.getIntValue("timeout", 60);
-    config.client_header_buffer_size = block.getIntValue("client_header_buffer_size", 8192);
+    config.client_header_buffer_size = block.getSizeValue("client_header_buffer_size", 8192);
     config.keepalive_timeout = block.getIntValue("keepalive_timeout", 65);
     config.keepalive_requests = block.getIntValue("keepalive_requests", 100);
 
@@ -159,7 +159,6 @@ RouteConfig ConfigParser::parseRouteBlock(const ConfigBlock& block, const Server
     route.autoindex = (block.getStringValue("autoindex", "off") == "on");
     route.alias = block.getStringValue("alias");
     route.deny_all = (block.getStringValue("deny", "") == "all");
-    route.try_files = block.getDirective("try_files");
 
     auto methods = block.getDirective("allowed_methods");
     if (!methods.empty()) {

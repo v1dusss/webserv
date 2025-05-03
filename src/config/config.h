@@ -6,7 +6,7 @@
 /*   By: eebert <eebert@student.42heilbronn.de>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/01 13:19:13 by eebert            #+#    #+#             */
-/*   Updated: 2025/05/03 15:56:24 by eebert           ###   ########.fr       */
+/*   Updated: 2025/05/03 18:29:54 by eebert           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,7 +38,6 @@ typedef struct {
     std::string index; // Override server index
     std::string alias; // Path substitution
     std::map<int, std::string> error_pages; // Status code to page path
-    std::vector<std::string> try_files; // Ordered list of files to try
     bool deny_all; // Access control
     std::map<std::string, std::string> cgi_params;
     std::map<std::string, std::string> return_directive; // Redirects
@@ -55,8 +54,8 @@ typedef struct {
 
     // Connection settings
     int timeout;
-    int client_max_body_size; // In bytes
-    int client_header_buffer_size; // In bytes
+    size_t client_max_body_size; // In bytes
+    size_t client_header_buffer_size; // In bytes
     int keepalive_timeout; // In seconds
     int keepalive_requests; // Max requests per connection
 } ServerConfig;

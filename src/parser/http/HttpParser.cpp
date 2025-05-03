@@ -14,7 +14,9 @@ HttpParser::HttpParser()
     : state(ParseState::REQUEST_LINE),
       request(std::make_shared<HttpRequest>()),
       contentLength(0),
-      chunkedTransfer(false) {
+      chunkedTransfer(false),
+      client_max_body_size(0),
+      client_header_buffer_size(0) {
 }
 
 bool HttpParser::parse(const char *data, size_t length) {
@@ -136,6 +138,15 @@ bool HttpParser::parseHeaders() {
             return true;
         }
 
+        if (client_header_buffer_size > 0 &&
+            (totalHeaderSize + endPos > static_cast<size_t>(client_header_buffer_size))) {
+            Logger::log(LogLevel::ERROR, "Headers exceed maximum allowed size");
+            state = ParseState::ERROR;
+            return false;
+        }
+
+        totalHeaderSize += endPos + 2;
+
         if (++headerCount > MAX_HEADERS) {
             Logger::log(LogLevel::ERROR, "Too many headers in request");
             state = ParseState::ERROR;
@@ -163,11 +174,17 @@ bool HttpParser::parseHeaders() {
 }
 
 bool HttpParser::parseBody() {
+    if (!chunkedTransfer && client_max_body_size > 0 &&
+        contentLength > static_cast<size_t>(client_max_body_size)) {
+        Logger::log(LogLevel::ERROR, "Content-Length exceeds maximum allowed body size");
+        state = ParseState::ERROR;
+        return false;
+    }
+
     if (chunkedTransfer) {
         std::string fullBody;
 
         while (true) {
-
             size_t sizeEndPos = buffer.find("\r\n");
             if (sizeEndPos == std::string::npos)
                 return false; // Need more data
@@ -198,8 +215,15 @@ bool HttpParser::parseBody() {
             if (buffer.length() < chunkSize + 2)
                 return false;
 
-            fullBody.append(buffer, 0, chunkSize);
+            if (client_max_body_size > 0 &&
+                totalBodySize + chunkSize > static_cast<size_t>(client_max_body_size)) {
+                Logger::log(LogLevel::ERROR, "Chunked body exceeds maximum allowed size");
+                state = ParseState::ERROR;
+                return false;
+            }
 
+            fullBody.append(buffer, 0, chunkSize);
+            totalBodySize += chunkSize;
             buffer.erase(0, chunkSize + 2);
         }
     }
@@ -233,4 +257,6 @@ void HttpParser::reset() {
     buffer.clear();
     contentLength = 0;
     chunkedTransfer = false;
+    totalHeaderSize = 0;
+    totalHeaderSize = 0;
 }

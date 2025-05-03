@@ -93,6 +93,7 @@ void Server::handleNewConnections(ServerPool *pool) {
     Logger::log(LogLevel::INFO, "Accepted new client connection");
     Logger::log(LogLevel::DEBUG, "Client fd: " + std::to_string(clientFd));
     clients[clientFd] = ClientConnection(clientFd, clientAddr);
+    clients[clientFd].parser.setClientLimits(config.client_max_body_size, config.client_header_buffer_size);
     pool->registerFdToServer(clientFd, this, POLLIN | POLLOUT);
 }
 
@@ -125,28 +126,19 @@ void Server::handleClientInput(ClientConnection &clientConnection, ServerPool *p
         const HttpResponse response = requestHandler.handleRequest();
 
         clientConnection.setResponse(response.toString());
+        clientConnection.buffer.clear();
         clientConnection.parser.reset();
         clientConnection.buffer.clear();
-
-        std::string connectionHeader = request->getHeader("Connection");
-        if (connectionHeader == "close") {
-            closeClientConnection(clientConnection, pool);
-        } else if (connectionHeader != "keep-alive") {
-            clientConnection.setResponse(Response::customResponse(
-                HttpResponse::StatusCode::BAD_REQUEST, "Bad Request, connection type is not supported").toString());
-            closeClientConnection(clientConnection, pool);
-        }
         return;
     }
 
     if (clientConnection.parser.hasError()) {
-        std::cout << "Error in parser" << std::endl;
         std::cout << clientConnection.buffer << std::endl;
+        clientConnection.buffer.clear();
 
         clientConnection.setResponse(Response::customResponse(
             HttpResponse::StatusCode::BAD_REQUEST, "Bad Request").toString());
         clientConnection.parser.reset();
-        closeClientConnection(clientConnection, pool);
     }
 }
 
