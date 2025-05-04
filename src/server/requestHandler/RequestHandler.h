@@ -48,17 +48,19 @@ private:
 
     bool isCgiRequest();
 
+    [[nodiscard]] std::string getFilePath() const;
+
 
     HttpResponse handleGet();
 
-    HttpResponse handlePost();
+    HttpResponse handlePost() const;
 
     HttpResponse handlePut();
 
     HttpResponse handleDelete();
 
-    std::optional<HttpResponse> handleCgi();
-    bool validateCgiEnvironment() const;
+    std::optional<HttpResponse> handleCgi() const;
+    [[nodiscard]] bool validateCgiEnvironment() const;
     void configureCgiChildProcess(int input_pipe[2], int output_pipe[2]) const;
 
 };

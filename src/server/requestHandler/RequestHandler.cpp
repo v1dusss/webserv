@@ -12,7 +12,6 @@
 #include <string>
 
 
-
 #include <sys/types.h>
 #include <arpa/inet.h>
 
@@ -46,7 +45,6 @@ void RequestHandler::findRoute() {
     if (longestMatch > 0) {
         Logger::log(LogLevel::DEBUG, "Matched route: " + matchedRoute->location);
         return;
-
     }
 
     matchedRoute.reset();
@@ -90,7 +88,9 @@ void RequestHandler::validateTargetPath() {
     if (route.index.empty() && serverConfig.index.empty())
         return;
 
-    std::string indexFilePath = std::filesystem::path(routePath) / (!route.index.empty() ? route.index : serverConfig.index);
+    std::string indexFilePath = std::filesystem::path(routePath) / (!route.index.empty()
+                                                                        ? route.index
+                                                                        : serverConfig.index);
 
     hasValidIndexFile = std::filesystem::exists(indexFilePath) && std::filesystem::is_regular_file(indexFilePath) &&
                         access(indexFilePath.c_str(), R_OK) == 0;
@@ -102,7 +102,9 @@ bool RequestHandler::isCgiRequest() {
     if (matchedRoute->cgi_params.empty())
         return false;
 
-    const std::string fileExtension = getFileExtension(routePath);
+    const std::string filePath = getFilePath();
+
+    const std::string fileExtension = getFileExtension(filePath);
     if (fileExtension.empty())
         return false;
 
@@ -146,4 +148,10 @@ HttpResponse RequestHandler::handleRequest() {
         default:
             return Response::customResponse(HttpResponse::StatusCode::METHOD_NOT_ALLOWED, "405 Method Not Allowed");
     }
+}
+
+std::string RequestHandler::getFilePath() const {
+    if (hasValidIndexFile)
+        return this->indexFilePath;
+    return this->routePath;
 }
