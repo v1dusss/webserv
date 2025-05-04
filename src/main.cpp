@@ -28,10 +28,16 @@ void setupSignalHandler() {
     }
 }
 
-int main() {
-    setupSignalHandler();
-
-    if (!serverPool.loadConfig("config.yaml"))
+int main(const int argc, char **argv) {
+    if (argc < 2) {
+        Logger::log(LogLevel::ERROR, "Not enough arguments");
+        std::cerr << "Usage: " << argv[0] << " <config_file>" << std::endl;
         return 1;
+    }
+    if (!serverPool.loadConfig(argv[1]))
+        return 1;
+
+    setupSignalHandler();
     serverPool.start();
+    return 0;
 }
