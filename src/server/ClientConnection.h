@@ -13,6 +13,10 @@ public:
     int fd{};
     struct sockaddr_in clientAddr{};
     HttpParser parser{};
+    int requests{};
+    std::time_t start = std::time(nullptr);
+    bool keepAlive = false;
+    bool shouldClose = false;
 
     // used for debugging
     std::string buffer = "";

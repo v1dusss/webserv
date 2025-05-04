@@ -53,9 +53,9 @@ typedef struct {
     std::map<int, std::string> error_pages; // Status code to error page mapping
 
     // Connection settings
-    int timeout;
+    int timeout; // In seconds
     size_t client_max_body_size; // In bytes
-    size_t client_header_buffer_size; // In bytes
+    size_t client_max_header_size; // In bytes
     int keepalive_timeout; // In seconds
     int keepalive_requests; // Max requests per connection
 } ServerConfig;

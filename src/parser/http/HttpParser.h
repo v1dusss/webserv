@@ -26,16 +26,17 @@ private:
     size_t contentLength;
     bool chunkedTransfer;
     size_t client_max_body_size;
-    size_t client_header_buffer_size;
+    size_t client_max_header_size;
     size_t totalHeaderSize = 0;
     size_t totalBodySize = 0;
+    std::time_t start = std::time(nullptr);
 
 public:
     HttpParser();
 
-    void setClientLimits(const size_t maxBodySize, const size_t headerBufferSize) {
+    void setClientLimits(const size_t maxBodySize, const size_t maxHeaderSize) {
         client_max_body_size = maxBodySize;
-        client_header_buffer_size = headerBufferSize;
+        client_max_header_size = maxHeaderSize;
     }
 
 
@@ -50,7 +51,7 @@ public:
 
     bool parse(const char *data, size_t length);
 
-    std::shared_ptr<HttpRequest> getRequest() const;
+    [[nodiscard]] std::shared_ptr<HttpRequest> getRequest() const;
 
     void reset();
 

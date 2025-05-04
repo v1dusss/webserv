@@ -96,7 +96,7 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock& block) const {
     config.host = "0.0.0.0";
     config.timeout = 60;
     config.client_max_body_size = 1 * 1024 * 1024;
-    config.client_header_buffer_size = 8192;
+    config.client_max_header_size = 8192;
     config.keepalive_timeout = 65;
     config.keepalive_requests = 100;
 
@@ -118,7 +118,7 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock& block) const {
     config.index = block.getStringValue("index", "index.html");
     config.client_max_body_size = block.getSizeValue("client_max_body_size", 1 * 1024 * 1024);
     config.timeout = block.getIntValue("timeout", 60);
-    config.client_header_buffer_size = block.getSizeValue("client_header_buffer_size", 8192);
+    config.client_max_header_size = block.getSizeValue("client_header_buffer_size", 8192);
     config.keepalive_timeout = block.getIntValue("keepalive_timeout", 65);
     config.keepalive_requests = block.getIntValue("keepalive_requests", 100);
 

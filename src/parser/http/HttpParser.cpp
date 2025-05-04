@@ -16,7 +16,7 @@ HttpParser::HttpParser()
       contentLength(0),
       chunkedTransfer(false),
       client_max_body_size(0),
-      client_header_buffer_size(0) {
+      client_max_header_size(0) {
 }
 
 bool HttpParser::parse(const char *data, size_t length) {
@@ -138,8 +138,8 @@ bool HttpParser::parseHeaders() {
             return true;
         }
 
-        if (client_header_buffer_size > 0 &&
-            (totalHeaderSize + endPos > static_cast<size_t>(client_header_buffer_size))) {
+        if (client_max_header_size > 0 &&
+            (totalHeaderSize + endPos > static_cast<size_t>(client_max_header_size))) {
             Logger::log(LogLevel::ERROR, "Headers exceed maximum allowed size");
             state = ParseState::ERROR;
             return false;
@@ -175,7 +175,7 @@ bool HttpParser::parseHeaders() {
 
 bool HttpParser::parseBody() {
     if (!chunkedTransfer && client_max_body_size > 0 &&
-        contentLength > static_cast<size_t>(client_max_body_size)) {
+        contentLength > client_max_body_size) {
         Logger::log(LogLevel::ERROR, "Content-Length exceeds maximum allowed body size");
         state = ParseState::ERROR;
         return false;
@@ -259,4 +259,5 @@ void HttpParser::reset() {
     chunkedTransfer = false;
     totalHeaderSize = 0;
     totalHeaderSize = 0;
+    start = std::time(nullptr);
 }

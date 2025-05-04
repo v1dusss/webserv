@@ -12,15 +12,15 @@ struct ConfigBlock {
     std::map<std::string, std::vector<std::string>> directives;
     std::vector<ConfigBlock> children;
 
-    std::vector<std::string> getDirective(const std::string& key) const;
+    [[nodiscard]] std::vector<std::string> getDirective(const std::string& key) const;
 
-    std::string getStringValue(const std::string& key, const std::string& defaultValue = "") const;
+    [[nodiscard]] std::string getStringValue(const std::string& key, const std::string& defaultValue = "") const;
 
-    std::map<std::string, std::vector<std::string>> findDirectivesByPrefix(const std::string& prefix) const;
+    [[nodiscard]] std::map<std::string, std::vector<std::string>> findDirectivesByPrefix(const std::string& prefix) const;
 
-    int getIntValue(const std::string& key, int defaultValue = 0) const;
+    [[nodiscard]] int getIntValue(const std::string& key, int defaultValue = 0) const;
 
-    size_t getSizeValue(const std::string& key, size_t defaultValue = 0) const;
+    [[nodiscard]] size_t getSizeValue(const std::string& key, size_t defaultValue = 0) const;
 
     std::vector<ConfigBlock*> findBlocks(const std::string& blockName);
 };
