@@ -1,5 +1,5 @@
 CC = c++
-CFLAGS = -Wall -Wextra -Werror -std=c++17
+CFLAGS = -Wall -Wextra -Werror -std=c++17 -g -fsanitize=address
 SRC = src/main.cpp \
  src/common/Logger.cpp \
  src/server/Server.cpp \

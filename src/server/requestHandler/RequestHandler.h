@@ -44,15 +44,15 @@ private:
     [[nodiscard]] std::string getFilePath() const;
 
 
-    HttpResponse handleGet();
+    [[nodiscard]] HttpResponse handleGet() const;
 
-    HttpResponse handlePost() const;
+    [[nodiscard]] HttpResponse handlePost() const;
 
     HttpResponse handlePut();
 
-    HttpResponse handleDelete() const;
+    [[nodiscard]] HttpResponse handleDelete() const;
 
-    std::optional<HttpResponse> handleCgi() const;
+    [[nodiscard]] std::optional<HttpResponse> handleCgi() const;
     [[nodiscard]] bool validateCgiEnvironment() const;
     void configureCgiChildProcess(int input_pipe[2], int output_pipe[2]) const;
 

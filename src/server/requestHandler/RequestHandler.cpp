@@ -128,7 +128,7 @@ HttpResponse RequestHandler::handleRequest() {
 
     if (isCgiRequest()) {
         Logger::log(LogLevel::DEBUG, "request is a CGI request");
-        std::optional<HttpResponse> cgiResponse = handleCgi();
+        const std::optional<HttpResponse> cgiResponse = handleCgi();
 
         if (cgiResponse.has_value())
             return cgiResponse.value();

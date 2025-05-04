@@ -37,8 +37,7 @@ public:
 
     HttpResponse(int statusCode = StatusCode::OK);
 
-    static HttpResponse html(StatusCode statusCode, const std::string &bodyMessage,
-                             const std::string &contentType = "text/plain");
+    static HttpResponse html(StatusCode statusCode, const std::string &bodyMessage);
 
     static HttpResponse notFoundResponse();
 

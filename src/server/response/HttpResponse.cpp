@@ -86,8 +86,7 @@ std::string HttpResponse::getBody() const {
     return body;
 }
 
-HttpResponse HttpResponse::html(StatusCode statusCode, const std::string &bodyMessage,
-                                const std::string &contentType) {
+HttpResponse HttpResponse::html(StatusCode statusCode, const std::string &bodyMessage) {
     HttpResponse response(statusCode);
     std::stringstream ss;
     ss << "<html>"
@@ -99,7 +98,7 @@ HttpResponse HttpResponse::html(StatusCode statusCode, const std::string &bodyMe
             "</body>"
             "</html>";
     response.setBody(ss.str());
-    response.setHeader("Content-Type", contentType);
+    response.setHeader("Content-Type", "text/html");
     return response;
 }
 
