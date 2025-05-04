@@ -75,10 +75,10 @@ void Server::handleFdEvent(int fd, ServerPool *pool, short events) {
     }
 
     ClientConnection &clientConnection = clients[fd];
-    if (events & POLLIN)
+    if (events & POLLIN && !clientConnection.shouldClose)
         handleClientInput(clientConnection, pool);
     if (events & POLLOUT)
-        handleClientOutput(clientConnection);
+        handleClientOutput(clientConnection, pool);
 }
 
 void Server::handleNewConnections(ServerPool *pool) {
@@ -92,8 +92,11 @@ void Server::handleNewConnections(ServerPool *pool) {
 
     Logger::log(LogLevel::INFO, "Accepted new client connection");
     Logger::log(LogLevel::DEBUG, "Client fd: " + std::to_string(clientFd));
+    auto connection = ClientConnection(clientFd, clientAddr);
+    connection.parser.setClientLimits(config.client_max_body_size, config.client_max_header_size);
+    connection.start = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     clients[clientFd] = ClientConnection(clientFd, clientAddr);
-    clients[clientFd].parser.setClientLimits(config.client_max_body_size, config.client_header_buffer_size);
+    clients[clientFd].parser.setClientLimits(config.client_max_body_size, config.client_max_header_size);
     pool->registerFdToServer(clientFd, this, POLLIN | POLLOUT);
 }
 
@@ -109,17 +112,16 @@ void Server::handleClientInput(ClientConnection &clientConnection, ServerPool *p
         closeClientConnection(clientConnection, pool);
         return;
     }
-
-
     clientConnection.buffer += std::string(buffer, bytesRead);
     //std::cout << clientConnection.buffer << std::endl;
     //  std::cout << "-------------------------" << std::endl;
 
     if (clientConnection.parser.parse(buffer, bytesRead)) {
         auto request = clientConnection.parser.getRequest();
+        clientConnection.keepAlive = request->getHeader("Connection") == "keep-alive";
 
         Logger::log(LogLevel::INFO, "Request Parsed");
-        request->printRequest();
+      //  request->printRequest();
         std::cout << std::endl;
 
         RequestHandler requestHandler(clientConnection, *request, config);
@@ -128,7 +130,8 @@ void Server::handleClientInput(ClientConnection &clientConnection, ServerPool *p
         clientConnection.setResponse(response.toString());
         clientConnection.buffer.clear();
         clientConnection.parser.reset();
-        clientConnection.buffer.clear();
+        if (!clientConnection.keepAlive)
+            clientConnection.shouldClose = true;
         return;
     }
 
@@ -139,18 +142,24 @@ void Server::handleClientInput(ClientConnection &clientConnection, ServerPool *p
         clientConnection.setResponse(Response::customResponse(
             HttpResponse::StatusCode::BAD_REQUEST, "Bad Request").toString());
         clientConnection.parser.reset();
+        if (!clientConnection.keepAlive)
+            clientConnection.shouldClose = true;
     }
 }
 
-void Server::handleClientOutput(ClientConnection &client) {
+void Server::handleClientOutput(ClientConnection &client, ServerPool *pool) {
+    (void) pool;
     if (client.hasPendingResponse()) {
         const std::string response = client.getResponse();
         const size_t bytesWritten = write(client.fd, response.c_str(), response.size());
 
         if (bytesWritten < response.size()) {
             client.setResponse(response.substr(bytesWritten));
+            Logger::log(LogLevel::ERROR, "Failed to write full response to client");
             return;
         }
+
+        Logger::log(LogLevel::INFO, "Client response sent");
 
         client.clearResponse();
     }
@@ -158,9 +167,25 @@ void Server::handleClientOutput(ClientConnection &client) {
 
 void Server::closeClientConnection(const ClientConnection &client, ServerPool *pool) {
     pool->unregisterFdFromServer(client.fd);
+    shutdown(client.fd, SHUT_WR);
     close(client.fd);
-    clients.erase(client.fd);
     Logger::log(LogLevel::INFO, "Closed client connection");
+    clients.erase(client.fd);
+}
+
+void Server::timeoutClients(ServerPool *pool) {
+    time_t currentTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    for (auto it = clients.begin(); it != clients.end();) {
+        if (it->second.shouldClose) {
+            closeClientConnection(it->second, pool);
+        } else if (it->second.keepAlive && it->second.start != std::time(nullptr) && currentTime - it->second.start >
+                   config.
+                   keepalive_timeout) {
+            closeClientConnection(it->second, pool);
+            Logger::log(LogLevel::INFO, "Client connection timed out");
+        }
+        ++it;
+    }
 }
 
 
