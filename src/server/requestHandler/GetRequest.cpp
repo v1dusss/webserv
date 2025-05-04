@@ -12,11 +12,11 @@
 static HttpResponse handleServeFile(const std::string &path) {
     struct stat fileStat;
     if (stat(path.c_str(), &fileStat) != 0 || S_ISDIR(fileStat.st_mode))
-        return Response::notFoundResponse();
+        return HttpResponse::notFoundResponse();
 
     std::ifstream file(path, std::ios::binary);
     if (!file)
-        return Response::notFoundResponse();
+        return HttpResponse::notFoundResponse();
 
     std::ostringstream ss;
     ss << file.rdbuf();
@@ -32,7 +32,7 @@ static HttpResponse handleAutoIndex(const std::string &path) {
     Logger::log(LogLevel::DEBUG, "Auto indexing path: " + path);
     DIR *dir = opendir(path.c_str());
     if (!dir)
-        return Response::notFoundResponse();
+        return HttpResponse::notFoundResponse();
 
     std::vector<std::string> entries;
     struct dirent *entry;
@@ -62,7 +62,7 @@ static HttpResponse handleAutoIndex(const std::string &path) {
 HttpResponse RequestHandler::handleGet() {
     struct stat fileStat;
     if (stat(routePath.c_str(), &fileStat) != 0)
-        return Response::notFoundResponse();
+        return HttpResponse::notFoundResponse();
 
     if (!isFile) {
         Logger::log(LogLevel::DEBUG, "Route is a directory");
@@ -73,7 +73,7 @@ HttpResponse RequestHandler::handleGet() {
 
         if (!matchedRoute->autoindex) {
             Logger::log(LogLevel::DEBUG, "Route Autoindex is disabled");
-            return Response::notFoundResponse();
+            return HttpResponse::notFoundResponse();
         }
         return handleAutoIndex(routePath);
     }

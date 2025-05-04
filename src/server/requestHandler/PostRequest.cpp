@@ -7,27 +7,27 @@
 
 HttpResponse RequestHandler::handlePost() const {
     if (!std::filesystem::exists(routePath)) {
-        return Response::customResponse(HttpResponse::StatusCode::NOT_FOUND,
-                                        "404 Not Found: Target directory does not exist");
+        return HttpResponse::html(HttpResponse::StatusCode::NOT_FOUND,
+                                  "404 Not Found: Target directory does not exist");
     }
 
     if (isFile) {
-        return Response::customResponse(HttpResponse::StatusCode::BAD_REQUEST,
-                                        "400 Bad Request: Target must be a directory for file uploads");
+        return HttpResponse::html(HttpResponse::StatusCode::BAD_REQUEST,
+                                  "400 Bad Request: Target must be a directory for file uploads");
     }
 
     std::string contentType = request.getHeader("Content-Type");
     std::smatch match;
 
     if (contentType.find("multipart/form-data") == std::string::npos) {
-        return Response::customResponse(HttpResponse::StatusCode::BAD_REQUEST,
-                                        "400 Bad Request: Invalid Content-Type");
+        return HttpResponse::html(HttpResponse::StatusCode::BAD_REQUEST,
+                                  "400 Bad Request: Invalid Content-Type");
     }
 
     std::regex boundaryRegex("boundary\\s*=\\s*([^;]+)");
     if (!std::regex_search(contentType, match, boundaryRegex)) {
-        return Response::customResponse(HttpResponse::StatusCode::BAD_REQUEST,
-                                        "400 Bad Request: Missing boundary");
+        return HttpResponse::html(HttpResponse::StatusCode::BAD_REQUEST,
+                                  "400 Bad Request: Missing boundary");
     }
     std::string boundary = "--" + match[1].str();
     std::string endBoundary = boundary + "--";
@@ -59,14 +59,14 @@ HttpResponse RequestHandler::handlePost() const {
 
         std::regex filenameRegex("filename\\s*=\\s*\"([^\"]*)\"");
         if (!std::regex_search(headers, match, filenameRegex)) {
-            return Response::customResponse(HttpResponse::StatusCode::BAD_REQUEST,
-                                            "400 Bad Request: Missing filename");
+            return HttpResponse::html(HttpResponse::StatusCode::BAD_REQUEST,
+                                      "400 Bad Request: Missing filename");
         }
 
         std::string filename = match[1].str();
         if (filename.empty()) {
-            return Response::customResponse(HttpResponse::StatusCode::BAD_REQUEST,
-                                            "400 Bad Request: Missing filename");
+            return HttpResponse::html(HttpResponse::StatusCode::BAD_REQUEST,
+                                      "400 Bad Request: Missing filename");
         }
 
         std::filesystem::path fullPath = std::filesystem::path(routePath) / filename;
@@ -81,8 +81,8 @@ HttpResponse RequestHandler::handlePost() const {
 
         std::ofstream file(fullPath, std::ios::binary);
         if (!file)
-            return Response::customResponse(HttpResponse::StatusCode::INTERNAL_SERVER_ERROR,
-                                            "500 Internal Server Error: Could not write file");
+            return HttpResponse::html(HttpResponse::StatusCode::INTERNAL_SERVER_ERROR,
+                                      "500 Internal Server Error: Could not write file");
 
         file.write(fileContent.c_str(), fileContent.size());
         file.close();
@@ -94,12 +94,10 @@ HttpResponse RequestHandler::handlePost() const {
     }
 
     if (filesUploaded == 0) {
-        return Response::customResponse(HttpResponse::StatusCode::BAD_REQUEST,
-                                        "400 Bad Request: No files found in request");
+        return HttpResponse::html(HttpResponse::StatusCode::BAD_REQUEST,
+                                  "400 Bad Request: No files found in request");
     }
 
-    HttpResponse response(HttpResponse::StatusCode::CREATED);
-    response.setBody("201 Created: " + std::to_string(filesUploaded) + " file(s) uploaded successfully");
-    response.setHeader("Content-Type", "text/plain");
-    return response;
+    return HttpResponse::html(HttpResponse::StatusCode::CREATED,
+                              "201 Created: " + std::to_string(filesUploaded) + " file(s) uploaded successfully");
 }

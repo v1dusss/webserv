@@ -121,9 +121,7 @@ bool RequestHandler::isCgiRequest() {
 
 HttpResponse RequestHandler::handleRequest() {
     if (!matchedRoute.has_value()) {
-        HttpResponse response(HttpResponse::StatusCode::NOT_FOUND);
-        response.setBody("404 Not Found");
-        return response;
+        return HttpResponse::notFoundResponse();
     }
 
     validateTargetPath();
@@ -146,7 +144,7 @@ HttpResponse RequestHandler::handleRequest() {
         case DELETE:
             return handleDelete();
         default:
-            return Response::customResponse(HttpResponse::StatusCode::METHOD_NOT_ALLOWED, "405 Method Not Allowed");
+            return HttpResponse::html(HttpResponse::StatusCode::METHOD_NOT_ALLOWED, "405 Method Not Allowed");
     }
 }
 

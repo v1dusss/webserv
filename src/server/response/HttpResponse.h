@@ -18,7 +18,7 @@ private:
     std::string body;
     bool chunkedEncoding;
 
-    std::string getStatusMessage(int code) const;
+    static std::string getStatusMessage(int code) ;
 
 public:
     enum StatusCode {
@@ -37,6 +37,11 @@ public:
 
     HttpResponse(int statusCode = StatusCode::OK);
 
+    static HttpResponse html(StatusCode statusCode, const std::string &bodyMessage,
+                             const std::string &contentType = "text/plain");
+
+    static HttpResponse notFoundResponse();
+
     void setStatus(int code, const std::string &message = "");
 
     void setHeader(const std::string &name, const std::string &value);
@@ -47,9 +52,9 @@ public:
 
     void addChunk(const std::string &chunk);
 
-    std::string toString() const;
+    [[nodiscard]] std::string toString() const;
 
-    std::string getBody() const;
+    [[nodiscard]] std::string getBody() const;
 };
 
 

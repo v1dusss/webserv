@@ -139,7 +139,7 @@ void Server::handleClientInput(ClientConnection &clientConnection, ServerPool *p
         std::cout << clientConnection.buffer << std::endl;
         clientConnection.buffer.clear();
 
-        clientConnection.setResponse(Response::customResponse(
+        clientConnection.setResponse(HttpResponse::html(
             HttpResponse::StatusCode::BAD_REQUEST, "Bad Request").toString());
         clientConnection.parser.reset();
         if (!clientConnection.keepAlive)

@@ -198,7 +198,7 @@ std::optional<HttpResponse> RequestHandler::handleCgi() const {
     int output_pipe[2]; // Child -> Parent
 
     if (!setupPipes(input_pipe, output_pipe)) {
-        return Response::customResponse(HttpResponse::StatusCode::INTERNAL_SERVER_ERROR,
+        return HttpResponse::html(HttpResponse::StatusCode::INTERNAL_SERVER_ERROR,
                                         "CGI Error: Could not create pipes");
     }
 
@@ -209,7 +209,7 @@ std::optional<HttpResponse> RequestHandler::handleCgi() const {
         close(output_pipe[0]);
         close(output_pipe[1]);
         Logger::log(LogLevel::ERROR, "Failed to fork process for CGI");
-        return Response::customResponse(HttpResponse::StatusCode::INTERNAL_SERVER_ERROR,
+        return HttpResponse::html(HttpResponse::StatusCode::INTERNAL_SERVER_ERROR,
                                         "CGI Error: Could not fork process");
     }
 
