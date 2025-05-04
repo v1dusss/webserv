@@ -70,6 +70,8 @@ void ServerPool::stop() {
 
 void ServerPool::serverLoop() {
     while (running.load()) {
+        for (const auto& shared_ptr : servers)
+            shared_ptr->closeConnections(this);
         const int pollResult = poll(fds.data(), fds.size(), 0);
         if (pollResult < 0) {
             Logger::log(LogLevel::ERROR, "Poll error");
@@ -87,7 +89,6 @@ void ServerPool::serverLoop() {
             }
         }
     }
-
     cleanUp();
 }
 

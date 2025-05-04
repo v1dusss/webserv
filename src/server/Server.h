@@ -35,6 +35,8 @@ public:
 
     void handleFdEvent(int fd, ServerPool *pool, short events);
 
+    void closeConnections(ServerPool *pool);
+
     int getFd() const { return serverFd; }
 
 private:
@@ -45,8 +47,6 @@ private:
     void handleClientOutput(ClientConnection &client, ServerPool *pool);
 
     void closeClientConnection(const ClientConnection &client, ServerPool *pool);
-
-    void timeoutClients(ServerPool *pool);
 };
 
 
