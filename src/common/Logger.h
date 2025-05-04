@@ -21,18 +21,7 @@ class Logger {
 public:
     static LogLevel currentLogLevel;
 
-    static void log(LogLevel level, const std::string &message) {
-        if (level >= currentLogLevel) {
-            std::string prefix;
-            switch (level) {
-                case LogLevel::INFO:    prefix = GREEN "[INFO] "; break;
-                case LogLevel::WARNING: prefix = YELLOW "[WARNING] "; break;
-                case LogLevel::ERROR:   prefix = RED "[ERROR] "; break;
-                case LogLevel::DEBUG:   prefix = CYAN "[DEBUG] "; break;
-            }
-            std::cout << prefix << message << RESET << std::endl;
-        }
-    }
+    static void log(LogLevel level, const std::string &message);
 };
 
 #endif //LOGGER_H
