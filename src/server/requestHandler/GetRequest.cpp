@@ -9,8 +9,10 @@
 #include <iostream>
 #include <common/Logger.h>
 
+// TODO: use poll
+
 static HttpResponse handleServeFile(const std::string &path) {
-    struct stat fileStat;
+    struct stat fileStat{};
     if (stat(path.c_str(), &fileStat) != 0 || S_ISDIR(fileStat.st_mode))
         return HttpResponse::notFoundResponse();
 
@@ -35,7 +37,7 @@ static HttpResponse handleAutoIndex(const std::string &path) {
         return HttpResponse::notFoundResponse();
 
     std::vector<std::string> entries;
-    struct dirent *entry;
+    dirent *entry;
     while ((entry = readdir(dir)) != nullptr) {
         std::string name = entry->d_name;
         if (name == ".") continue;
@@ -59,8 +61,8 @@ static HttpResponse handleAutoIndex(const std::string &path) {
     return response;
 }
 
-HttpResponse RequestHandler::handleGet() {
-    struct stat fileStat;
+HttpResponse RequestHandler::handleGet() const {
+    struct stat fileStat{};
     if (stat(routePath.c_str(), &fileStat) != 0)
         return HttpResponse::notFoundResponse();
 

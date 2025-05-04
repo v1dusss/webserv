@@ -6,7 +6,7 @@
 /*   By: eebert <eebert@student.42heilbronn.de>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/01 13:19:13 by eebert            #+#    #+#             */
-/*   Updated: 2025/05/03 18:29:54 by eebert           ###   ########.fr       */
+/*   Updated: 2025/05/04 20:09:06 by eebert           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,11 +53,12 @@ typedef struct {
     std::map<int, std::string> error_pages; // Status code to error page mapping
 
     // Connection settings
-    int timeout; // In seconds
+    size_t client_body_timeout; // In seconds
+    size_t client_header_timeout; // In seconds
     size_t client_max_body_size; // In bytes
     size_t client_max_header_size; // In bytes
-    int keepalive_timeout; // In seconds
-    int keepalive_requests; // Max requests per connection
+    size_t keepalive_timeout; // In seconds
+    size_t keepalive_requests; // Max requests per connection
 } ServerConfig;
 
 #endif //CONFIG_H

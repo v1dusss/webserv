@@ -11,10 +11,10 @@
 class ClientConnection {
 public:
     int fd{};
-    struct sockaddr_in clientAddr{};
+    sockaddr_in clientAddr{};
     HttpParser parser{};
-    int requests{};
-    std::time_t start = std::time(nullptr);
+    size_t requestCount = 0;
+    std::time_t lastPackageSend = 0;
     bool keepAlive = false;
     bool shouldClose = false;
 

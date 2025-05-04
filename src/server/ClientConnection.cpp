@@ -6,7 +6,7 @@
 
 #include <unistd.h>
 
-ClientConnection::ClientConnection(int clientFd, struct sockaddr_in clientAddr) {
+ClientConnection::ClientConnection(const int clientFd, const sockaddr_in clientAddr) {
     this->fd = clientFd;
     this->clientAddr = clientAddr;
 }
@@ -19,6 +19,14 @@ ClientConnection &ClientConnection::operator=(const ClientConnection &other) {
     if (this != &other) {
         this->fd = other.fd;
         this->clientAddr = other.clientAddr;
+        this->parser = other.parser;
+        this->requestCount = other.requestCount;
+        this->lastPackageSend = other.lastPackageSend;
+        this->keepAlive = other.keepAlive;
+        this->shouldClose = other.shouldClose;
+        this->buffer = other.buffer;
+        this->rawResponse = other.rawResponse;
+        this->hasResponse = other.hasResponse;
     }
     return *this;
 }

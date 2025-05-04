@@ -29,9 +29,11 @@ private:
     size_t client_max_header_size;
     size_t totalHeaderSize = 0;
     size_t totalBodySize = 0;
-    std::time_t start = std::time(nullptr);
 
 public:
+    std::time_t headerStart = 0;
+    std::time_t bodyStart = 0;
+
     HttpParser();
 
     void setClientLimits(const size_t maxBodySize, const size_t maxHeaderSize) {
@@ -59,6 +61,8 @@ public:
     bool hasError() const { return state == ParseState::ERROR; }
 
     const std::string &getBuffer() const { return buffer; }
+
+    static bool isHttpStatusCode(int statusCode);
 };
 
 
