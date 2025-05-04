@@ -3,23 +3,26 @@
 //
 
 #include "HttpResponse.h"
+#include <format>
+#include <iostream>
+#include "NotFoundImage.h"
 
-HttpResponse::HttpResponse(int statusCode)
+HttpResponse::HttpResponse(const int statusCode)
     : statusCode(statusCode),
       chunkedEncoding(false) {
     statusMessage = getStatusMessage(statusCode);
 }
 
-void HttpResponse::setStatus(int code, const std::string& message) {
+void HttpResponse::setStatus(const int code, const std::string &message) {
     statusCode = code;
     statusMessage = message.empty() ? getStatusMessage(code) : message;
 }
 
-void HttpResponse::setHeader(const std::string& name, const std::string& value) {
+void HttpResponse::setHeader(const std::string &name, const std::string &value) {
     headers[name] = value;
 }
 
-void HttpResponse::setBody(const std::string& body) {
+void HttpResponse::setBody(const std::string &body) {
     this->body = body;
     if (!chunkedEncoding) {
         headers["Content-Length"] = std::to_string(body.length());
@@ -32,7 +35,7 @@ void HttpResponse::enableChunkedEncoding() {
     headers.erase("Content-Length");
 }
 
-void HttpResponse::addChunk(const std::string& chunk) {
+void HttpResponse::addChunk(const std::string &chunk) {
     if (!chunkedEncoding) {
         enableChunkedEncoding();
     }
@@ -47,7 +50,7 @@ std::string HttpResponse::toString() const {
 
     response << "HTTP/1.1 " << statusCode << " " << statusMessage << "\r\n";
 
-    for (const auto& header : headers) {
+    for (const auto &header: headers) {
         response << header.first << ": " << header.second << "\r\n";
     }
 
@@ -62,7 +65,7 @@ std::string HttpResponse::toString() const {
     return response.str();
 }
 
-std::string HttpResponse::getStatusMessage(int code) const {
+std::string HttpResponse::getStatusMessage(const int code) {
     switch (code) {
         case OK: return "OK";
         case CREATED: return "Created";
@@ -73,6 +76,8 @@ std::string HttpResponse::getStatusMessage(int code) const {
         case METHOD_NOT_ALLOWED: return "Method Not Allowed";
         case INTERNAL_SERVER_ERROR: return "Internal Server Error";
         case NOT_IMPLEMENTED: return "Not Implemented";
+        case FORBIDDEN: return "Forbidden";
+        case CONFLICT: return "Conflict";
         default: return "Unknown";
     }
 }
@@ -80,3 +85,51 @@ std::string HttpResponse::getStatusMessage(int code) const {
 std::string HttpResponse::getBody() const {
     return body;
 }
+
+HttpResponse HttpResponse::html(StatusCode statusCode, const std::string &bodyMessage,
+                                const std::string &contentType) {
+    HttpResponse response(statusCode);
+    std::stringstream ss;
+    ss << "<html>"
+            "<head>"
+            "<title>" << statusCode << " " << bodyMessage << "</title>"
+            "</head>"
+            "<body>"
+            "<h1>" << statusCode << " " << bodyMessage << "</h1>"
+            "</body>"
+            "</html>";
+    response.setBody(ss.str());
+    response.setHeader("Content-Type", contentType);
+    return response;
+}
+
+HttpResponse HttpResponse::notFoundResponse() {
+    HttpResponse response(NOT_FOUND);
+    std::stringstream ss;
+    ss << "<html>"
+         "<head>"
+         "<title>" << NOT_FOUND << " " << "not found" << "</title>"
+         "<style>"
+         "body { margin: 0; padding: 0; height: 100vh; }"
+         "body { background: "<< NOT_FOUND_IMG_URL << " no-repeat center center; background-size: cover; }"
+         "body::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; "
+         "background-color: rgba(0, 0, 0, 0.6); }"
+         ".content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); "
+         "text-align: center; z-index: 1; }"
+         ".big-404 { font-size: 120px; font-weight: bold; color: white; margin: 0; }"
+         "h1 { color: white; }"
+         "</style>"
+         "</head>"
+         "<body>"
+         "<div class=\"content\">"
+         "<p class=\"big-404\">404</p>"
+         "<h1>Page Not Found</h1>"
+         "</div>"
+         "</body>"
+         "</html>";
+    response.setBody(ss.str());
+    response.setHeader("Content-Type", "text/html");
+    return response;
+}
+
+

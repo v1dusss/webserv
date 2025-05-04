@@ -12,7 +12,6 @@ SRC = src/main.cpp \
  src/server/requestHandler/GetRequest.cpp \
  src/server/requestHandler/DeleteRequest.cpp \
  src/server/requestHandler/PutRequest.cpp \
- src/server/requestHandler/responses.cpp \
  src/server/requestHandler/RequestHandlerUtils.cpp \
  src/server/requestHandler/CGIRequest.cpp \
  src/parser/config/ConfigParser.cpp \
