@@ -1,22 +1,32 @@
 CC = c++
 CFLAGS = -Wall -Wextra -Werror -std=c++17 -g -fsanitize=address
-SRC = src/main.cpp \
- src/common/Logger.cpp \
- src/server/Server.cpp \
- src/server/ServerPool.cpp \
- src/server/ClientConnection.cpp \
- src/parser/http/HttpParser.cpp \
- src/server/response/HttpResponse.cpp \
- src/server/requestHandler/RequestHandler.cpp \
- src/server/requestHandler/PostRequest.cpp \
- src/server/requestHandler/GetRequest.cpp \
- src/server/requestHandler/DeleteRequest.cpp \
- src/server/requestHandler/PutRequest.cpp \
- src/server/requestHandler/RequestHandlerUtils.cpp \
- src/server/requestHandler/CGIRequest.cpp \
- src/parser/config/ConfigParser.cpp \
- src/parser/config/ConfigBlock.cpp
 
+VPATH = src \
+		src/common \
+		src/config \
+		src/parser \
+		src/parser/config \
+		src/parser/http \
+		src/server \
+		src/server/requestHandler \
+		src/server/response
+
+SRC = main.cpp \
+	Logger.cpp \
+	Server.cpp \
+	ServerPool.cpp \
+	ClientConnection.cpp \
+	HttpParser.cpp \
+	HttpResponse.cpp \
+	RequestHandler.cpp \
+	PostRequest.cpp \
+	GetRequest.cpp \
+	DeleteRequest.cpp \
+	PutRequest.cpp \
+	RequestHandlerUtils.cpp \
+	CGIRequest.cpp \
+	ConfigParser.cpp \
+	ConfigBlock.cpp
 
 OBJ_DIR = obj
 INCLUDE_DIR = src
