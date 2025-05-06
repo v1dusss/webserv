@@ -69,13 +69,13 @@ void Server::handleFdEvent(const int fd, ServerPool *pool, const short events) {
         return;
     }
 
-    if (clients.find(fd) == clients.end()) {
+    if (clients.count(fd) == 0) {
         Logger::log(LogLevel::ERROR, "Client fd not found in map");
         return;
     }
 
-    ClientConnection &clientConnection = clients[fd];
-    if (events & POLLIN && !clientConnection.shouldClose)
+    const std::shared_ptr<ClientConnection> &clientConnection = clients[fd];
+    if (events & POLLIN && !clientConnection->shouldClose)
         handleClientInput(clientConnection, pool);
     if (events & POLLOUT)
         handleClientOutput(clientConnection, pool);
@@ -92,31 +92,33 @@ void Server::handleNewConnections(ServerPool *pool) {
 
     Logger::log(LogLevel::INFO, "Accepted new client connection");
     Logger::log(LogLevel::DEBUG, "Client fd: " + std::to_string(clientFd));
-    auto connection = ClientConnection(clientFd, clientAddr);
-    connection.parser.setClientLimits(config.client_max_body_size, config.client_max_header_size);
-    clients[clientFd] = connection;
+    clients[clientFd] = std::make_shared<ClientConnection>(clientFd, clientAddr);
+    clients[clientFd]->parser.setClientLimits(config.client_max_body_size, config.client_max_header_size);
+
+
     pool->registerFdToServer(clientFd, this, POLLIN | POLLOUT);
 }
 
-void Server::handleClientInput(ClientConnection &clientConnection, ServerPool *pool) {
+void Server::handleClientInput(std::shared_ptr<ClientConnection> clientConnection, ServerPool *pool) {
+    (void) pool;
     char buffer[1024];
-    const ssize_t bytesRead = read(clientConnection.fd, buffer, sizeof(buffer));
+    const ssize_t bytesRead = read(clientConnection->fd, buffer, sizeof(buffer));
     if (bytesRead < 0) {
         Logger::log(LogLevel::ERROR, "Failed to read from client");
         return;
     }
 
     if (bytesRead == 0) {
-        closeClientConnection(clientConnection, pool);
+        clientConnection->shouldClose = true;
         return;
     }
-    clientConnection.buffer += std::string(buffer, bytesRead);
+    clientConnection->buffer += std::string(buffer, bytesRead);
     //std::cout << clientConnection.buffer << std::endl;
     //  std::cout << "-------------------------" << std::endl;
 
-    if (clientConnection.parser.parse(buffer, bytesRead)) {
-        auto request = clientConnection.parser.getRequest();
-        clientConnection.keepAlive = request->getHeader("Connection") == "keep-alive";
+    if (clientConnection->parser.parse(buffer, bytesRead)) {
+        auto request = clientConnection->parser.getRequest();
+        clientConnection->keepAlive = request->getHeader("Connection") == "keep-alive";
 
         Logger::log(LogLevel::INFO, "Request Parsed");
         //  request->printRequest();
@@ -124,70 +126,120 @@ void Server::handleClientInput(ClientConnection &clientConnection, ServerPool *p
         RequestHandler requestHandler(clientConnection, *request, config);
         const HttpResponse response = requestHandler.handleRequest();
 
-        clientConnection.setResponse(response.toString());
+        clientConnection->setResponse(response);
         return;
     }
 
-    if (clientConnection.parser.hasError()) {
-        std::cout << clientConnection.buffer << std::endl;
+    if (clientConnection->parser.hasError()) {
+        std::cout << clientConnection->buffer << std::endl;
 
         const HttpResponse response = HttpResponse::html(HttpResponse::StatusCode::BAD_REQUEST);
-        clientConnection.setResponse(RequestHandler::handleCustomErrorPage(response, config, std::nullopt).toString());
+        clientConnection->setResponse(RequestHandler::handleCustomErrorPage(response, config, std::nullopt));
     }
 }
 
-void Server::handleClientOutput(ClientConnection &client, const ServerPool *pool) {
+void Server::handleClientOutput(std::shared_ptr<ClientConnection> client, const ServerPool *pool) {
     (void) pool;
-    if (client.hasPendingResponse()) {
-        const std::string response = client.getResponse();
-        const size_t bytesWritten = write(client.fd, response.c_str(), response.size());
+    if (client->hasPendingResponse()) {
+        HttpResponse &response = client->getResponse().value();
 
-        if (bytesWritten < response.size()) {
-            client.setResponse(response.substr(bytesWritten));
+        if (response.isChunkedEncoding()) {
+            handleClientFileOutput(client, response);
+            return;
+        }
+        const std::string responseBuffer = response.toString();
+        const size_t bytesWritten = write(client->fd, responseBuffer.c_str(), responseBuffer.size());
+
+        if (bytesWritten < responseBuffer.size()) {
             Logger::log(LogLevel::ERROR, "Failed to write full response to client");
             return;
         }
 
-        client.lastPackageSend = std::time(nullptr);
+        client->lastPackageSend = std::time(nullptr);
         Logger::log(LogLevel::INFO, "Client response sent");
-
-        client.clearResponse();
+        client->clearResponse();
     }
 }
 
-void Server::closeClientConnection(const ClientConnection &client, ServerPool *pool) {
-    pool->unregisterFdFromServer(client.fd);
-    shutdown(client.fd, SHUT_WR);
-    close(client.fd);
-    Logger::log(LogLevel::INFO, "Closed client connection");
-    clients.erase(client.fd);
+void Server::handleClientFileOutput(std::shared_ptr<ClientConnection> client, HttpResponse &response) {
+    if (!response.alreadySendHeader) {
+        const std::string header = response.toHeaderString();
+        if (write(client->fd, header.c_str(), header.length()) < 0) {
+            Logger::log(LogLevel::ERROR, "Failed to write header to client");
+            client->clearResponse();
+            return;
+        }
+        response.alreadySendHeader = true;
+    }
+
+    const int bodyFd = response.getBodyFd();
+    char buffer[config.body_buffer_size];
+
+    const ssize_t bytesRead = read(bodyFd, buffer, sizeof(buffer));
+
+    if (bytesRead < 0) {
+        Logger::log(LogLevel::ERROR, "Failed to read from file descriptor");
+        client->clearResponse();
+        return;
+    }
+
+    if (bytesRead == 0) {
+        if (write(client->fd, "0\r\n\r\n", 5) < 0)
+            Logger::log(LogLevel::ERROR, "Failed to write final chunk to client");
+        client->lastPackageSend = std::time(nullptr);
+        Logger::log(LogLevel::INFO, "Client response sent");
+        client->clearResponse();
+        return;
+    }
+
+    std::stringstream chunkHeader;
+    chunkHeader << std::hex << bytesRead << "\r\n";
+    const std::string header = chunkHeader.str();
+
+    // Write the chunk header
+    if (write(client->fd, header.c_str(), header.length()) < 0) {
+        Logger::log(LogLevel::ERROR, "Failed to write chunk header to client");
+        client->clearResponse();
+    }
+
+    // Write the chunk data
+    if (write(client->fd, buffer, bytesRead) < 0) {
+        Logger::log(LogLevel::ERROR, "Failed to write chunk data to client");
+        client->clearResponse();
+    }
+
+    // Write the trailing CRLF
+    if (write(client->fd, "\r\n", 2) < 0) {
+        Logger::log(LogLevel::ERROR, "Failed to write chunk trailing CRLF to client");
+        client->clearResponse();
+    }
 }
 
 void Server::closeConnections(ServerPool *pool) {
     const time_t currentTime = std::time(nullptr);
     std::vector<int> clientsToClose;
     for (auto &[fd, client]: clients) {
-        if (client.shouldClose || client.requestCount > config.keepalive_requests) {
+        if (client->shouldClose || client->requestCount > config.keepalive_requests) {
             clientsToClose.push_back(fd);
             continue;
         }
 
-        if (client.keepAlive && client.lastPackageSend != 0 &&
-            currentTime - client.lastPackageSend > static_cast<long>(config.keepalive_timeout)) {
+        if (client->keepAlive && client->lastPackageSend != 0 &&
+            currentTime - client->lastPackageSend > static_cast<long>(config.keepalive_timeout)) {
             clientsToClose.push_back(fd);
             Logger::log(LogLevel::INFO, "Client connection timed out");
             continue;
         }
 
-        if (client.parser.headerStart != 0 &&
-            currentTime - client.parser.headerStart > static_cast<long>(config.client_header_timeout)) {
+        if (client->parser.headerStart != 0 &&
+            currentTime - client->parser.headerStart > static_cast<long>(config.client_header_timeout)) {
             clientsToClose.push_back(fd);
             Logger::log(LogLevel::INFO, "Client connection header timed out");
             continue;
         }
 
-        if (client.parser.bodyStart != 0 &&
-            currentTime - client.parser.bodyStart > static_cast<long>(config.client_body_timeout)) {
+        if (client->parser.bodyStart != 0 &&
+            currentTime - client->parser.bodyStart > static_cast<long>(config.client_body_timeout)) {
             clientsToClose.push_back(fd);
             Logger::log(LogLevel::INFO, "Client connection body timed out");
         }
@@ -195,7 +247,9 @@ void Server::closeConnections(ServerPool *pool) {
 
     for (int fd: clientsToClose) {
         if (clients.find(fd) != clients.end()) {
-            closeClientConnection(clients[fd], pool);
+            pool->unregisterFdFromServer(fd);
+            Logger::log(LogLevel::INFO, "Closed client connection");
+            clients.erase(fd);
         }
     }
 }
@@ -203,10 +257,6 @@ void Server::closeConnections(ServerPool *pool) {
 
 void Server::stop() {
     if (serverFd >= 0) {
-        for (const auto &[fd, _]: clients) {
-            close(fd);
-            Logger::log(LogLevel::DEBUG, "closed client fd: " + std::to_string(fd));
-        }
         clients.clear();
 
         Logger::log(LogLevel::DEBUG, "Stopping server on fd: " + std::to_string(serverFd));
