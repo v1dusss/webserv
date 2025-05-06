@@ -28,6 +28,8 @@ public:
 
     HttpResponse handleRequest();
 
+    static HttpResponse handleCustomErrorPage(HttpResponse original, ServerConfig &serverConfig, std::optional<RouteConfig> matchedRoute);
+
     static std::string getMimeType(const std::string &path);
 
     static std::string getFileExtension(const std::string &path);

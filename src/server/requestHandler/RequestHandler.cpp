@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <fcntl.h>
 #include <algorithm>
+#include <fstream>
 #include <string>
 
 
@@ -120,33 +121,73 @@ bool RequestHandler::isCgiRequest() {
 }
 
 HttpResponse RequestHandler::handleRequest() {
-    if (!matchedRoute.has_value()) {
-        return HttpResponse::notFoundResponse();
-    }
+    if (!matchedRoute.has_value())
+        return handleCustomErrorPage(HttpResponse::html(HttpResponse::NOT_FOUND), serverConfig, matchedRoute);
 
     validateTargetPath();
 
     if (isCgiRequest()) {
         Logger::log(LogLevel::DEBUG, "request is a CGI request");
-        const std::optional<HttpResponse> cgiResponse = handleCgi();
 
+        const std::optional<HttpResponse> cgiResponse = handleCgi();
         if (cgiResponse.has_value())
             return cgiResponse.value();
     }
 
+    HttpResponse response;
+
     switch (request.method) {
         case GET:
-            return handleGet();
+            response = handleGet();
+            break;
         case POST:
-            return handlePost();
+            response = handlePost();
+            break;
         case PUT:
-            return handlePut();
+            response = handlePut();
+            break;
         case DELETE:
-            return handleDelete();
+            response = handleDelete();
+            break;
         default:
-            return HttpResponse::html(HttpResponse::StatusCode::METHOD_NOT_ALLOWED, "405 Method Not Allowed");
+            response = HttpResponse::html(HttpResponse::StatusCode::METHOD_NOT_ALLOWED);
     }
+
+    return handleCustomErrorPage(response, serverConfig, matchedRoute);
 }
+
+HttpResponse RequestHandler::handleCustomErrorPage(HttpResponse original, ServerConfig &serverConfig,
+                                                   std::optional<RouteConfig> matchedRoute) {
+    std::string errorPagePath;
+
+    if (matchedRoute.has_value() && matchedRoute->error_pages.count(original.getStatus()))
+        errorPagePath = matchedRoute->error_pages[original.getStatus()];
+    else if (serverConfig.error_pages.count(original.getStatus()))
+        errorPagePath = serverConfig.error_pages[original.getStatus()];
+    else
+        return original;
+
+    if (!std::filesystem::is_regular_file(errorPagePath) || access(errorPagePath.c_str(), R_OK) != 0) {
+        Logger::log(LogLevel::ERROR, "error page has an invalid path: " + errorPagePath);
+        return original;
+    }
+    std::ifstream file(errorPagePath);
+    if (!file) {
+        Logger::log(LogLevel::ERROR, "error page does not exist: " + errorPagePath);
+        return original;
+    }
+    std::ostringstream ss;
+    ss << file.rdbuf();
+    std::string body = ss.str();
+    file.close();
+
+    HttpResponse newResponse;
+    newResponse.setBody(body);
+    newResponse.setHeader("Content-Type", getMimeType(errorPagePath));
+    newResponse.setStatus(original.getStatus());
+    return newResponse;
+}
+
 
 std::string RequestHandler::getFilePath() const {
     if (hasValidIndexFile)
