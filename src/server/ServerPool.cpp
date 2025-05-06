@@ -30,7 +30,7 @@ bool ServerPool::loadConfig(const std::string &configFile) {
         return false;
     }
 
-   std::vector<ServerConfig> serverConfigs = parser.getServerConfigs();
+    std::vector<ServerConfig> serverConfigs = parser.getServerConfigs();
 
     for (const auto &server_config: serverConfigs) {
         auto server = std::make_shared<Server>(server_config);
@@ -70,12 +70,19 @@ void ServerPool::stop() {
 
 void ServerPool::serverLoop() {
     while (running.load()) {
-        for (const auto& shared_ptr : servers)
+        while (!newClients.empty()) {
+            pollfd newFd{};
+            newFd.fd = newClients.front().first;
+            newFd.events = newClients.front().second;
+            fds.push_back(newFd);
+            newClients.pop();
+        }
+        for (const auto &shared_ptr: servers)
             shared_ptr->closeConnections(this);
         const int pollResult = poll(fds.data(), fds.size(), 0);
         if (pollResult < 0) {
             Logger::log(LogLevel::ERROR, "Poll error");
-            Logger::log(LogLevel::ERROR,  strerror(errno));
+            Logger::log(LogLevel::ERROR, strerror(errno));
             continue;
         }
         if (pollResult == 0) {
@@ -92,12 +99,9 @@ void ServerPool::serverLoop() {
     cleanUp();
 }
 
-void ServerPool::registerFdToServer(const int fd, Server *server, const short events) {
-    pollfd newFd{};
-    newFd.fd = fd;
-    newFd.events = events;
-    fds.push_back(newFd);
+void ServerPool::registerFdToServer(const int fd, Server *server, short events) {
     serverFds[fd] = server;
+    newClients.emplace(fd, events);
 }
 
 void ServerPool::unregisterFdFromServer(const int fd) {
