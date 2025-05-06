@@ -9,6 +9,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <common/Logger.h>
+#include <sys/fcntl.h>
 
 // TODO: use poll
 
@@ -17,16 +18,15 @@ static HttpResponse handleServeFile(const std::string &path) {
     if (stat(path.c_str(), &fileStat) != 0 || S_ISDIR(fileStat.st_mode))
         return HttpResponse::html(HttpResponse::NOT_FOUND);
 
-    std::ifstream file(path, std::ios::binary);
-    if (!file)
+    if (access(path.c_str(), R_OK) != 0)
+        return HttpResponse::html(HttpResponse::FORBIDDEN);
+
+    const int fd = open(path.c_str(), O_RDONLY);
+    if (fd < 0)
         return HttpResponse::html(HttpResponse::NOT_FOUND);
 
-    std::ostringstream ss;
-    ss << file.rdbuf();
-    std::string body = ss.str();
-
     HttpResponse response(HttpResponse::StatusCode::OK);
-    response.setBody(body);
+    response.enableChunkedEncoding(fd);
     response.setHeader("Content-Type", RequestHandler::getMimeType(path));
     return response;
 }

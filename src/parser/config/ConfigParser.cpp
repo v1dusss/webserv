@@ -9,7 +9,8 @@
 ConfigParser::ConfigParser() : rootBlock{"root", {}, {}}, currentLine(0), currentFilename(""), parseSuccessful(true) {
     serverDirectives = {
         "listen", "server_name", "root", "index", "client_max_body_size",
-        "client_body_timeout", "client_header_timeout", "client_max_header_size", "keepalive_timeout",
+        "client_body_timeout", "body_buffer_size", "client_header_timeout", "client_max_header_size",
+        "keepalive_timeout",
         "keepalive_requests", "error_page"
     };
 
@@ -123,6 +124,7 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
     config.client_body_timeout = block.getSizeValue("client_body_timeout", 60);
     config.keepalive_timeout = block.getSizeValue("keepalive_timeout", 65);
     config.keepalive_requests = block.getSizeValue("keepalive_requests", 100);
+    config.body_buffer_size = block.getSizeValue("body_buffer_size", 8192);
 
     const auto errorPages = block.getDirective("error_page");
     parseErrorPages(errorPages, config.error_pages);
@@ -306,7 +308,7 @@ void ConfigParser::parseDirective(const std::string &line, ConfigBlock &block) {
             return;
         }
     } else if ((key == "keepalive_timeout" || key == "keepalive_requests" || key == "client_header_timeout" || key ==
-                "client_body_timeout") && !tokens.empty()) {
+                "client_body_timeout" || key == "body_buffer_size") && !tokens.empty()) {
         if (!validateDigitsOnly(tokens[0], key))
             return;
     }

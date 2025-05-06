@@ -9,6 +9,7 @@
 #include <memory>
 #include <string>
 #include <optional>
+#include <ctime>
 
 enum class ParseState {
     REQUEST_LINE,
