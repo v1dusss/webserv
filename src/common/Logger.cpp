@@ -4,10 +4,10 @@
 
 #include "Logger.h"
 
-LogLevel Logger::currentLogLevel = LogLevel::INFO;
+LogLevel Logger::currentLogLevel = LogLevel::DEBUG;
 
 void Logger::log(const LogLevel level, const std::string &message) {
-    if (level >= currentLogLevel) {
+    if (level <= currentLogLevel) {
         std::string prefix;
         switch (level) {
             case LogLevel::INFO: prefix = GREEN "[INFO] ";
@@ -17,6 +17,8 @@ void Logger::log(const LogLevel level, const std::string &message) {
             case LogLevel::ERROR: prefix = RED "[ERROR] ";
                 break;
             case LogLevel::DEBUG: prefix = CYAN "[DEBUG] ";
+                break;
+            default:
                 break;
         }
         if (level == LogLevel::ERROR)
