@@ -15,8 +15,10 @@
 
 #include <sys/types.h>
 #include <arpa/inet.h>
+#include <sys/poll.h>
 
 #include "common/Logger.h"
+#include "webserv.h"
 
 RequestHandler::RequestHandler(ClientConnection &connection, const HttpRequest &request,
                                ServerConfig &serverConfig): request(request), connection(connection),
@@ -171,16 +173,34 @@ HttpResponse RequestHandler::handleCustomErrorPage(HttpResponse original, Server
         Logger::log(LogLevel::ERROR, "error page has an invalid path: " + errorPagePath);
         return original;
     }
-    std::ifstream file(errorPagePath);
-    if (!file) {
+    const int fd = open(errorPagePath.c_str(), O_RDONLY);
+    if (fd < 0) {
         Logger::log(LogLevel::ERROR, "error page does not exist: " + errorPagePath);
         return original;
     }
-    std::ostringstream ss;
-    ss << file.rdbuf();
-    std::string body = ss.str();
-    file.close();
 
+    pollfd pfd{};
+    pfd.fd = fd;
+    pfd.events = POLLIN;
+
+    if (const int poll_result = poll(&pfd, 1, READ_FILE_TIMEOUT); poll_result <= 0) {
+        if (poll_result == 0)
+            Logger::log(LogLevel::ERROR, "Timeout reading error page: " + errorPagePath);
+        else
+            Logger::log(LogLevel::ERROR, "Poll failed for error page: " + errorPagePath);
+        close(fd);
+        return original;
+    }
+
+    std::ostringstream ss;
+    char buffer[4096];
+    ssize_t bytes_read;
+    while ((bytes_read = read(fd, buffer, sizeof(buffer))) > 0) {
+        ss.write(buffer, bytes_read);
+    }
+
+    close(fd);
+    const std::string body = ss.str();
     HttpResponse newResponse;
     newResponse.setBody(body);
     newResponse.setHeader("Content-Type", getMimeType(errorPagePath));

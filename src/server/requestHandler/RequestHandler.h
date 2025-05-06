@@ -18,7 +18,7 @@ private:
     ServerConfig &serverConfig;
     std::string routePath;
     std::string cgiPath;
-    bool isFile;
+    bool isFile = false;
     bool hasValidIndexFile = false;
     std::string indexFilePath;
 
@@ -28,7 +28,8 @@ public:
 
     HttpResponse handleRequest();
 
-    static HttpResponse handleCustomErrorPage(HttpResponse original, ServerConfig &serverConfig, std::optional<RouteConfig> matchedRoute);
+    static HttpResponse handleCustomErrorPage(HttpResponse original, ServerConfig &serverConfig,
+                                              std::optional<RouteConfig> matchedRoute);
 
     static std::string getMimeType(const std::string &path);
 
@@ -55,9 +56,10 @@ private:
     [[nodiscard]] HttpResponse handleDelete() const;
 
     [[nodiscard]] std::optional<HttpResponse> handleCgi() const;
-    [[nodiscard]] bool validateCgiEnvironment() const;
-    void configureCgiChildProcess(int input_pipe[2], int output_pipe[2]) const;
 
+    [[nodiscard]] bool validateCgiEnvironment() const;
+
+    void configureCgiChildProcess(int input_pipe[2], int output_pipe[2]) const;
 };
 
 
