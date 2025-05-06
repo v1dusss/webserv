@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <webserv.h>
 #include <arpa/inet.h>
 
 #include "ServerPool.h"
@@ -161,7 +162,7 @@ void Server::handleClientOutput(std::shared_ptr<ClientConnection> client, const 
     }
 }
 
-void Server::handleClientFileOutput(const std::shared_ptr<ClientConnection>& client, HttpResponse &response) const {
+void Server::handleClientFileOutput(const std::shared_ptr<ClientConnection> &client, HttpResponse &response) const {
     if (!response.alreadySendHeader) {
         const std::string header = response.toHeaderString();
         if (write(client->fd, header.c_str(), header.length()) < 0) {
@@ -174,6 +175,23 @@ void Server::handleClientFileOutput(const std::shared_ptr<ClientConnection>& cli
 
     const int bodyFd = response.getBodyFd();
     char buffer[config.body_buffer_size];
+
+    pollfd pollfd;
+    pollfd.fd = bodyFd;
+    pollfd.events = POLLIN;
+
+    const int pollResult = poll(&pollfd, 1, READ_FILE_TIMEOUT);
+    if (pollResult < 0) {
+        Logger::log(LogLevel::ERROR, "Poll error while reading from client");
+        client->clearResponse();
+        return;
+    }
+
+    if (pollResult == 0) {
+        Logger::log(LogLevel::ERROR, "Timeout while reading from client");
+        client->clearResponse();
+        return;
+    }
 
     const ssize_t bytesRead = read(bodyFd, buffer, sizeof(buffer));
 
