@@ -2,7 +2,7 @@
 #include <sys/wait.h>
 #include <poll.h>
 #include <fcntl.h>
-#include <signal.h>
+#include <csignal>
 #include <filesystem>
 
 #include "common/Logger.h"
@@ -212,6 +212,7 @@ std::optional<HttpResponse> RequestHandler::handleCgi() const {
         return HttpResponse::html(HttpResponse::StatusCode::INTERNAL_SERVER_ERROR,
                                         "CGI Error: Could not fork process");
     }
+
 
     if (pid == 0) {
         configureCgiChildProcess(input_pipe, output_pipe);
