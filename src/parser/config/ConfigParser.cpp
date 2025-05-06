@@ -124,17 +124,8 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
     config.keepalive_timeout = block.getSizeValue("keepalive_timeout", 65);
     config.keepalive_requests = block.getSizeValue("keepalive_requests", 100);
 
-    auto errorPages = block.getDirective("error_page");
-    for (const auto &errorPage: errorPages) {
-        std::istringstream iss(errorPage);
-        std::string errorCode, path;
-        while (iss >> errorCode && iss >> path) {
-            try {
-                config.error_pages[std::stoi(errorCode)] = path;
-            } catch (...) {
-            }
-        }
-    }
+    const auto errorPages = block.getDirective("error_page");
+    parseErrorPages(errorPages, config.error_pages);
 
     for (const auto &child: block.children) {
         if (child.name == "location") {
@@ -162,10 +153,10 @@ RouteConfig ConfigParser::parseRouteBlock(const ConfigBlock &block, const Server
     route.alias = block.getStringValue("alias");
     route.deny_all = (block.getStringValue("deny", "") == "all");
 
-    auto methods = block.getDirective("allowed_methods");
+    const auto methods = block.getDirective("allowed_methods");
     if (!methods.empty()) {
         for (const auto &method: methods) {
-            auto httpMethod = HttpParser::stringToMethod(method);
+            const auto httpMethod = HttpParser::stringToMethod(method);
             if (httpMethod != std::nullopt)
                 route.allowedMethods.push_back(httpMethod.value());
             else
@@ -175,17 +166,8 @@ RouteConfig ConfigParser::parseRouteBlock(const ConfigBlock &block, const Server
         route.allowedMethods.push_back(GET);
     }
 
-    auto errorPages = block.getDirective("error_page");
-    for (const auto &errorPage: errorPages) {
-        std::istringstream iss(errorPage);
-        std::string errorCode, path;
-        while (iss >> errorCode && iss >> path) {
-            try {
-                route.error_pages[std::stoi(errorCode)] = path;
-            } catch (...) {
-            }
-        }
-    }
+    const auto errorPages = block.getDirective("error_page");
+    parseErrorPages(errorPages, route.error_pages);
 
     auto cgiParams = block.findDirectivesByPrefix("cgi");
     for (const auto &[key, values]: cgiParams) {
@@ -194,13 +176,29 @@ RouteConfig ConfigParser::parseRouteBlock(const ConfigBlock &block, const Server
         }
     }
 
-    auto returnDir = block.getDirective("return");
+    const auto returnDir = block.getDirective("return");
     if (returnDir.size() >= 2) {
         route.return_directive[returnDir[0]] = returnDir[1];
     }
 
     return route;
 }
+
+void ConfigParser::parseErrorPages(const std::vector<std::string> &tokens,
+                                   std::map<int, std::string> &error_pages) const {
+    if (tokens.size() != 2) {
+        return;
+    }
+    const std::string errorCode = tokens[0];
+    const std::string path = tokens[1];
+
+    try {
+        error_pages[std::stoi(errorCode)] = path;
+    } catch (...) {
+        reportError("Invalid error page format: " + path);
+    }
+}
+
 
 bool ConfigParser::parseBlock(std::ifstream &file, ConfigBlock &block) {
     std::string line;
@@ -276,22 +274,41 @@ void ConfigParser::parseDirective(const std::string &line, ConfigBlock &block) {
         }
     }
 
-    if (key == "listen" && !tokens.empty()) {
+    if (key == "error_page") {
+        if (tokens.size() != 2) {
+            reportError(
+                "Invalid error_page directive: " + line + " - expected format: error_page <status_code> <path>");
+            parseSuccessful = false;
+            return;
+        }
+
+        int statusCode;
+        if (!tryParseInt(tokens[0], statusCode)) {
+            reportError("Invalid status code in error_page directive: " + tokens[0]);
+            parseSuccessful = false;
+            return;
+        }
+
+        if (!HttpParser::isHttpStatusCode(statusCode)) {
+            reportError("Invalid HTTP status code in error_page: " + std::to_string(statusCode));
+            parseSuccessful = false;
+            return;
+        }
+    } else if (key == "listen" && !tokens.empty()) {
         if (!validateListenValue(tokens[0])) {
             return;
         }
-    } else if (key == "client_max_body_size" && !tokens.empty()) {
-        std::regex sizeRegex("^\\d+[kmg]?$", std::regex::icase);
+    } else if ((key == "client_max_body_size" || key == "client_max_header_size") && !tokens.empty()) {
+        const std::regex sizeRegex("^\\d+[kmg]?$", std::regex::icase);
         if (!std::regex_match(tokens[0], sizeRegex)) {
-            reportError("Invalid value for client_max_body_size: " + tokens[0]);
+            reportError("Invalid value for " + key + ": " + tokens[0]);
             parseSuccessful = false;
             return;
         }
     } else if ((key == "keepalive_timeout" || key == "keepalive_requests" || key == "client_header_timeout" || key ==
                 "client_body_timeout") && !tokens.empty()) {
-        if (!validateDigitsOnly(tokens[0], key)) {
+        if (!validateDigitsOnly(tokens[0], key))
             return;
-        }
     }
 
     block.directives[key] = tokens;
@@ -346,9 +363,9 @@ bool ConfigParser::tryParseInt(const std::string &value, int &result) const {
 }
 
 void ConfigParser::reportError(const std::string &message) const {
-    std::string location = !currentFilename.empty()
-                               ? (currentFilename + ":" + std::to_string(currentLine))
-                               : "unknown location";
+    const std::string location = !currentFilename.empty()
+                                     ? (currentFilename + ":" + std::to_string(currentLine))
+                                     : "unknown location";
 
     std::cerr << RED << "Error at " << location << ": " << message << RESET << std::endl;
 }

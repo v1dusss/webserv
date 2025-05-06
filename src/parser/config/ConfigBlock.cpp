@@ -25,7 +25,7 @@ int ConfigBlock::getIntValue(const std::string &key, int defaultValue) const {
 }
 
 size_t ConfigBlock::getSizeValue(const std::string &key, size_t defaultValue) const {
-    auto values = getDirective(key);
+    const auto values = getDirective(key);
     if (values.empty()) return defaultValue;
     try {
         return std::stoull(values[0]);

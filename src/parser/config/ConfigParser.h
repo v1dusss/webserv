@@ -14,7 +14,7 @@ public:
 
     bool parse(const std::string& filename);
 
-    std::vector<ServerConfig> getServerConfigs() const;
+    [[nodiscard]] std::vector<ServerConfig> getServerConfigs() const;
 
 private:
     ConfigBlock rootBlock;
@@ -26,14 +26,14 @@ private:
     std::vector<std::string> locationDirectives;
     std::vector<std::string> validDirectivePrefixes;
 
-    bool isValidDirective(const std::string& directive, const std::string& blockType) const;
+    [[nodiscard]] bool isValidDirective(const std::string& directive, const std::string& blockType) const;
     bool validateDigitsOnly(const std::string& value, const std::string& directive);
     bool validateListenValue(const std::string& value);
 
 
-    ServerConfig parseServerBlock(const ConfigBlock& block) const;
+    [[nodiscard]] ServerConfig parseServerBlock(const ConfigBlock& block) const;
 
-    RouteConfig parseRouteBlock(const ConfigBlock& block, const ServerConfig& serverConfig) const;
+    [[nodiscard]] RouteConfig parseRouteBlock(const ConfigBlock& block, const ServerConfig& serverConfig) const;
 
     bool parseBlock(std::ifstream& file, ConfigBlock& block);
 
@@ -48,6 +48,8 @@ private:
     bool tryParseInt(const std::string& value, int& result) const;
 
     void reportError(const std::string& message) const;
+
+    void parseErrorPages(const std::vector<std::string> &tokens, std::map<int, std::string> &error_pages) const;
 };
 
 #endif // CONFIG_PARSER_H
