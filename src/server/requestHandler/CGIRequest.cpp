@@ -55,7 +55,7 @@ void RequestHandler::configureCgiChildProcess(int input_pipe[2], int output_pipe
     std::vector<char *> envp;
     for (const auto &[fst, snd]: env) {
         std::string envVar = fst + "=" + snd;
-        envp.push_back(strdup(envVar.c_str()));
+        envp.push_back(envVar.data());
     }
     envp.push_back(nullptr);
     char *const argv[] = {const_cast<char *>(cgiPath.c_str()), const_cast<char *>(filePath.c_str()), nullptr};
