@@ -10,7 +10,7 @@
 
 ServerPool serverPool;
 
-void signalHandler(int signum) {
+void signalHandler(const int signum) {
     std::cout << std::endl;
     serverPool.stop();
     (void) signum;

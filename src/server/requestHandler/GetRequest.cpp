@@ -7,6 +7,7 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <unistd.h>
 #include <common/Logger.h>
 
 // TODO: use poll
@@ -14,11 +15,11 @@
 static HttpResponse handleServeFile(const std::string &path) {
     struct stat fileStat{};
     if (stat(path.c_str(), &fileStat) != 0 || S_ISDIR(fileStat.st_mode))
-        return HttpResponse::notFoundResponse();
+        return HttpResponse::html(HttpResponse::NOT_FOUND);
 
     std::ifstream file(path, std::ios::binary);
     if (!file)
-        return HttpResponse::notFoundResponse();
+        return HttpResponse::html(HttpResponse::NOT_FOUND);
 
     std::ostringstream ss;
     ss << file.rdbuf();
@@ -34,7 +35,10 @@ static HttpResponse handleAutoIndex(const std::string &path) {
     Logger::log(LogLevel::DEBUG, "Auto indexing path: " + path);
     DIR *dir = opendir(path.c_str());
     if (!dir)
-        return HttpResponse::notFoundResponse();
+        return HttpResponse::html(HttpResponse::NOT_FOUND);
+
+    if (access(path.c_str(), R_OK) == -1)
+        return HttpResponse::html(HttpResponse::StatusCode::FORBIDDEN);
 
     std::vector<std::string> entries;
     dirent *entry;
@@ -64,7 +68,7 @@ static HttpResponse handleAutoIndex(const std::string &path) {
 HttpResponse RequestHandler::handleGet() const {
     struct stat fileStat{};
     if (stat(routePath.c_str(), &fileStat) != 0)
-        return HttpResponse::notFoundResponse();
+        return HttpResponse::html(HttpResponse::NOT_FOUND);
 
     if (!isFile) {
         Logger::log(LogLevel::DEBUG, "Route is a directory");
@@ -75,7 +79,7 @@ HttpResponse RequestHandler::handleGet() const {
 
         if (!matchedRoute->autoindex) {
             Logger::log(LogLevel::DEBUG, "Route Autoindex is disabled");
-            return HttpResponse::notFoundResponse();
+            return HttpResponse::html(HttpResponse::NOT_FOUND);
         }
         return handleAutoIndex(routePath);
     }

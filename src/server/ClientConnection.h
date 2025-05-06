@@ -34,10 +34,7 @@ public:
 
     ClientConnection &operator=(const ClientConnection &other);
 
-    void setResponse(const std::string &response) {
-        rawResponse = response;
-        hasResponse = true;
-    }
+    void setResponse(const std::string &response);
 
     void clearResponse() {
         rawResponse.clear();

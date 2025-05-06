@@ -37,11 +37,11 @@ public:
 
     HttpResponse(int statusCode = StatusCode::OK);
 
-    static HttpResponse html(StatusCode statusCode, const std::string &bodyMessage);
-
-    static HttpResponse notFoundResponse();
+    static HttpResponse html(StatusCode statusCode, const std::string &bodyMessage = "");
 
     void setStatus(int code, const std::string &message = "");
+
+    [[nodiscard]] int getStatus() const;
 
     void setHeader(const std::string &name, const std::string &value);
 
@@ -54,6 +54,9 @@ public:
     [[nodiscard]] std::string toString() const;
 
     [[nodiscard]] std::string getBody() const;
+
+private:
+    static void createNotFoundPage(std::stringstream &ss);
 };
 
 
