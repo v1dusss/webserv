@@ -20,13 +20,13 @@
 #include "common/Logger.h"
 #include "webserv.h"
 
-RequestHandler::RequestHandler(ClientConnection &connection, const HttpRequest &request,
+RequestHandler::RequestHandler(std::shared_ptr<ClientConnection> connection, const HttpRequest &request,
                                ServerConfig &serverConfig): request(request), connection(connection),
                                                             serverConfig(serverConfig) {
     char ipStr[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &(connection.clientAddr.sin_addr), ipStr, INET_ADDRSTRLEN);
+    inet_ntop(AF_INET, &(connection->clientAddr.sin_addr), ipStr, INET_ADDRSTRLEN);
     Logger::log(LogLevel::DEBUG, "IP: " + std::string(ipStr) +
-                                 " Port: " + std::to_string(ntohs(connection.clientAddr.sin_port)) + " request: " +
+                                 " Port: " + std::to_string(ntohs(connection->clientAddr.sin_port)) + " request: " +
                                  request.getMethodString() + " at " + request.uri);
 
     findRoute();
@@ -87,13 +87,13 @@ void RequestHandler::validateTargetPath() {
     if (isFile)
         return;
 
-    RouteConfig route = matchedRoute.value();
+    const RouteConfig route = matchedRoute.value();
     if (route.index.empty() && serverConfig.index.empty())
         return;
 
-    std::string indexFilePath = std::filesystem::path(routePath) / (!route.index.empty()
-                                                                        ? route.index
-                                                                        : serverConfig.index);
+    const std::string indexFilePath = std::filesystem::path(routePath) / (!route.index.empty()
+                                                                              ? route.index
+                                                                              : serverConfig.index);
 
     hasValidIndexFile = std::filesystem::exists(indexFilePath) && std::filesystem::is_regular_file(indexFilePath) &&
                         access(indexFilePath.c_str(), R_OK) == 0;
@@ -179,6 +179,7 @@ HttpResponse RequestHandler::handleCustomErrorPage(HttpResponse original, Server
         return original;
     }
 
+    /*
     pollfd pfd{};
     pfd.fd = fd;
     pfd.events = POLLIN;
@@ -192,17 +193,19 @@ HttpResponse RequestHandler::handleCustomErrorPage(HttpResponse original, Server
         return original;
     }
 
+
     std::ostringstream ss;
     char buffer[4096];
     ssize_t bytes_read;
     while ((bytes_read = read(fd, buffer, sizeof(buffer))) > 0) {
         ss.write(buffer, bytes_read);
     }
-
     close(fd);
     const std::string body = ss.str();
+    */
+
     HttpResponse newResponse;
-    newResponse.setBody(body);
+    newResponse.enableChunkedEncoding(fd);
     newResponse.setHeader("Content-Type", getMimeType(errorPagePath));
     newResponse.setStatus(original.getStatus());
     return newResponse;

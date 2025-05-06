@@ -14,7 +14,7 @@ class RequestHandler {
 private:
     std::optional<RouteConfig> matchedRoute;
     const HttpRequest request;
-    ClientConnection &connection;
+    std::shared_ptr<ClientConnection> connection;
     ServerConfig &serverConfig;
     std::string routePath;
     std::string cgiPath;
@@ -23,7 +23,7 @@ private:
     std::string indexFilePath;
 
 public:
-    RequestHandler(ClientConnection &connection, const HttpRequest &request,
+    RequestHandler(std::shared_ptr<ClientConnection> connection, const HttpRequest &request,
                    ServerConfig &serverConfig);
 
     HttpResponse handleRequest();

@@ -33,39 +33,40 @@ void HttpResponse::setBody(const std::string &body) {
     }
 }
 
-void HttpResponse::enableChunkedEncoding() {
+void HttpResponse::enableChunkedEncoding(const int bodyFd) {
+    this->bodyFd = bodyFd;
     chunkedEncoding = true;
     headers["Transfer-Encoding"] = "chunked";
     headers.erase("Content-Length");
 }
 
-void HttpResponse::addChunk(const std::string &chunk) {
-    if (!chunkedEncoding) {
-        enableChunkedEncoding();
-    }
+int HttpResponse::getBodyFd() const {
+    return bodyFd;
+}
 
-    std::stringstream ss;
-    ss << std::hex << chunk.length() << "\r\n" << chunk << "\r\n";
-    body += ss.str();
+bool HttpResponse::isChunkedEncoding() const {
+    return chunkedEncoding;
 }
 
 std::string HttpResponse::toString() const {
     std::stringstream response;
 
-    response << "HTTP/1.1 " << statusCode << " " << statusMessage << "\r\n";
-
-    for (const auto &header: headers) {
-        response << header.first << ": " << header.second << "\r\n";
-    }
-
-    response << "\r\n";
+    response << toHeaderString();
 
     response << body;
 
-    if (chunkedEncoding) {
-        response << "0\r\n\r\n";
+    return response.str();
+}
+
+std::string HttpResponse::toHeaderString() const {
+    std::stringstream response;
+
+    response << "HTTP/1.1 " << statusCode << " " << statusMessage << "\r\n";
+    for (const auto &[fst, snd]: headers) {
+        response << fst << ": " << snd << "\r\n";
     }
 
+    response << "\r\n";
     return response.str();
 }
 
@@ -84,10 +85,6 @@ std::string HttpResponse::getStatusMessage(const int code) {
         case CONFLICT: return "Conflict";
         default: return "Unknown";
     }
-}
-
-std::string HttpResponse::getBody() const {
-    return body;
 }
 
 HttpResponse HttpResponse::html(const StatusCode statusCode, const std::string &bodyMessage) {
@@ -132,4 +129,8 @@ void HttpResponse::createNotFoundPage(std::stringstream &ss) {
             "</div>"
             "</body>"
             "</html>";
+}
+
+std::string HttpResponse::getBody() const {
+    return body;
 }

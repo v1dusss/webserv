@@ -17,10 +17,14 @@ private:
     std::unordered_map<std::string, std::string> headers;
     std::string body;
     bool chunkedEncoding;
-
-    static std::string getStatusMessage(int code) ;
+    int bodyFd = -1;
 
 public:
+    // only used for chunked encoding, because there we have to send the header and body separately
+    bool alreadySendHeader = false;
+
+    static std::string getStatusMessage(int code);
+
     enum StatusCode {
         OK = 200,
         CREATED = 201,
@@ -47,13 +51,18 @@ public:
 
     void setBody(const std::string &body);
 
-    void enableChunkedEncoding();
-
-    void addChunk(const std::string &chunk);
+    // this is only used for sending files
+    void enableChunkedEncoding(int bodyFd);
 
     [[nodiscard]] std::string toString() const;
 
+    [[nodiscard]] std::string toHeaderString() const;
+
     [[nodiscard]] std::string getBody() const;
+
+    [[nodiscard]] int getBodyFd() const;
+
+    [[nodiscard]] bool isChunkedEncoding() const;
 
 private:
     static void createNotFoundPage(std::stringstream &ss);
