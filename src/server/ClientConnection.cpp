@@ -5,6 +5,7 @@
 #include "ClientConnection.h"
 
 #include <unistd.h>
+#include <common/Logger.h>
 
 ClientConnection::ClientConnection(const int clientFd, const sockaddr_in clientAddr) {
     this->fd = clientFd;
@@ -13,6 +14,16 @@ ClientConnection::ClientConnection(const int clientFd, const sockaddr_in clientA
 
 ClientConnection::ClientConnection(const ClientConnection &other) {
     *this = other;
+}
+
+ClientConnection::~ClientConnection() {
+    this->clearResponse();
+    if (fd != -1) {
+        shutdown(fd, SHUT_RDWR);
+        close(fd);
+        Logger::log(LogLevel::DEBUG, "closed client fd: " + std::to_string(fd));
+        fd = -1;
+    }
 }
 
 ClientConnection &ClientConnection::operator=(const ClientConnection &other) {
@@ -25,16 +36,13 @@ ClientConnection &ClientConnection::operator=(const ClientConnection &other) {
         this->keepAlive = other.keepAlive;
         this->shouldClose = other.shouldClose;
         this->buffer = other.buffer;
-        this->rawResponse = other.rawResponse;
-        this->hasResponse = other.hasResponse;
+        this->response = other.response;
     }
     return *this;
 }
 
-void ClientConnection::setResponse(const std::string &response) {
-    rawResponse = response;
-    hasResponse = true;
-
+void ClientConnection::setResponse(const HttpResponse &response) {
+    this->response = response;
     buffer.clear();
     parser.reset();
     requestCount++;

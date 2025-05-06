@@ -5,8 +5,14 @@
 #ifndef CLIENTCONNECTION_H
 #define CLIENTCONNECTION_H
 
+#include <unistd.h>
 #include <netinet/in.h>
 #include <parser/http/HttpParser.h>
+#include <optional>
+#include <string>
+#include <ctime>
+
+#include "response/HttpResponse.h"
 
 class ClientConnection {
 public:
@@ -22,31 +28,34 @@ public:
     std::string buffer = "";
 
 private:
-    std::string rawResponse;
-    bool hasResponse = false;
+    std::optional<HttpResponse> response = std::nullopt;
 
 public:
     ClientConnection() = default;
 
     ClientConnection(int clientFd, struct sockaddr_in clientAddr);
 
+    ~ClientConnection();
+
     ClientConnection(const ClientConnection &other);
 
     ClientConnection &operator=(const ClientConnection &other);
 
-    void setResponse(const std::string &response);
+    void setResponse(const HttpResponse &response);
 
     void clearResponse() {
-        rawResponse.clear();
-        hasResponse = false;
+        if (response != std::nullopt && response.value().getBodyFd()) {
+            close(response.value().getBodyFd());
+        }
+        response = std::nullopt;
     }
 
-    bool hasPendingResponse() const {
-        return hasResponse;
+    [[nodiscard]] bool hasPendingResponse() const {
+        return response != std::nullopt;
     }
 
-    std::string getResponse() {
-        return rawResponse;
+    std::optional<HttpResponse> &getResponse() {
+        return response;
     }
 };
 

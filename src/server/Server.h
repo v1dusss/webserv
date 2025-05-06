@@ -20,7 +20,7 @@ class Server {
 private:
     int serverFd;
     ServerConfig config;
-    std::unordered_map<int, ClientConnection> clients;
+    std::unordered_map<int, std::shared_ptr<ClientConnection>> clients;
 
 public:
     Server(ServerConfig config);
@@ -42,11 +42,11 @@ public:
 private:
     void handleNewConnections(ServerPool *pool);
 
-    void handleClientInput(ClientConnection &client, ServerPool *pool);
+    void handleClientInput(std::shared_ptr<ClientConnection> client, ServerPool *pool);
 
-    void handleClientOutput(ClientConnection &client, const ServerPool *pool);
+    void handleClientOutput(std::shared_ptr<ClientConnection> client, const ServerPool *pool);
 
-    void closeClientConnection(const ClientConnection &client, ServerPool *pool);
+    void handleClientFileOutput(std::shared_ptr<ClientConnection> client, HttpResponse &response);
 };
 
 
