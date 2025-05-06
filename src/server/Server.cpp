@@ -161,7 +161,7 @@ void Server::handleClientOutput(std::shared_ptr<ClientConnection> client, const 
     }
 }
 
-void Server::handleClientFileOutput(std::shared_ptr<ClientConnection> client, HttpResponse &response) {
+void Server::handleClientFileOutput(const std::shared_ptr<ClientConnection>& client, HttpResponse &response) const {
     if (!response.alreadySendHeader) {
         const std::string header = response.toHeaderString();
         if (write(client->fd, header.c_str(), header.length()) < 0) {
@@ -224,7 +224,7 @@ void Server::closeConnections(ServerPool *pool) {
             continue;
         }
 
-        if (client->keepAlive && client->lastPackageSend != 0 &&
+        if (client->keepAlive && !client->hasPendingResponse() && client->lastPackageSend != 0 &&
             currentTime - client->lastPackageSend > static_cast<long>(config.keepalive_timeout)) {
             clientsToClose.push_back(fd);
             Logger::log(LogLevel::INFO, "Client connection timed out");

@@ -46,7 +46,7 @@ private:
 
     void handleClientOutput(std::shared_ptr<ClientConnection> client, const ServerPool *pool);
 
-    void handleClientFileOutput(std::shared_ptr<ClientConnection> client, HttpResponse &response);
+    void handleClientFileOutput(const std::shared_ptr<ClientConnection>& client, HttpResponse &response) const;
 };
 
 
