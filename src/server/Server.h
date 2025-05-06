@@ -44,7 +44,7 @@ private:
 
     void handleClientInput(ClientConnection &client, ServerPool *pool);
 
-    void handleClientOutput(ClientConnection &client, ServerPool *pool);
+    void handleClientOutput(ClientConnection &client, const ServerPool *pool);
 
     void closeClientConnection(const ClientConnection &client, ServerPool *pool);
 };

@@ -30,3 +30,14 @@ ClientConnection &ClientConnection::operator=(const ClientConnection &other) {
     }
     return *this;
 }
+
+void ClientConnection::setResponse(const std::string &response) {
+    rawResponse = response;
+    hasResponse = true;
+
+    buffer.clear();
+    parser.reset();
+    requestCount++;
+    if (!keepAlive)
+        shouldClose = true;
+}

@@ -119,34 +119,24 @@ void Server::handleClientInput(ClientConnection &clientConnection, ServerPool *p
         clientConnection.keepAlive = request->getHeader("Connection") == "keep-alive";
 
         Logger::log(LogLevel::INFO, "Request Parsed");
-       //  request->printRequest();
+        //  request->printRequest();
 
         RequestHandler requestHandler(clientConnection, *request, config);
         const HttpResponse response = requestHandler.handleRequest();
 
         clientConnection.setResponse(response.toString());
-        clientConnection.buffer.clear();
-        clientConnection.parser.reset();
-        clientConnection.requestCount++;
-        if (!clientConnection.keepAlive || clientConnection.requestCount > config.keepalive_requests)
-            clientConnection.shouldClose = true;
         return;
     }
 
     if (clientConnection.parser.hasError()) {
         std::cout << clientConnection.buffer << std::endl;
-        clientConnection.buffer.clear();
 
-        clientConnection.setResponse(HttpResponse::html(
-            HttpResponse::StatusCode::BAD_REQUEST, "Bad Request").toString());
-        clientConnection.parser.reset();
-        clientConnection.requestCount++;
-        if (!clientConnection.keepAlive || clientConnection.requestCount > config.keepalive_requests)
-            clientConnection.shouldClose = true;
+        const HttpResponse response = HttpResponse::html(HttpResponse::StatusCode::BAD_REQUEST);
+        clientConnection.setResponse(RequestHandler::handleCustomErrorPage(response, config, std::nullopt).toString());
     }
 }
 
-void Server::handleClientOutput(ClientConnection &client, ServerPool *pool) {
+void Server::handleClientOutput(ClientConnection &client, const ServerPool *pool) {
     (void) pool;
     if (client.hasPendingResponse()) {
         const std::string response = client.getResponse();
@@ -177,7 +167,7 @@ void Server::closeConnections(ServerPool *pool) {
     const time_t currentTime = std::time(nullptr);
     std::vector<int> clientsToClose;
     for (auto &[fd, client]: clients) {
-        if (client.shouldClose) {
+        if (client.shouldClose || client.requestCount > config.keepalive_requests) {
             clientsToClose.push_back(fd);
             continue;
         }
