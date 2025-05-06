@@ -131,7 +131,7 @@ HttpResponse RequestHandler::handleRequest() {
 
         const std::optional<HttpResponse> cgiResponse = handleCgi();
         if (cgiResponse.has_value())
-            return cgiResponse.value();
+            return handleCustomErrorPage(cgiResponse.value(), serverConfig, matchedRoute);
     }
 
     HttpResponse response;
