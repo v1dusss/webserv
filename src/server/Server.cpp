@@ -83,7 +83,7 @@ void Server::handleFdEvent(const int fd, ServerPool *pool, const short events) {
 }
 
 void Server::handleNewConnections(ServerPool *pool) {
-    struct sockaddr_in clientAddr{};
+    sockaddr_in clientAddr{};
     socklen_t addrLen = sizeof(clientAddr);
     const int clientFd = accept(serverFd, reinterpret_cast<struct sockaddr *>(&clientAddr), &addrLen);
     if (clientFd < 0) {
@@ -118,7 +118,7 @@ void Server::handleClientInput(std::shared_ptr<ClientConnection> clientConnectio
     //  std::cout << "-------------------------" << std::endl;
 
     if (clientConnection->parser.parse(buffer, bytesRead)) {
-        auto request = clientConnection->parser.getRequest();
+        const auto request = clientConnection->parser.getRequest();
         clientConnection->keepAlive = request->getHeader("Connection") == "keep-alive";
 
         Logger::log(LogLevel::INFO, "Request Parsed");
@@ -169,7 +169,6 @@ void Server::handleClientOutput(std::shared_ptr<ClientConnection> client, const 
 void Server::handleClientFileOutput(const std::shared_ptr<ClientConnection> &client, HttpResponse &response) const {
     if (!response.alreadySendHeader) {
         const std::string header = response.toHeaderString();
-        std::cout << header << std::endl;
         if (write(client->fd, header.c_str(), header.length()) < 0) {
             Logger::log(LogLevel::ERROR, "Failed to write header to client");
             client->clearResponse();

@@ -30,7 +30,7 @@ bool ServerPool::loadConfig(const std::string &configFile) {
         return false;
     }
 
-    std::vector<ServerConfig> serverConfigs = parser.getServerConfigs();
+    const std::vector<ServerConfig> serverConfigs = parser.getServerConfigs();
 
     for (const auto &server_config: serverConfigs) {
         auto server = std::make_shared<Server>(server_config);
