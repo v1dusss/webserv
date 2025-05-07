@@ -138,17 +138,31 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
     return config;
 }
 
+static LocationType getLocationType(const std::string &modifier) {
+    if (modifier == "=")
+        return LocationType::EXACT;
+    if (modifier == "~")
+        return LocationType::REGEX;
+    if (modifier == "~*")
+        return LocationType::REGEX_IGNORE_CASE;
+    return LocationType::PREFIX;
+}
+
 RouteConfig ConfigParser::parseRouteBlock(const ConfigBlock &block, const ServerConfig &serverConfig) const {
     RouteConfig route;
 
     route.autoindex = false;
     route.deny_all = false;
 
-    auto params = block.getDirective("_parameters");
+    const auto params = block.getDirective("_parameters");
     if (params.empty())
         return route;
-    if (params.size() == 2)
+    route.type = getLocationType(params[0]);
+
+    if (params.size() == 1)
         route.location = params[0];
+    else
+        route.location = params[1];
 
     route.root = block.getStringValue("root", serverConfig.root);
     route.index = block.getStringValue("index", serverConfig.index);
