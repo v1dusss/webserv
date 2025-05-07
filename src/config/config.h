@@ -6,7 +6,7 @@
 /*   By: eebert <eebert@student.42heilbronn.de>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/01 13:19:13 by eebert            #+#    #+#             */
-/*   Updated: 2025/05/06 15:28:29 by eebert           ###   ########.fr       */
+/*   Updated: 2025/05/07 10:03:56 by eebert           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,8 +31,15 @@ typedef enum {
     OPTIONS
 } HttpMethod;
 
+enum class LocationType {
+    EXACT,
+    PREFIX,
+    REGEX
+};
+
 typedef struct {
     std::string location;
+    LocationType type;
     std::vector<HttpMethod> allowedMethods;
     std::string root; // Override server root
     bool autoindex; // Directory listing

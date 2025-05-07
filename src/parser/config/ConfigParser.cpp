@@ -240,6 +240,12 @@ bool ConfigParser::parseBlock(std::ifstream &file, ConfigBlock &block) {
                 childBlock.name = blockType;
                 tokens.erase(tokens.begin());
 
+                if (tokens.empty() && blockType == "location") {
+                    reportError("Location block requires a path");
+                    parseSuccessful = false;
+                    return false;
+                }
+
                 if (!tokens.empty()) {
                     childBlock.directives["_parameters"] = tokens;
                 }
@@ -265,7 +271,7 @@ void ConfigParser::parseDirective(const std::string &line, ConfigBlock &block) {
     auto tokens = tokenize(line);
     if (tokens.empty()) return;
 
-    std::string key = tokens[0];
+    const std::string key = tokens[0];
     tokens.erase(tokens.begin());
 
     if (block.name == "server" || block.name == "location") {

@@ -111,7 +111,7 @@ bool HttpParser::parseHeaders() {
     size_t headerCount = 0;
 
     while (true) {
-        size_t endPos = buffer.find("\r\n");
+        const size_t endPos = buffer.find("\r\n");
         if (endPos == std::string::npos)
             return false;
 
@@ -188,7 +188,7 @@ bool HttpParser::parseBody() {
         std::string fullBody;
 
         while (true) {
-            size_t sizeEndPos = buffer.find("\r\n");
+            const size_t sizeEndPos = buffer.find("\r\n");
             if (sizeEndPos == std::string::npos)
                 return false; // Need more data
 
