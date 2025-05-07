@@ -240,10 +240,19 @@ bool ConfigParser::parseBlock(std::ifstream &file, ConfigBlock &block) {
                 childBlock.name = blockType;
                 tokens.erase(tokens.begin());
 
-                if (tokens.empty() && blockType == "location") {
-                    reportError("Location block requires a path");
-                    parseSuccessful = false;
-                    return false;
+                if (blockType == "location") {
+                    if (tokens.empty()) {
+                        reportError("Location block requires a path");
+                        parseSuccessful = false;
+                        return false;
+                    }
+                    if (tokens.size() == 2) {
+                        if (tokens[0] != "=" && tokens[0] != "~" && tokens[0] != "~*") {
+                            reportError("Invalid location modifier: " + tokens[0] + ". Expected '=', '~', or '~*'");
+                            parseSuccessful = false;
+                            return false;
+                        }
+                    }
                 }
 
                 if (!tokens.empty()) {
