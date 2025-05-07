@@ -38,8 +38,7 @@ void RequestHandler::findRoute() {
     for (const RouteConfig &route: serverConfig.routes) {
         if (request.getPath().find(route.location) == 0) {
             Logger::log(LogLevel::DEBUG, "Found route: " + route.location);
-            if (std::find(route.allowedMethods.begin(), route.allowedMethods.end(), request.method) != route.
-                allowedMethods.end() && route.location.length() > longestMatch) {
+            if (route.location.length() > longestMatch) {
                 matchedRoute = route;
                 longestMatch = route.location.length();
             }
@@ -125,6 +124,12 @@ bool RequestHandler::isCgiRequest() {
 HttpResponse RequestHandler::handleRequest() {
     if (!matchedRoute.has_value())
         return handleCustomErrorPage(HttpResponse::html(HttpResponse::NOT_FOUND), serverConfig, matchedRoute);
+
+    if (std::find(matchedRoute->allowedMethods.begin(), matchedRoute->allowedMethods.end(), request.method) ==
+        matchedRoute->allowedMethods.end()) {
+        return handleCustomErrorPage(HttpResponse::html(HttpResponse::StatusCode::METHOD_NOT_ALLOWED), serverConfig,
+                                     matchedRoute);
+    }
 
     validateTargetPath();
 

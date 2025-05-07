@@ -244,6 +244,7 @@ std::optional<HttpMethod> HttpParser::stringToMethod(const std::string &method) 
     if (method == "POST") return std::make_optional(POST);
     if (method == "PUT") return std::make_optional(PUT);
     if (method == "DELETE") return std::make_optional(DELETE);
+    if (method == "HEAD") return std::make_optional(HEAD);
     if (method == "PATCH") return std::make_optional(PATCH);
     if (method == "OPTIONS") return std::make_optional(OPTIONS);
 
