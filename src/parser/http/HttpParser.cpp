@@ -185,30 +185,33 @@ bool HttpParser::parseBody() {
     }
 
     if (chunkedTransfer) {
-        std::string fullBody;
-
         while (true) {
-            const size_t sizeEndPos = buffer.find("\r\n");
-            if (sizeEndPos == std::string::npos)
-                return false; // Need more data
+            if (!hasChunkSize) {
+                const size_t sizeEndPos = buffer.find("\r\n");
+                if (sizeEndPos == std::string::npos)
+                    return false; // Need more data
 
-            std::string sizeHex = buffer.substr(0, sizeEndPos);
+                std::string sizeHex = buffer.substr(0, sizeEndPos);
 
-            size_t semicolonPos = sizeHex.find(';');
-            if (semicolonPos != std::string::npos) {
-                sizeHex = sizeHex.substr(0, semicolonPos);
+                size_t semicolonPos = sizeHex.find(';');
+                if (semicolonPos != std::string::npos) {
+                    sizeHex = sizeHex.substr(0, semicolonPos);
+                }
+
+
+                try {
+                    chunkSize = std::stoul(sizeHex, nullptr, 16);
+                    hasChunkSize = true;
+                } catch (...) {
+                    Logger::log(LogLevel::ERROR, "Invalid chunk size format");
+                    std::cout << "Error: " << sizeHex << std::endl;
+                    state = ParseState::ERROR;
+                    return false;
+                }
+
+                buffer.erase(0, sizeEndPos + 2);
             }
 
-            unsigned long chunkSize;
-            try {
-                chunkSize = std::stoul(sizeHex, nullptr, 16);
-            } catch (...) {
-                Logger::log(LogLevel::ERROR, "Invalid chunk size format");
-                state = ParseState::ERROR;
-                return false;
-            }
-
-            buffer.erase(0, sizeEndPos + 2);
 
             if (chunkSize == 0) {
                 state = ParseState::COMPLETE;
@@ -225,7 +228,9 @@ bool HttpParser::parseBody() {
                 return false;
             }
 
-            fullBody.append(buffer, 0, chunkSize);
+            std::string chunkedBody = buffer.substr(0, chunkSize);
+            request->body.append(chunkedBody);
+            hasChunkSize = false;
             totalBodySize += chunkSize;
             buffer.erase(0, chunkSize + 2);
         }
@@ -265,6 +270,8 @@ void HttpParser::reset() {
     totalHeaderSize = 0;
     headerStart = 0;
     bodyStart = 0;
+    chunkSize = 0;
+    hasChunkSize = false;
 }
 
 bool HttpParser::isHttpStatusCode(const int statusCode) {

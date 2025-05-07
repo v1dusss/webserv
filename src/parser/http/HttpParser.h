@@ -31,6 +31,9 @@ private:
     size_t totalHeaderSize = 0;
     size_t totalBodySize = 0;
 
+    unsigned long chunkSize = 0;
+    bool hasChunkSize = false;
+
 public:
     std::time_t headerStart = 0;
     std::time_t bodyStart = 0;
