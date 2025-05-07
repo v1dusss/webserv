@@ -27,6 +27,7 @@ typedef enum {
     PUT,
     DELETE,
     PATCH,
+    HEAD,
     OPTIONS
 } HttpMethod;
 
