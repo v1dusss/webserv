@@ -48,6 +48,8 @@ public:
             close(response.value().getBodyFd());
         }
         response = std::nullopt;
+        if (!keepAlive)
+            shouldClose = true;
     }
 
     [[nodiscard]] bool hasPendingResponse() const {

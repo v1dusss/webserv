@@ -46,6 +46,4 @@ void ClientConnection::setResponse(const HttpResponse &response) {
     buffer.clear();
     parser.reset();
     requestCount++;
-    if (!keepAlive)
-        shouldClose = true;
 }

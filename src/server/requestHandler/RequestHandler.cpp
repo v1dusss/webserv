@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include <algorithm>
 #include <fstream>
+#include <regex>
 #include <string>
 
 
@@ -36,8 +37,18 @@ RequestHandler::RequestHandler(std::shared_ptr<ClientConnection> connection, con
 void RequestHandler::findRoute() {
     size_t longestMatch = 0;
     for (const RouteConfig &route: serverConfig.routes) {
-        if (request.getPath().find(route.location) == 0) {
-            Logger::log(LogLevel::DEBUG, "Found route: " + route.location);
+        if (route.type == LocationType::EXACT && request.getPath() == route.location) {
+            matchedRoute = route;
+            longestMatch = route.location.length();
+            break;
+        }
+        if (route.type == LocationType::REGEX &&
+            std::regex_match(request.getPath(), std::regex(route.location))) {
+            matchedRoute = route;
+            longestMatch = route.location.length();
+            break;
+        }
+        if (route.type == LocationType::PREFIX && request.getPath().find(route.location) == 0) {
             if (route.location.length() > longestMatch) {
                 matchedRoute = route;
                 longestMatch = route.location.length();

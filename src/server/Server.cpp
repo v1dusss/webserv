@@ -143,6 +143,10 @@ void Server::handleClientOutput(std::shared_ptr<ClientConnection> client, const 
     (void) pool;
     if (client->hasPendingResponse()) {
         HttpResponse &response = client->getResponse().value();
+        if (client->keepAlive)
+            response.setHeader("Connection", "keep-alive");
+        else
+            response.setHeader("Connection", "close");
 
         if (response.isChunkedEncoding()) {
             handleClientFileOutput(client, response);
@@ -165,6 +169,7 @@ void Server::handleClientOutput(std::shared_ptr<ClientConnection> client, const 
 void Server::handleClientFileOutput(const std::shared_ptr<ClientConnection> &client, HttpResponse &response) const {
     if (!response.alreadySendHeader) {
         const std::string header = response.toHeaderString();
+        std::cout << header << std::endl;
         if (write(client->fd, header.c_str(), header.length()) < 0) {
             Logger::log(LogLevel::ERROR, "Failed to write header to client");
             client->clearResponse();
@@ -237,7 +242,8 @@ void Server::closeConnections(ServerPool *pool) {
     const time_t currentTime = std::time(nullptr);
     std::vector<int> clientsToClose;
     for (auto &[fd, client]: clients) {
-        if (client->shouldClose || client->requestCount > config.keepalive_requests) {
+        if ((client->shouldClose) || client->requestCount > config.
+            keepalive_requests) {
             clientsToClose.push_back(fd);
             continue;
         }
