@@ -12,10 +12,6 @@ ClientConnection::ClientConnection(const int clientFd, const sockaddr_in clientA
     this->clientAddr = clientAddr;
 }
 
-ClientConnection::ClientConnection(const ClientConnection &other) {
-    *this = other;
-}
-
 ClientConnection::~ClientConnection() {
     this->clearResponse();
     if (fd != -1) {
@@ -24,21 +20,6 @@ ClientConnection::~ClientConnection() {
         Logger::log(LogLevel::DEBUG, "closed client fd: " + std::to_string(fd));
         fd = -1;
     }
-}
-
-ClientConnection &ClientConnection::operator=(const ClientConnection &other) {
-    if (this != &other) {
-        this->fd = other.fd;
-        this->clientAddr = other.clientAddr;
-        this->parser = other.parser;
-        this->requestCount = other.requestCount;
-        this->lastPackageSend = other.lastPackageSend;
-        this->keepAlive = other.keepAlive;
-        this->shouldClose = other.shouldClose;
-        this->buffer = other.buffer;
-        this->response = other.response;
-    }
-    return *this;
 }
 
 void ClientConnection::setResponse(const HttpResponse &response) {

@@ -37,9 +37,7 @@ public:
 
     ~ClientConnection();
 
-    ClientConnection(const ClientConnection &other);
 
-    ClientConnection &operator=(const ClientConnection &other);
 
     void setResponse(const HttpResponse &response);
 
