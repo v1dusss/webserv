@@ -11,8 +11,6 @@
 #include <common/Logger.h>
 #include <sys/fcntl.h>
 
-// TODO: use poll
-
 static HttpResponse handleServeFile(const std::string &path) {
     struct stat fileStat{};
     if (stat(path.c_str(), &fileStat) != 0 || S_ISDIR(fileStat.st_mode))
@@ -31,6 +29,7 @@ static HttpResponse handleServeFile(const std::string &path) {
     return response;
 }
 
+// TODO: maybe we have to use poll here I don't know
 static HttpResponse handleAutoIndex(const std::string &path) {
     Logger::log(LogLevel::DEBUG, "Auto indexing path: " + path);
     DIR *dir = opendir(path.c_str());

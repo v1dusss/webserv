@@ -176,7 +176,7 @@ void Server::handleClientFileOutput(const std::shared_ptr<ClientConnection> &cli
     const int bodyFd = response.getBodyFd();
     char buffer[config.body_buffer_size];
 
-    pollfd pollfd;
+    pollfd pollfd{};
     pollfd.fd = bodyFd;
     pollfd.events = POLLIN;
 
