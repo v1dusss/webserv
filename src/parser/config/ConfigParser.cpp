@@ -145,9 +145,10 @@ RouteConfig ConfigParser::parseRouteBlock(const ConfigBlock &block, const Server
     route.deny_all = false;
 
     auto params = block.getDirective("_parameters");
-    if (!params.empty()) {
+    if (params.empty())
+        return route;
+    if (params.size() == 2)
         route.location = params[0];
-    }
 
     route.root = block.getStringValue("root", serverConfig.root);
     route.index = block.getStringValue("index", serverConfig.index);
@@ -246,6 +247,13 @@ bool ConfigParser::parseBlock(std::ifstream &file, ConfigBlock &block) {
                         parseSuccessful = false;
                         return false;
                     }
+
+                    if (tokens.size() >= 3) {
+                        reportError("Invalid location: too many parameters, expected 1 or 2");
+                        parseSuccessful = false;
+                        return false;
+                    }
+
                     if (tokens.size() == 2) {
                         if (tokens[0] != "=" && tokens[0] != "~" && tokens[0] != "~*") {
                             reportError("Invalid location modifier: " + tokens[0] + ". Expected '=', '~', or '~*'");

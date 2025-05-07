@@ -6,7 +6,7 @@
 /*   By: eebert <eebert@student.42heilbronn.de>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/01 13:19:13 by eebert            #+#    #+#             */
-/*   Updated: 2025/05/07 10:03:56 by eebert           ###   ########.fr       */
+/*   Updated: 2025/05/07 10:19:40 by eebert           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,8 @@ typedef enum {
 enum class LocationType {
     EXACT,
     PREFIX,
-    REGEX
+    REGEX,
+    REGEX_IGNORE_CASE,
 };
 
 typedef struct {
