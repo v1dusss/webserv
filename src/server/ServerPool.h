@@ -16,12 +16,7 @@
 class ServerPool {
 private:
     std::vector<std::shared_ptr<Server> > servers;
-    std::unordered_map<int, Server *> serverFds;
-
-    std::queue<std::pair<int, short>> newClients;
-
     std::atomic<bool> running;
-    std::vector<struct pollfd> fds;
 
 public:
     ServerPool();

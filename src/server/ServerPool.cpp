@@ -79,22 +79,7 @@ void ServerPool::serverLoop() {
     cleanUp();
 }
 
-void ServerPool::registerFdToServer(const int fd, Server *server, short events) {
-    serverFds[fd] = server;
-    newClients.emplace(fd, events);
-}
-
-void ServerPool::unregisterFdFromServer(const int fd) {
-    auto it = std::remove_if(fds.begin(), fds.end(), [fd](const pollfd &pfd) { return pfd.fd == fd; });
-    if (it != fds.end()) {
-        fds.erase(it, fds.end());
-        serverFds.erase(fd);
-    }
-}
-
 void ServerPool::cleanUp() {
     servers.clear();
-    serverFds.clear();
-    fds.clear();
     Logger::log(LogLevel::INFO, "Server pool cleaned up.");
 }
