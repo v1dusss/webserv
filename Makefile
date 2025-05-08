@@ -26,7 +26,8 @@ SRC = main.cpp \
 	RequestHandlerUtils.cpp \
 	CGIRequest.cpp \
 	ConfigParser.cpp \
-	ConfigBlock.cpp
+	ConfigBlock.cpp \
+	FdHandler.cpp
 
 OBJ_DIR = obj
 INCLUDE_DIR = src

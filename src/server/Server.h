@@ -18,35 +18,29 @@ class ServerPool;
 
 class Server {
 private:
-    int serverFd;
+    int serverFd{};
     ServerConfig config;
     std::unordered_map<int, std::shared_ptr<ClientConnection>> clients;
 
 public:
-    Server(ServerConfig config);
+    Server(const ServerConfig& config);
 
     ~Server();
 
     bool createSocket();
 
-    bool listen(ServerPool *pool);
+    bool listen();
 
     void stop();
 
-    void handleFdEvent(int fd, ServerPool *pool, short events);
+    void handleFdEvent(int fd, short events);
 
-    void closeConnections(ServerPool *pool);
+    void closeConnections();
 
     int getFd() const { return serverFd; }
 
 private:
-    void handleNewConnections(ServerPool *pool);
-
-    void handleClientInput(const std::shared_ptr<ClientConnection>& client, ServerPool *pool);
-
-    void handleClientOutput(std::shared_ptr<ClientConnection> client, const ServerPool *pool);
-
-    void handleClientFileOutput(const std::shared_ptr<ClientConnection>& client, HttpResponse &response) const;
+    void handleNewConnections();
 };
 
 

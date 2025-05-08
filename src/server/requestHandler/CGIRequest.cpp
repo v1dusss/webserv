@@ -97,7 +97,7 @@ static bool writeRequestBodyToCgi(int pipe_fd, const std::string &body) {
 static std::string readCgiOutput(const int pipe_fd) {
     fcntl(pipe_fd, F_SETFL, O_NONBLOCK);
 
-    pollfd read_fd;
+    pollfd read_fd{};
     read_fd.fd = pipe_fd;
     read_fd.events = POLLIN;
 

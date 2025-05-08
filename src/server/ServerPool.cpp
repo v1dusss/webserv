@@ -13,6 +13,8 @@
 #include <algorithm>
 #include <parser/config/ConfigParser.h>
 
+#include "FdHandler.h"
+
 ServerPool::ServerPool() : running(false) {
 }
 
@@ -51,7 +53,7 @@ void ServerPool::start() {
 
     int startedServers = 0;
     for (const auto &server: servers) {
-        if (server->listen(this)) {
+        if (server->listen()) {
             startedServers++;
         }
     }
@@ -70,31 +72,9 @@ void ServerPool::stop() {
 
 void ServerPool::serverLoop() {
     while (running.load()) {
-        while (!newClients.empty()) {
-            pollfd newFd{};
-            newFd.fd = newClients.front().first;
-            newFd.events = newClients.front().second;
-            fds.push_back(newFd);
-            newClients.pop();
-        }
         for (const auto &shared_ptr: servers)
-            shared_ptr->closeConnections(this);
-        const int pollResult = poll(fds.data(), fds.size(), 0);
-        if (pollResult < 0) {
-            Logger::log(LogLevel::ERROR, "Poll error");
-            Logger::log(LogLevel::ERROR, strerror(errno));
-            continue;
-        }
-        if (pollResult == 0) {
-            continue;
-        }
-
-        for (const auto &fd: fds) {
-            if (fd.revents & POLLIN || fd.revents & POLLOUT) {
-                const auto server = serverFds[fd.fd];
-                server->handleFdEvent(fd.fd, this, fd.revents);
-            }
-        }
+            shared_ptr->closeConnections();
+        FdHandler::pollFds();
     }
     cleanUp();
 }

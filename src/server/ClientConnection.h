@@ -23,6 +23,7 @@ public:
     std::time_t lastPackageSend = 0;
     bool keepAlive = false;
     bool shouldClose = false;
+    ServerConfig &config;
 
     // used for debugging
     std::string buffer = "";
@@ -31,24 +32,21 @@ private:
     std::optional<HttpResponse> response = std::nullopt;
 
 public:
-    ClientConnection() = default;
+    ClientConnection() = delete;
 
-    ClientConnection(int clientFd, struct sockaddr_in clientAddr);
+    ClientConnection(int clientFd, struct sockaddr_in clientAddr, ServerConfig &config);
 
     ~ClientConnection();
 
+    void handleInput();
 
+    void handleOutput();
+
+    void handleFileOutput();
 
     void setResponse(const HttpResponse &response);
 
-    void clearResponse() {
-        if (response != std::nullopt && response.value().getBodyFd()) {
-            close(response.value().getBodyFd());
-        }
-        response = std::nullopt;
-        if (!keepAlive)
-            shouldClose = true;
-    }
+    void clearResponse();
 
     [[nodiscard]] bool hasPendingResponse() const {
         return response != std::nullopt;

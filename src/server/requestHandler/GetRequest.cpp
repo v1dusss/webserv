@@ -65,10 +65,6 @@ static HttpResponse handleAutoIndex(const std::string &path) {
 }
 
 HttpResponse RequestHandler::handleGet() const {
-    struct stat fileStat{};
-    if (stat(routePath.c_str(), &fileStat) != 0)
-        return HttpResponse::html(HttpResponse::NOT_FOUND);
-
     if (!isFile) {
         Logger::log(LogLevel::DEBUG, "Route is a directory");
         if (hasValidIndexFile) {

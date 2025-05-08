@@ -21,7 +21,7 @@
 #include "common/Logger.h"
 #include "webserv.h"
 
-RequestHandler::RequestHandler(std::shared_ptr<ClientConnection> connection, const HttpRequest &request,
+RequestHandler::RequestHandler(ClientConnection* connection, const HttpRequest &request,
                                ServerConfig &serverConfig): request(request), connection(connection),
                                                             serverConfig(serverConfig) {
     char ipStr[INET_ADDRSTRLEN];
@@ -143,6 +143,8 @@ HttpResponse RequestHandler::handleRequest() {
     }
 
     validateTargetPath();
+
+
 
     if (isCgiRequest()) {
         Logger::log(LogLevel::DEBUG, "request is a CGI request");

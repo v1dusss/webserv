@@ -3,6 +3,9 @@
 //
 
 #include "Logger.h"
+#include <iostream>
+#include <chrono>
+#include <ctime>
 
 LogLevel Logger::currentLogLevel = LogLevel::DEBUG;
 

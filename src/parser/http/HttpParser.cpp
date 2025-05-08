@@ -20,7 +20,7 @@ HttpParser::HttpParser()
     this->headerStart = std::time(nullptr);
 }
 
-bool HttpParser::parse(const char *data, size_t length) {
+bool HttpParser::parse(const char *data, const size_t length) {
     if (state == ParseState::COMPLETE || state == ParseState::ERROR)
         return false;
 
