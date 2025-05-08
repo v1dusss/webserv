@@ -100,42 +100,42 @@ void Server::handleNewConnections(ServerPool *pool) {
     pool->registerFdToServer(clientFd, this, POLLIN | POLLOUT);
 }
 
-void Server::handleClientInput(std::shared_ptr<ClientConnection> clientConnection, ServerPool *pool) {
+void Server::handleClientInput(const std::shared_ptr<ClientConnection>& client, ServerPool *pool) {
     (void) pool;
     char buffer[1024];
-    const ssize_t bytesRead = read(clientConnection->fd, buffer, sizeof(buffer));
+    const ssize_t bytesRead = read(client->fd, buffer, sizeof(buffer));
     if (bytesRead < 0) {
         Logger::log(LogLevel::ERROR, "Failed to read from client");
         return;
     }
 
     if (bytesRead == 0) {
-        clientConnection->shouldClose = true;
+        client->shouldClose = true;
         return;
     }
-    clientConnection->buffer += std::string(buffer, bytesRead);
+    client->buffer += std::string(buffer, bytesRead);
     //std::cout << clientConnection.buffer << std::endl;
     //  std::cout << "-------------------------" << std::endl;
 
-    if (clientConnection->parser.parse(buffer, bytesRead)) {
-        const auto request = clientConnection->parser.getRequest();
-        clientConnection->keepAlive = request->getHeader("Connection") == "keep-alive";
+    if (client->parser.parse(buffer, bytesRead)) {
+        const auto request = client->parser.getRequest();
+        client->keepAlive = request->getHeader("Connection") == "keep-alive";
 
         Logger::log(LogLevel::INFO, "Request Parsed");
         //  request->printRequest();
 
-        RequestHandler requestHandler(clientConnection, *request, config);
+        RequestHandler requestHandler(client, *request, config);
         const HttpResponse response = requestHandler.handleRequest();
 
-        clientConnection->setResponse(response);
+        client->setResponse(response);
         return;
     }
 
-    if (clientConnection->parser.hasError()) {
-        std::cout << clientConnection->buffer << std::endl;
+    if (client->parser.hasError()) {
+        std::cout << client->buffer << std::endl;
 
         const HttpResponse response = HttpResponse::html(HttpResponse::StatusCode::BAD_REQUEST);
-        clientConnection->setResponse(RequestHandler::handleCustomErrorPage(response, config, std::nullopt));
+        client->setResponse(RequestHandler::handleCustomErrorPage(response, config, std::nullopt));
     }
 }
 

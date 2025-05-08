@@ -42,7 +42,7 @@ public:
 private:
     void handleNewConnections(ServerPool *pool);
 
-    void handleClientInput(std::shared_ptr<ClientConnection> client, ServerPool *pool);
+    void handleClientInput(const std::shared_ptr<ClientConnection>& client, ServerPool *pool);
 
     void handleClientOutput(std::shared_ptr<ClientConnection> client, const ServerPool *pool);
 
