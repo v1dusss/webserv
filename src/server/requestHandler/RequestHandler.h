@@ -58,6 +58,10 @@ private:
 
     [[nodiscard]] HttpResponse handlePost() const;
 
+    [[nodiscard]] HttpResponse handlePostMultipart(const std::string& contentType) const;
+
+    [[nodiscard]] HttpResponse handlePostTestFile() const;
+
     HttpResponse handlePut();
 
     [[nodiscard]] HttpResponse handleDelete() const;
