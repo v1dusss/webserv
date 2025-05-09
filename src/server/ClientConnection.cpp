@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <webserv.h>
 #include <common/Logger.h>
+#include <vector>
 
 #include "FdHandler.h"
 #include "requestHandler/RequestHandler.h"
@@ -111,7 +112,7 @@ void ClientConnection::handleFileOutput() {
     }
 
     const int bodyFd = response.value().getBodyFd();
-    char buffer[config.body_buffer_size];
+    std::vector<char> buffer(config.body_buffer_size);
 
     pollfd pollfd{};
     pollfd.fd = bodyFd;
@@ -130,7 +131,7 @@ void ClientConnection::handleFileOutput() {
         return;
     }
 
-    const ssize_t bytesRead = read(bodyFd, buffer, sizeof(buffer));
+    const ssize_t bytesRead = read(bodyFd, buffer.data(), buffer.size());
 
     if (bytesRead < 0) {
         Logger::log(LogLevel::ERROR, "Failed to read from file descriptor");
@@ -158,7 +159,7 @@ void ClientConnection::handleFileOutput() {
     }
 
     // Write the chunk data
-    if (write(fd, buffer, bytesRead) < 0) {
+    if (write(fd, buffer.data(), bytesRead) < 0) {
         Logger::log(LogLevel::ERROR, "Failed to write chunk data to client");
         clearResponse();
     }
