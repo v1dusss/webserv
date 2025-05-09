@@ -16,13 +16,43 @@ HttpResponse RequestHandler::handlePost() const {
                                   "Target must be a directory for file uploads");
     }
 
-    std::string contentType = request.getHeader("Content-Type");
-    std::smatch match;
+    if (request.body.empty())
+        return HttpResponse::html(HttpResponse::StatusCode::NO_CONTENT,
+                                  "Empty request body");
 
-    if (contentType.find("multipart/form-data") == std::string::npos) {
-        return HttpResponse::html(HttpResponse::StatusCode::BAD_REQUEST,
-                                  "Invalid Content-Type");
+    std::string contentType = request.getHeader("Content-Type");
+
+    if (contentType.find("multipart/form-data") != std::string::npos)
+        return handlePostMultipart(contentType);
+
+    if (contentType.find("test/file") != std::string::npos)
+        return handlePostTestFile();
+
+    return HttpResponse::html(HttpResponse::StatusCode::UNSUPPORTED_MEDIA_TYPE,
+                              "Invalid Content-Type");
+}
+
+HttpResponse RequestHandler::handlePostTestFile() const {
+// TODO: create a config for the maximum size of the request body for uploads
+    if (request.body.size() > 100)
+        return HttpResponse::html(HttpResponse::StatusCode::CONTENT_TOO_LARGE);
+
+    std::string filename = "test_file_" + std::to_string(std::time(nullptr)) + ".txt";
+    std::filesystem::path fullPath = std::filesystem::path(routePath) / filename;
+    std::ofstream file(fullPath, std::ios::binary);
+    if (!file) {
+        return HttpResponse::html(HttpResponse::StatusCode::INTERNAL_SERVER_ERROR,
+                                  "Could not write file");
     }
+    file.write(request.body.c_str(), request.body.size());
+    file.close();
+
+    return HttpResponse::html(HttpResponse::StatusCode::CREATED,
+                              "201 Created: " + filename + " file uploaded successfully");
+}
+
+HttpResponse RequestHandler::handlePostMultipart(const std::string &contentType) const {
+    std::smatch match;
 
     std::regex boundaryRegex("boundary\\s*=\\s*([^;]+)");
     if (!std::regex_search(contentType, match, boundaryRegex)) {
