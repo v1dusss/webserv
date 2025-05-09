@@ -27,7 +27,7 @@ void FdHandler::removeFd(const int fd) {
 }
 
 void FdHandler::pollFds() {
-    while (!fdQueue.empty()) {
+    while (!fdQueue.empty() && pollfds.size() < 1024) {
         pollfds.push_back(fdQueue.front());
         fdQueue.pop();
     }

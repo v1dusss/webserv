@@ -59,8 +59,6 @@ void ClientConnection::handleInput() {
 
         Logger::log(LogLevel::INFO, "Request Parsed");
         //  request->printRequest();
-        for (auto header : request->headers)
-            std::cout << header.first << ": " << header.second << std::endl;
 
         requestHandler = std::make_unique<RequestHandler>(this, *request, config);
         requestHandler->execute();
