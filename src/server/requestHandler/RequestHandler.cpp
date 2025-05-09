@@ -20,9 +20,10 @@
 
 #include "common/Logger.h"
 #include "webserv.h"
+#include "server/ClientConnection.h"
 
-RequestHandler::RequestHandler(ClientConnection* connection, const HttpRequest &request,
-                               ServerConfig &serverConfig): request(request), connection(connection),
+RequestHandler::RequestHandler(ClientConnection *connection, const HttpRequest &request,
+                               ServerConfig &serverConfig): request(request), client(connection),
                                                             serverConfig(serverConfig) {
     char ipStr[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &(connection->clientAddr.sin_addr), ipStr, INET_ADDRSTRLEN);
@@ -132,26 +133,31 @@ bool RequestHandler::isCgiRequest() {
     return true;
 }
 
-HttpResponse RequestHandler::handleRequest() {
+void RequestHandler::execute() {
+    const auto response = handleRequest();
+    if (response.has_value()) {
+        client->setResponse(response.value());
+    }
+}
+
+
+std::optional<HttpResponse> RequestHandler::handleRequest() {
     if (!matchedRoute.has_value())
-        return handleCustomErrorPage(HttpResponse::html(HttpResponse::NOT_FOUND), serverConfig, matchedRoute);
+        return HttpResponse::html(HttpResponse::NOT_FOUND);
 
     if (std::find(matchedRoute->allowedMethods.begin(), matchedRoute->allowedMethods.end(), request.method) ==
         matchedRoute->allowedMethods.end()) {
-        return handleCustomErrorPage(HttpResponse::html(HttpResponse::StatusCode::METHOD_NOT_ALLOWED), serverConfig,
-                                     matchedRoute);
+        return HttpResponse::html(HttpResponse::StatusCode::METHOD_NOT_ALLOWED);
     }
 
-    validateTargetPath();
 
+    validateTargetPath();
 
 
     if (isCgiRequest()) {
         Logger::log(LogLevel::DEBUG, "request is a CGI request");
 
-        const std::optional<HttpResponse> cgiResponse = handleCgi();
-        if (cgiResponse.has_value())
-            return handleCustomErrorPage(cgiResponse.value(), serverConfig, matchedRoute);
+        return handleCgi();
     }
 
     HttpResponse response;
@@ -173,7 +179,7 @@ HttpResponse RequestHandler::handleRequest() {
             response = HttpResponse::html(HttpResponse::StatusCode::METHOD_NOT_ALLOWED);
     }
 
-    return handleCustomErrorPage(response, serverConfig, matchedRoute);
+    return response;
 }
 
 HttpResponse RequestHandler::handleCustomErrorPage(HttpResponse original, ServerConfig &serverConfig,

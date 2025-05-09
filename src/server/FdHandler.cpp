@@ -32,7 +32,7 @@ void FdHandler::pollFds() {
         fdQueue.pop();
     }
 
-    const int ret = poll(pollfds.data(), pollfds.size(), -1);
+    const int ret = poll(pollfds.data(), pollfds.size(), 0);
     if (ret < 0) {
         std::cerr << "Poll error: " << strerror(errno) << std::endl;
         return;
@@ -42,11 +42,6 @@ void FdHandler::pollFds() {
     while (it != pollfds.end()) {
         if (it->revents & POLLERR) {
             std::cerr << "Poll error on fd: " << it->fd << std::endl;
-            it = pollfds.erase(it);
-            continue;
-        }
-        if (it->revents & POLLHUP) {
-            std::cerr << "Poll hangup on fd: " << it->fd << std::endl;
             it = pollfds.erase(it);
             continue;
         }

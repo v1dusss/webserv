@@ -33,7 +33,7 @@ bool ConfigParser::parse(const std::string &filename) {
     currentLine = 0;
     parseSuccessful = true;
 
-    bool result = parseBlock(file, rootBlock);
+    const bool result = parseBlock(file, rootBlock);
     return result && parseSuccessful;
 }
 

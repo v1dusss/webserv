@@ -12,6 +12,7 @@
 #include <string>
 #include <ctime>
 
+#include "requestHandler/RequestHandler.h"
 #include "response/HttpResponse.h"
 
 class ClientConnection {
@@ -24,6 +25,8 @@ public:
     bool keepAlive = false;
     bool shouldClose = false;
     ServerConfig &config;
+
+    std::unique_ptr<RequestHandler> requestHandler;
 
     // used for debugging
     std::string buffer = "";

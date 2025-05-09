@@ -59,11 +59,11 @@ void ClientConnection::handleInput() {
 
         Logger::log(LogLevel::INFO, "Request Parsed");
         //  request->printRequest();
+        for (auto header : request->headers)
+            std::cout << header.first << ": " << header.second << std::endl;
 
-        RequestHandler requestHandler(this, *request, config);
-        const HttpResponse response = requestHandler.handleRequest();
-
-        setResponse(response);
+        requestHandler = std::make_unique<RequestHandler>(this, *request, config);
+        requestHandler->execute();
         return;
     }
 

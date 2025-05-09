@@ -7,14 +7,16 @@
 
 #include <config/config.h>
 #include <parser/http/HttpRequest.h>
-#include <server/ClientConnection.h>
 #include <server/response/HttpResponse.h>
+#include <optional>
+
+class ClientConnection;
 
 class RequestHandler {
 private:
     std::optional<RouteConfig> matchedRoute;
     const HttpRequest request;
-    ClientConnection* connection;
+    ClientConnection* client;
     ServerConfig &serverConfig;
     std::string routePath;
     std::string cgiPath;
@@ -22,11 +24,16 @@ private:
     bool hasValidIndexFile = false;
     std::string indexFilePath;
 
+    ssize_t bytesWrittenToCgi = 0;
+    std::string cgiOutputBuffer{};
+
 public:
     RequestHandler(ClientConnection* connection, const HttpRequest &request,
                    ServerConfig &serverConfig);
 
-    HttpResponse handleRequest();
+    void execute();
+
+    std::optional<HttpResponse> handleRequest();
 
     static HttpResponse handleCustomErrorPage(HttpResponse original, ServerConfig &serverConfig,
                                               std::optional<RouteConfig> matchedRoute);
@@ -55,7 +62,9 @@ private:
 
     [[nodiscard]] HttpResponse handleDelete() const;
 
-    [[nodiscard]] std::optional<HttpResponse> handleCgi() const;
+    [[nodiscard]] std::optional<HttpResponse> handleCgi();
+
+    bool writeRequestBodyToCgi(int pipe_fd, const std::string &body);
 
     [[nodiscard]] bool validateCgiEnvironment() const;
 
