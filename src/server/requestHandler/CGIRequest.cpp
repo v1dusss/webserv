@@ -4,9 +4,11 @@
 #include <fcntl.h>
 #include <csignal>
 #include <filesystem>
+#include <server/FdHandler.h>
 
 #include "common/Logger.h"
 #include "RequestHandler.h"
+#include "server/ClientConnection.h"
 
 bool RequestHandler::validateCgiEnvironment() const {
     const std::string filePath = getFilePath();
@@ -42,20 +44,39 @@ void RequestHandler::configureCgiChildProcess(int input_pipe[2], int output_pipe
 
     std::unordered_map<std::string, std::string> env;
 
+
+    for (const auto &header: request.headers) {
+        std::string name = header.first;
+        std::string value = header.second;
+
+        std::string envName = "HTTP_";
+        for (char c: name) {
+            if (c == '-') {
+                envName += '_';
+            } else {
+                envName += std::toupper(c);
+            }
+        }
+
+            env[envName] = value;
+    }
+
     env["QUERY_STRING"] = request.getQueryString();
     env["REQUEST_METHOD"] = request.getMethodString();
     env["CONTENT_TYPE"] = request.getHeader("Content-Type");
     env["CONTENT_LENGTH"] = std::to_string(request.body.size());
-    env["SCRIPT_NAME"] = filePath;
     env["SERVER_PROTOCOL"] = "HTTP/1.1";
     env["SERVER_SOFTWARE"] = "Webserv/1.0";
     env["GATEWAY_INTERFACE"] = "CGI/1.1";
-    env["PATH_INFO"] = filePath;
+    env["SERVER_NAME"] = serverConfig.host;
+    env["SERVER_PORT"] = std::to_string(serverConfig.port);
+    env["PATH_INFO"] = request.getPath();
+
 
     std::vector<char *> envp;
     for (const auto &[fst, snd]: env) {
         std::string envVar = fst + "=" + snd;
-        envp.push_back(envVar.data());
+        envp.push_back(strdup(envVar.data()));
     }
     envp.push_back(nullptr);
     char *const argv[] = {const_cast<char *>(cgiPath.c_str()), const_cast<char *>(filePath.c_str()), nullptr};
@@ -63,72 +84,6 @@ void RequestHandler::configureCgiChildProcess(int input_pipe[2], int output_pipe
 
     Logger::log(LogLevel::ERROR, "Failed to execute CGI script");
     exit(EXIT_FAILURE);
-}
-
-static bool writeRequestBodyToCgi(int pipe_fd, const std::string &body) {
-    fcntl(pipe_fd, F_SETFL, O_NONBLOCK);
-
-    pollfd write_fd{};
-    write_fd.fd = pipe_fd;
-    write_fd.events = POLLOUT;
-
-    size_t bytesWritten = 0;
-    while (bytesWritten < body.size()) {
-        int poll_result = poll(&write_fd, 1, 5000);
-
-        if (poll_result < 0) {
-            Logger::log(LogLevel::ERROR, "Poll error while writing to CGI");
-            return false;
-        }
-        if (poll_result == 0) {
-            Logger::log(LogLevel::ERROR, "Timeout while writing to CGI");
-            return false;
-        }
-        if (write_fd.revents & POLLOUT) {
-            const ssize_t written = write(pipe_fd, body.c_str() + bytesWritten,
-                                    body.size() - bytesWritten);
-            if (written <= 0) return false;
-            bytesWritten += written;
-        }
-    }
-    return true;
-}
-
-static std::string readCgiOutput(const int pipe_fd) {
-    fcntl(pipe_fd, F_SETFL, O_NONBLOCK);
-
-    pollfd read_fd{};
-    read_fd.fd = pipe_fd;
-    read_fd.events = POLLIN;
-
-    std::string cgiOutput;
-    char buffer[4096];
-    bool keepReading = true;
-
-    while (keepReading) {
-        const int poll_result = poll(&read_fd, 1, 10000);
-
-        if (poll_result < 0) {
-            Logger::log(LogLevel::ERROR, "Poll error while reading from CGI");
-            break;
-        }
-        if (poll_result == 0) {
-            Logger::log(LogLevel::ERROR, "Timeout while reading from CGI");
-            break;
-        }
-        if (read_fd.revents & POLLIN) {
-            const ssize_t bytesRead = read(pipe_fd, buffer, sizeof(buffer) - 1);
-            if (bytesRead > 0) {
-                buffer[bytesRead] = '\0';
-                cgiOutput.append(buffer, bytesRead);
-            } else {
-                keepReading = false;
-            }
-        } else if (read_fd.revents & (POLLHUP | POLLERR | POLLNVAL)) {
-            keepReading = false;
-        }
-    }
-    return cgiOutput;
 }
 
 static void cleanupCgiProcess(const pid_t pid) {
@@ -189,17 +144,13 @@ static HttpResponse parseCgiOutput(const std::string &cgiOutput) {
     return response;
 }
 
-std::optional<HttpResponse> RequestHandler::handleCgi() const {
-    if (!validateCgiEnvironment()) {
-        return std::nullopt;
-    }
-
+std::optional<HttpResponse> RequestHandler::handleCgi() {
     int input_pipe[2]; // Parent -> Child
     int output_pipe[2]; // Child -> Parent
 
     if (!setupPipes(input_pipe, output_pipe)) {
         return HttpResponse::html(HttpResponse::StatusCode::INTERNAL_SERVER_ERROR,
-                                        "CGI Error: Could not create pipes");
+                                  "CGI Error: Could not create pipes");
     }
 
     const pid_t pid = fork();
@@ -210,7 +161,7 @@ std::optional<HttpResponse> RequestHandler::handleCgi() const {
         close(output_pipe[1]);
         Logger::log(LogLevel::ERROR, "Failed to fork process for CGI");
         return HttpResponse::html(HttpResponse::StatusCode::INTERNAL_SERVER_ERROR,
-                                        "CGI Error: Could not fork process");
+                                  "CGI Error: Could not fork process");
     }
 
 
@@ -221,13 +172,44 @@ std::optional<HttpResponse> RequestHandler::handleCgi() const {
     close(input_pipe[0]);
     close(output_pipe[1]);
 
-    writeRequestBodyToCgi(input_pipe[1], request.body);
-    close(input_pipe[1]);
+    const int pipeFd = input_pipe[1];
+    FdHandler::addFd(pipeFd, POLLOUT, [ this](int fd, short events) {
+        (void) fd;
+        (void) events;
+        const ssize_t bytesToWrite = std::min(static_cast<ssize_t>(1024),
+                                              static_cast<ssize_t>(request.body.size() - bytesWrittenToCgi));
 
-    const std::string cgiOutput = readCgiOutput(output_pipe[0]);
-    close(output_pipe[0]);
 
-    cleanupCgiProcess(pid);
+        if (bytesToWrite == 0) {
+            close(fd);
+            return true;
+        }
 
-    return parseCgiOutput(cgiOutput);
+        const ssize_t written = write(fd, request.body.c_str() + bytesWrittenToCgi,
+                                      bytesToWrite);
+        bytesWrittenToCgi += written;
+        return false;
+    });
+    FdHandler::addFd(output_pipe[0], POLLIN | POLLHUP, [pid, this](int fd, short events) {
+        (void) events;
+
+        ssize_t bytesRead = 0;
+        char buffer[4096];
+        bytesRead = read(fd, buffer, sizeof(buffer) - 1);
+        if (bytesRead > 0) {
+            buffer[bytesRead] = '\0';
+            cgiOutputBuffer.append(buffer, bytesRead);
+            return false;
+        }
+
+        if (bytesRead == 0 || events & (POLLHUP)) {
+            close(fd);
+            cleanupCgiProcess(pid);
+            const HttpResponse response = parseCgiOutput(cgiOutputBuffer);
+            client->setResponse(response);
+            return true;
+        }
+        return false;
+    });
+    return std::nullopt;
 }
