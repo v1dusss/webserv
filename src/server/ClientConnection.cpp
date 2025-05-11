@@ -18,7 +18,7 @@ ClientConnection::ClientConnection(const int clientFd, const sockaddr_in clientA
     parser.setClientLimits(config.client_max_body_size, config.client_max_header_size);
     FdHandler::addFd(clientFd, POLLIN | POLLOUT, [this](const int fd, short events) {
         (void) fd;
-        if (events & POLLIN)
+        if (events & POLLIN && !requestHandler.has_value())
             this->handleInput();
         if (events & POLLOUT)
             this->handleOutput();
@@ -28,6 +28,8 @@ ClientConnection::ClientConnection(const int clientFd, const sockaddr_in clientA
 
 ClientConnection::~ClientConnection() {
     FdHandler::removeFd(this->fd);
+    if (requestHandler.has_value())
+        requestHandler.value().reset();
     this->clearResponse();
     if (fd != -1) {
         shutdown(fd, SHUT_RDWR);
@@ -55,13 +57,15 @@ void ClientConnection::handleInput() {
 
     if (parser.parse(buffer, bytesRead)) {
         const auto request = parser.getRequest();
+        request->body = "test";
+
         keepAlive = request->getHeader("Connection") == "keep-alive";
 
         Logger::log(LogLevel::INFO, "Request Parsed");
         //  request->printRequest();
 
-        requestHandler = std::make_unique<RequestHandler>(this, *request, config);
-        requestHandler->execute();
+        requestHandler = std::make_optional(std::make_unique<RequestHandler>(this, *request, config));
+        requestHandler.value()->execute();
         return;
     }
 
@@ -178,6 +182,8 @@ void ClientConnection::clearResponse() {
     response = std::nullopt;
     if (!keepAlive)
         shouldClose = true;
+
+    requestHandler.reset();
 }
 
 void ClientConnection::setResponse(const HttpResponse &response) {

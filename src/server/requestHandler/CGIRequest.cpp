@@ -58,7 +58,7 @@ void RequestHandler::configureCgiChildProcess(int input_pipe[2], int output_pipe
             }
         }
 
-            env[envName] = value;
+        env[envName] = value;
     }
 
     env["QUERY_STRING"] = request.getQueryString();

@@ -16,6 +16,7 @@
 
 #include <sys/types.h>
 #include <arpa/inet.h>
+#include <server/FdHandler.h>
 #include <sys/poll.h>
 
 #include "common/Logger.h"

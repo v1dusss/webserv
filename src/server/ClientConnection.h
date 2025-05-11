@@ -14,6 +14,7 @@
 
 #include "requestHandler/RequestHandler.h"
 #include "response/HttpResponse.h"
+#include <iostream>
 
 class ClientConnection {
 public:
@@ -26,7 +27,7 @@ public:
     bool shouldClose = false;
     ServerConfig &config;
 
-    std::unique_ptr<RequestHandler> requestHandler;
+    std::optional<std::unique_ptr<RequestHandler>> requestHandler = std::nullopt;
 
     // used for debugging
     std::string buffer = "";
