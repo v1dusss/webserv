@@ -115,7 +115,7 @@ void ClientConnection::handleFileOutput() {
     }
 
     const int bodyFd = response.value().getBodyFd();
-    char buffer[config.body_buffer_size];
+    char buffer[config.send_body_buffer_size];
 
     pollfd pollfd{};
     pollfd.fd = bodyFd;

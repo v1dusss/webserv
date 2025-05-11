@@ -6,7 +6,7 @@
 /*   By: eebert <eebert@student.42heilbronn.de>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/01 13:19:13 by eebert            #+#    #+#             */
-/*   Updated: 2025/05/07 10:19:40 by eebert           ###   ########.fr       */
+/*   Updated: 2025/05/11 19:35:34 by eebert           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,6 +65,7 @@ typedef struct {
     size_t client_body_timeout; // In seconds
     size_t client_header_timeout; // In seconds
     size_t client_max_body_size; // In bytes
+    size_t send_body_buffer_size;
     size_t body_buffer_size;
     size_t client_max_header_size; // In bytes
     size_t keepalive_timeout; // In seconds
