@@ -53,7 +53,7 @@ bool Server::createSocket() {
 }
 
 bool Server::listen() {
-    if (::listen(serverFd, SOMAXCONN) < 0) {
+    if (::listen(serverFd, 5024) < 0) {
         Logger::log(LogLevel::ERROR, "Failed to listen on socket");
         return false;
     }
@@ -77,6 +77,9 @@ void Server::handleNewConnections() {
         Logger::log(LogLevel::ERROR, "Failed to accept client connection");
         return;
     }
+
+    int opt = 1;
+    setsockopt(clientFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
     Logger::log(LogLevel::INFO, "Accepted new client connection");
     Logger::log(LogLevel::DEBUG, "Client fd: " + std::to_string(clientFd));
