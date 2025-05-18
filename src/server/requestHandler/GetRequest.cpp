@@ -19,6 +19,7 @@ static HttpResponse handleServeFile(const std::string &path) {
     if (access(path.c_str(), R_OK) != 0)
         return HttpResponse::html(HttpResponse::FORBIDDEN);
 
+    // TODO: we are probably breaking the "never read or write without going through poll()" rule here
     std::ifstream file(path, std::ios::binary);
     if (!file)
         return HttpResponse::html(HttpResponse::NOT_FOUND);
