@@ -19,13 +19,22 @@ static HttpResponse handleServeFile(const std::string &path) {
     if (access(path.c_str(), R_OK) != 0)
         return HttpResponse::html(HttpResponse::FORBIDDEN);
 
-    const int fd = open(path.c_str(), O_RDONLY);
-    if (fd < 0)
+    std::ifstream file(path, std::ios::binary);
+    if (!file)
         return HttpResponse::html(HttpResponse::NOT_FOUND);
 
+    // read entire file into memory
+    std::string content;
+    content.reserve(fileStat.st_size);
+    char buf[4096];
+    while (file.read(buf, sizeof(buf)))
+        content.append(buf, file.gcount());
+    // last partial chunk
+    content.append(buf, file.gcount());
+
     HttpResponse response(HttpResponse::StatusCode::OK);
-    response.enableChunkedEncoding(fd);
     response.setHeader("Content-Type", RequestHandler::getMimeType(path));
+    response.setBody(content);
     return response;
 }
 
