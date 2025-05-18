@@ -23,6 +23,26 @@
 #include "webserv.h"
 #include "server/ClientConnection.h"
 
+// URL-decode percent-escapes
+std::string RequestHandler::urlDecode(const std::string& in) {
+    std::string out; out.reserve(in.size());
+    for (size_t i = 0; i < in.size(); ++i) {
+        if (in[i] == '%' && i + 2 < in.size()) {
+            int val = 0;
+            std::istringstream hex{ in.substr(i + 1, 2) };
+            if (hex >> std::hex >> val) {
+                out.push_back(static_cast<char>(val));
+                i += 2;
+            }
+        } else if (in[i] == '+') {
+            out.push_back(' ');
+        } else {
+            out.push_back(in[i]);
+        }
+    }
+    return out;
+}
+
 RequestHandler::RequestHandler(ClientConnection *connection, const HttpRequest &request,
                                ServerConfig &serverConfig): request(request), client(connection),
                                                             serverConfig(serverConfig) {
@@ -87,6 +107,8 @@ void RequestHandler::setRoutePath() {
     if (!uriSuffix.empty() && uriSuffix[0] == '/') {
         uriSuffix.erase(0, 1);
     }
+
+    uriSuffix = urlDecode(uriSuffix);
 
     if (!basePath.empty() && basePath.back() != '/')
         basePath += '/';
