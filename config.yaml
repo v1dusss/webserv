@@ -1,13 +1,13 @@
 server {
-    listen 8080;
-    server_name example.com;
-    client_max_body_size 10;
+    listen                 8080;
+    server_name            example.com;
+    client_max_body_size   52428800;    # 50 MB * 1024 * 1024
     client_max_header_size 10000;
-    keepalive_timeout 10;
-    client_header_timeout 5;
-    client_body_timeout 5;
-    keepalive_requests 4;
-    error_page 404 /404.html;
+    keepalive_timeout      10;
+    client_header_timeout  5;
+    client_body_timeout    5;
+    keepalive_requests     4;
+    error_page 404         /404.html;
 
     # Home page
     location / {
@@ -22,10 +22,11 @@ server {
         autoindex on;
     }
 
-    # File uploads / Gallery
+    # Gallery
     location /upload {
-        allowed_methods POST;
-        root ./www/upload;
+        root             ./www/upload;
+        index            index.html;
+        allowed_methods  GET PUT DELETE;
     }
 
     # CGI scripts

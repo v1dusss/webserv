@@ -58,7 +58,6 @@ void ClientConnection::handleInput() {
 
     if (parser.parse(buffer, bytesRead)) {
         const auto request = parser.getRequest();
-        request->body = "test";
 
         keepAlive = request->getHeader("Connection") == "keep-alive";
 

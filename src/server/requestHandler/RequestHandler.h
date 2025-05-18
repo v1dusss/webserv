@@ -62,7 +62,7 @@ private:
 
     [[nodiscard]] HttpResponse handlePostTestFile() const;
 
-    HttpResponse handlePut();
+    HttpResponse handlePut() const;
 
     [[nodiscard]] HttpResponse handleDelete() const;
 
