@@ -22,6 +22,7 @@
 #include "common/Logger.h"
 #include "webserv.h"
 #include "server/ClientConnection.h"
+#include "common/SessionManager.h"
 
 // URL-decode percent-escapes
 std::string RequestHandler::urlDecode(const std::string& in) {
@@ -165,44 +166,70 @@ void RequestHandler::execute() {
 
 
 std::optional<HttpResponse> RequestHandler::handleRequest() {
-    if (!matchedRoute.has_value())
-        return HttpResponse::html(HttpResponse::NOT_FOUND);
-
-    if (std::find(matchedRoute->allowedMethods.begin(), matchedRoute->allowedMethods.end(), request.method) ==
-        matchedRoute->allowedMethods.end()) {
-        return HttpResponse::html(HttpResponse::StatusCode::METHOD_NOT_ALLOWED);
-    }
-
-
+    findRoute();
+    setRoutePath();
     validateTargetPath();
 
+    // 1) get or create session
+    bool newSession = false;
+    const std::string sid = SessionManager::getSessionId(
+        request.getHeader("Cookie"), newSession);
 
-    if (isCgiRequest()) {
-        Logger::log(LogLevel::DEBUG, "request is a CGI request");
-
-        return handleCgi();
+    // 2) normal routing & response
+    std::optional<HttpResponse> respOpt;
+    if (!matchedRoute.has_value()) {
+        respOpt = HttpResponse::html(HttpResponse::NOT_FOUND);
+    }
+    else if (std::find(matchedRoute->allowedMethods.begin(),
+                       matchedRoute->allowedMethods.end(),
+                       request.method) ==
+             matchedRoute->allowedMethods.end()) {
+        respOpt = HttpResponse::html(HttpResponse::METHOD_NOT_ALLOWED);
+    }
+    else if (isCgiRequest()) {
+        return handleCgi();  // CGI uses its own async, we skip cookie here
+    }
+    else {
+        HttpResponse r;
+        switch (request.method) {
+            case GET:    r = handleGet();   break;
+            case POST:   r = handlePost();  break;
+            case PUT:    r = handlePut();   break;
+            case DELETE: {
+                // 4) enforce ownership
+                std::string fn = std::filesystem::path(getFilePath()).filename();
+                if (!SessionManager::ownsFile(sid, fn)) {
+                    r = HttpResponse::html(HttpResponse::FORBIDDEN,
+                                           "You may only delete your own uploads");
+                } else {
+                    r = handleDelete();
+                }
+            } break;
+            default:
+                r = HttpResponse::html(HttpResponse::METHOD_NOT_ALLOWED);
+        }
+        respOpt = r;
+        // 3) record uploads on PUT or multipart‐POST
+        if (respOpt.has_value()) {
+            HttpResponse &resp = *respOpt;
+            if (request.method == PUT && resp.getStatus() == 201) {
+                std::string raw = request.uri.substr(request.uri.find_last_of('/') + 1);
+                std::string fn  = urlDecode(raw);
+                SessionManager::addUploadedFile(sid, fn);
+            }
+            if (request.method == POST && resp.getStatus()==201) {
+                // in multipart we returned CREATED only if we saved files;
+                // we could inspect which were saved, but for brevity assume single
+                // or adjust handlePostMultipart to return the list and record them here
+            }
+            // always set the cookie if new
+            if (newSession)
+                resp.setHeader("Set-Cookie",
+                               "sessionId="+sid+"; Path=/; HttpOnly");
+        }
     }
 
-    HttpResponse response;
-
-    switch (request.method) {
-        case GET:
-            response = handleGet();
-            break;
-        case POST:
-            response = handlePost();
-            break;
-        case PUT:
-            response = handlePut();
-            break;
-        case DELETE:
-            response = handleDelete();
-            break;
-        default:
-            response = HttpResponse::html(HttpResponse::StatusCode::METHOD_NOT_ALLOWED);
-    }
-
-    return response;
+    return respOpt;
 }
 
 HttpResponse RequestHandler::handleCustomErrorPage(HttpResponse original, ServerConfig &serverConfig,
