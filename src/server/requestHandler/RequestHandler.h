@@ -9,14 +9,32 @@
 #include <parser/http/HttpRequest.h>
 #include <server/response/HttpResponse.h>
 #include <optional>
+#include <parser/cgi/CgiParser.h>
 
 class ClientConnection;
+
+enum class  MultipartParseStateEnum {
+    LOOKING_FOR_BOUNDARY,
+    READING_HEADERS,
+    READING_FILE_CONTENT
+};
+
+struct MultipartParseState {
+    std::string boundary;
+    std::string endBoundary;
+    std::string parseBuffer;
+    int fileWriteFd = -1;
+    int uploadedFiles;
+    std::vector<std::string> fileNames;
+    MultipartParseStateEnum currentState;
+};
+
 
 class RequestHandler {
 private:
     std::optional<RouteConfig> matchedRoute;
-    const HttpRequest request;
-    ClientConnection* client;
+    const std::shared_ptr<HttpRequest> request;
+    ClientConnection *client;
     ServerConfig &serverConfig;
     std::string routePath;
     std::string cgiPath;
@@ -26,10 +44,18 @@ private:
 
     ssize_t bytesWrittenToCgi = 0;
     std::string cgiOutputBuffer{};
+    // TODO: clean this code, by using an array of fileDescriptors that will be closed at the end
+    int cgiOutputFd = -1;
+    int cgiInputFd = -1;
+    int cgiProcessId = -1;
+    int fileWriteFd = -1;
+    std::unique_ptr<CgiParser> cgiParser;
 
 public:
-    RequestHandler(ClientConnection* connection, const HttpRequest &request,
+    RequestHandler(ClientConnection *connection, std::shared_ptr<HttpRequest>,
                    ServerConfig &serverConfig);
+
+    ~RequestHandler();
 
     void execute();
 
@@ -56,11 +82,13 @@ private:
 
     [[nodiscard]] HttpResponse handleGet() const;
 
-    [[nodiscard]] HttpResponse handlePost() const;
+    [[nodiscard]] std::optional<HttpResponse> handlePost();
 
-    [[nodiscard]] HttpResponse handlePostMultipart(const std::string& contentType) const;
+    [[nodiscard]] std::optional<HttpResponse> handlePostMultipart(const std::string &contentType);
 
-    [[nodiscard]] HttpResponse handlePostTestFile() const;
+    void processMultipartBuffer(MultipartParseState *state);
+
+    [[nodiscard]] std::optional<HttpResponse> handlePostTestFile();
 
     HttpResponse handlePut();
 

@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <fstream>
 #include <regex>
+#include <signal.h>
 #include <string>
 
 
@@ -23,34 +24,56 @@
 #include "webserv.h"
 #include "server/ClientConnection.h"
 
-RequestHandler::RequestHandler(ClientConnection *connection, const HttpRequest &request,
+RequestHandler::RequestHandler(ClientConnection *connection, const std::shared_ptr<HttpRequest> request,
                                ServerConfig &serverConfig): request(request), client(connection),
                                                             serverConfig(serverConfig) {
     char ipStr[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &(connection->clientAddr.sin_addr), ipStr, INET_ADDRSTRLEN);
     Logger::log(LogLevel::DEBUG, "IP: " + std::string(ipStr) +
                                  " Port: " + std::to_string(ntohs(connection->clientAddr.sin_port)) + " request: " +
-                                 request.getMethodString() + " at " + request.uri);
+                                 request->getMethodString() + " at " + request->uri);
 
     findRoute();
     setRoutePath();
 }
 
+RequestHandler::~RequestHandler() {
+    if (cgiInputFd != -1) {
+        FdHandler::removeFd(cgiInputFd);
+        close(cgiInputFd);
+        cgiInputFd = -1;
+    }
+    if (cgiOutputFd != -1) {
+        FdHandler::removeFd(cgiOutputFd);
+        close(cgiOutputFd);
+        cgiInputFd = -1;
+    }
+    if (fileWriteFd != -1) {
+        FdHandler::removeFd(fileWriteFd);
+        close(fileWriteFd);
+        fileWriteFd = -1;
+    }
+    if (cgiProcessId != -1) {
+        kill(cgiProcessId, SIGINT);
+    }
+}
+
+
 void RequestHandler::findRoute() {
     size_t longestMatch = 0;
     for (const RouteConfig &route: serverConfig.routes) {
-        if (route.type == LocationType::EXACT && request.getPath() == route.location) {
+        if (route.type == LocationType::EXACT && request->getPath() == route.location) {
             matchedRoute = route;
             longestMatch = route.location.length();
             break;
         }
         if (route.type == LocationType::REGEX &&
-            std::regex_match(request.getPath(), std::regex(route.location))) {
+            std::regex_match(request->getPath(), std::regex(route.location))) {
             matchedRoute = route;
             longestMatch = route.location.length();
             break;
         }
-        if (route.type == LocationType::PREFIX && request.getPath().find(route.location) == 0) {
+        if (route.type == LocationType::PREFIX && request->getPath().find(route.location) == 0) {
             if (route.location.length() > longestMatch) {
                 matchedRoute = route;
                 longestMatch = route.location.length();
@@ -63,7 +86,7 @@ void RequestHandler::findRoute() {
     }
 
     matchedRoute.reset();
-    Logger::log(LogLevel::WARNING, "No matching route found for URI: " + request.uri);
+    Logger::log(LogLevel::WARNING, "No matching route found for URI: " + request->uri);
 }
 
 void RequestHandler::setRoutePath() {
@@ -83,7 +106,7 @@ void RequestHandler::setRoutePath() {
         basePath = serverConfig.root;
     }
 
-    std::string uriSuffix = request.getPath().substr(route.location.length());
+    std::string uriSuffix = request->getPath().substr(route.location.length());
     if (!uriSuffix.empty() && uriSuffix[0] == '/') {
         uriSuffix.erase(0, 1);
     }
@@ -137,7 +160,7 @@ bool RequestHandler::isCgiRequest() {
 void RequestHandler::execute() {
     const auto response = handleRequest();
     if (response.has_value()) {
-        client->setResponse(response.value());
+        client->setResponse(handleCustomErrorPage(response.value(), serverConfig, matchedRoute));
     }
 }
 
@@ -146,7 +169,7 @@ std::optional<HttpResponse> RequestHandler::handleRequest() {
     if (!matchedRoute.has_value())
         return HttpResponse::html(HttpResponse::NOT_FOUND);
 
-    if (std::find(matchedRoute->allowedMethods.begin(), matchedRoute->allowedMethods.end(), request.method) ==
+    if (std::find(matchedRoute->allowedMethods.begin(), matchedRoute->allowedMethods.end(), request->method) ==
         matchedRoute->allowedMethods.end()) {
         return HttpResponse::html(HttpResponse::StatusCode::METHOD_NOT_ALLOWED);
     }
@@ -161,26 +184,18 @@ std::optional<HttpResponse> RequestHandler::handleRequest() {
         return handleCgi();
     }
 
-    HttpResponse response;
-
-    switch (request.method) {
+    switch (request->method) {
         case GET:
-            response = handleGet();
-            break;
+            return handleGet();
         case POST:
-            response = handlePost();
-            break;
+            return handlePost();
         case PUT:
-            response = handlePut();
-            break;
+            return handlePut();
         case DELETE:
-            response = handleDelete();
-            break;
+            return handleDelete();
         default:
-            response = HttpResponse::html(HttpResponse::StatusCode::METHOD_NOT_ALLOWED);
+            return HttpResponse::html(HttpResponse::StatusCode::METHOD_NOT_ALLOWED);
     }
-
-    return response;
 }
 
 HttpResponse RequestHandler::handleCustomErrorPage(HttpResponse original, ServerConfig &serverConfig,
@@ -193,6 +208,7 @@ HttpResponse RequestHandler::handleCustomErrorPage(HttpResponse original, Server
         errorPagePath = serverConfig.error_pages[original.getStatus()];
     else
         return original;
+
 
     if (!std::filesystem::is_regular_file(errorPagePath) || access(errorPagePath.c_str(), R_OK) != 0) {
         Logger::log(LogLevel::ERROR, "error page has an invalid path: " + errorPagePath);
@@ -229,8 +245,8 @@ HttpResponse RequestHandler::handleCustomErrorPage(HttpResponse original, Server
     const std::string body = ss.str();
     */
 
-    HttpResponse newResponse;
-    newResponse.enableChunkedEncoding(fd);
+    HttpResponse newResponse(HttpResponse::StatusCode::OK);
+    newResponse.enableChunkedEncoding(std::make_shared<SmartBuffer>(fd));
     newResponse.setHeader("Content-Type", getMimeType(errorPagePath));
     newResponse.setStatus(original.getStatus());
     return newResponse;
