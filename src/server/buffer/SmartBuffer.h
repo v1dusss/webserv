@@ -11,16 +11,16 @@
 
 class SmartBuffer {
 private:
-    int fd;
-    size_t size;
-    size_t maxMemorySize;
-    bool isFile;
+    int fd = -1;
+    size_t size = 0;
+    size_t maxMemorySize = 0;
+    bool isFile = false;
     std::string buffer;
     std::string writeBuffer;
     std::string readBuffer;
-    size_t readPos;
-    size_t toRead;
-    bool fdCallbackRegistered;
+    size_t readPos = 0;
+    size_t toRead = 0;
+    bool fdCallbackRegistered = false;
     static size_t tmpFileCount;
     std::string tmpFileName;
 

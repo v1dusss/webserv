@@ -13,7 +13,7 @@
 size_t SmartBuffer::tmpFileCount = 0;
 
 SmartBuffer::SmartBuffer(const size_t maxMemorySize)
-    : fd(-1), size(0), maxMemorySize(maxMemorySize), isFile(false), readPos(0), toRead(0), fdCallbackRegistered(false) {
+    : maxMemorySize(maxMemorySize) {
 }
 
 SmartBuffer::SmartBuffer(const int fd): fd(fd) {
