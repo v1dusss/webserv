@@ -14,7 +14,7 @@
 #include "requestHandler/RequestHandler.h"
 #include "response/HttpResponse.h"
 
-Server::Server(const ServerConfig& config) : config(config) {
+Server::Server(const ServerConfig &config) : config(config) {
     Logger::log(LogLevel::INFO, "Server created with config: " + config.host + ":" + std::to_string(config.port));
 }
 
@@ -110,7 +110,7 @@ void Server::closeConnections() {
             continue;
         }
 
-        if (client->parser.bodyStart != 0 &&
+        if (client->parser.getState() == ParseState::BODY && client->parser.bodyStart != 0 &&
             currentTime - client->parser.bodyStart > static_cast<long>(config.client_body_timeout)) {
             clientsToClose.push_back(fd);
             Logger::log(LogLevel::INFO, "Client connection body timed out");
@@ -128,9 +128,9 @@ void Server::closeConnections() {
 
 void Server::stop() {
     if (serverFd >= 0) {
+        Logger::log(LogLevel::DEBUG, "Stopping server on fd: " + std::to_string(serverFd));
         clients.clear();
 
-        Logger::log(LogLevel::DEBUG, "Stopping server on fd: " + std::to_string(serverFd));
         close(serverFd);
         serverFd = -1;
         Logger::log(LogLevel::INFO, "Server stopped");
