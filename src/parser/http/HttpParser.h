@@ -21,15 +21,15 @@ enum class ParseState {
 
 class HttpParser {
 private:
+    static ssize_t tmpFileCount;
     ParseState state;
     std::shared_ptr<HttpRequest> request;
     std::string buffer;
     size_t contentLength;
     bool chunkedTransfer;
+    size_t body_buffer_size;
     size_t client_max_body_size;
     size_t client_max_header_size;
-    size_t totalHeaderSize = 0;
-    size_t totalBodySize = 0;
 
     unsigned long chunkSize = 0;
     bool hasChunkSize = false;
@@ -40,9 +40,13 @@ public:
 
     HttpParser();
 
-    void setClientLimits(const size_t maxBodySize, const size_t maxHeaderSize) {
+    ~HttpParser();
+
+    void setClientLimits(const size_t maxBodySize, const size_t maxHeaderSize,
+                         const size_t bodyBufferSize) {
         client_max_body_size = maxBodySize;
         client_max_header_size = maxHeaderSize;
+        body_buffer_size = bodyBufferSize;
     }
 
 
@@ -51,6 +55,8 @@ public:
     bool parseHeaders();
 
     bool parseBody();
+
+    bool appendToBody(const std::string &data);
 
     static std::optional<HttpMethod> stringToMethod(const std::string &method);
 
@@ -67,6 +73,8 @@ public:
     const std::string &getBuffer() const { return buffer; }
 
     static bool isHttpStatusCode(int statusCode);
+
+    [[nodiscard]] ParseState getState() const { return state; }
 };
 
 

@@ -9,15 +9,16 @@
 #include <string>
 #include <unordered_map>
 #include <sstream>
+#include <server/buffer/SmartBuffer.h>
+#include <memory>
 
 class HttpResponse {
 private:
     int statusCode;
     std::string statusMessage;
     std::unordered_map<std::string, std::string> headers;
-    std::string body;
-    bool chunkedEncoding;
-    int bodyFd = -1;
+    std::shared_ptr<SmartBuffer> body;
+    bool chunkedEncoding;;
 
 public:
     // only used for chunked encoding, because there we have to send the header and body separately
@@ -41,6 +42,8 @@ public:
         NOT_IMPLEMENTED = 501,
     };
 
+    HttpResponse() = delete;
+
     HttpResponse(int statusCode = StatusCode::OK);
 
     static HttpResponse html(StatusCode statusCode, const std::string &bodyMessage = "");
@@ -54,17 +57,17 @@ public:
     void setBody(const std::string &body);
 
     // this is only used for sending files
-    void enableChunkedEncoding(int bodyFd);
+    void enableChunkedEncoding(std::shared_ptr<SmartBuffer> body);
 
     [[nodiscard]] std::string toString() const;
 
     [[nodiscard]] std::string toHeaderString() const;
 
-    [[nodiscard]] std::string getBody() const;
-
-    [[nodiscard]] int getBodyFd() const;
+    [[nodiscard]] std::shared_ptr<SmartBuffer> getBody() const;
 
     [[nodiscard]] bool isChunkedEncoding() const;
+
+    [[nodiscard]] std::unordered_map<std::string, std::string> getHeaders() const;
 
 private:
     static void createNotFoundPage(std::stringstream &ss);

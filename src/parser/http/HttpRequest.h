@@ -9,6 +9,8 @@
 #include <unordered_map>
 #include "config/config.h"
 #include <iostream>
+#include <server/buffer/SmartBuffer.h>
+#include <memory>
 
 class HttpRequest {
 public:
@@ -16,10 +18,14 @@ public:
     std::string uri;
     std::string version;
     std::unordered_map<std::string, std::string> headers;
-    std::string body;
+    std::shared_ptr<SmartBuffer> body;
+    size_t totalHeaderSize = 0;
+    size_t totalBodySize = 0;
 
     HttpRequest() : method(GET) {
+        body = std::make_shared<SmartBuffer>();
     }
+
 
     [[nodiscard]] std::string getMethodString() const {
         switch (method) {
@@ -63,7 +69,6 @@ public:
         for (const auto &header: headers) {
             std::cout << header.first << ": " << header.second << "\n";
         }
-        std::cout << "Body: " << body;
     }
 };
 

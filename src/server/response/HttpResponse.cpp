@@ -5,12 +5,15 @@
 #include "HttpResponse.h"
 #include <format>
 #include <iostream>
+#include <utility>
 #include "NotFoundImage.h"
 
 HttpResponse::HttpResponse(const int statusCode)
     : statusCode(statusCode),
-      chunkedEncoding(false) {
+      chunkedEncoding(true) {
+    body = std::make_shared<SmartBuffer>();
     statusMessage = getStatusMessage(statusCode);
+    headers["Transfer-Encoding"] = "chunked";
 }
 
 void HttpResponse::setStatus(const int code, const std::string &message) {
@@ -27,21 +30,16 @@ void HttpResponse::setHeader(const std::string &name, const std::string &value) 
 }
 
 void HttpResponse::setBody(const std::string &body) {
-    this->body = body;
+    this->body->append(body.c_str(), body.length());
     if (!chunkedEncoding) {
         headers["Content-Length"] = std::to_string(body.length());
     }
 }
 
-void HttpResponse::enableChunkedEncoding(const int bodyFd) {
-    this->bodyFd = bodyFd;
+void HttpResponse::enableChunkedEncoding(std::shared_ptr<SmartBuffer> body) {
+    this->body = std::move(body);
     chunkedEncoding = true;
-    headers["Transfer-Encoding"] = "chunked";
     headers.erase("Content-Length");
-}
-
-int HttpResponse::getBodyFd() const {
-    return bodyFd;
 }
 
 bool HttpResponse::isChunkedEncoding() const {
@@ -132,6 +130,10 @@ void HttpResponse::createNotFoundPage(std::stringstream &ss) {
             "</html>";
 }
 
-std::string HttpResponse::getBody() const {
+std::shared_ptr<SmartBuffer> HttpResponse::getBody() const {
     return body;
+}
+
+std::unordered_map<std::string, std::string> HttpResponse::getHeaders() const {
+    return headers;
 }
