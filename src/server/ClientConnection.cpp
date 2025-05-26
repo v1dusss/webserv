@@ -10,26 +10,34 @@
 
 #include "FdHandler.h"
 #include "requestHandler/RequestHandler.h"
+#include <execinfo.h>
+#include <iostream>
+#include <cstdlib>
+#include <dirent.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 
 ClientConnection::ClientConnection(const int clientFd, const sockaddr_in clientAddr, ServerConfig &config): config(
     config) {
     this->fd = clientFd;
     this->clientAddr = clientAddr;
-    parser.setClientLimits(config.client_max_body_size, config.client_max_header_size);
-    FdHandler::addFd(clientFd, POLLIN | POLLOUT, [this](const int fd, short events) {
+    parser.setClientLimits(config.client_max_body_size, config.client_max_header_size, config.body_buffer_size);
+    FdHandler::addFd(clientFd, POLLIN | POLLOUT, [this](const int fd, const short events) {
         (void) fd;
-        if (events & POLLIN && !requestHandler.has_value())
+        if (shouldClose)
+            return true;
+        if (events & POLLIN)
             this->handleInput();
         if (events & POLLOUT)
             this->handleOutput();
-        return shouldClose;
+        return false;
     });
 }
 
 ClientConnection::~ClientConnection() {
     FdHandler::removeFd(this->fd);
-    if (requestHandler.has_value())
-        requestHandler.value().reset();
     this->clearResponse();
     if (fd != -1) {
         shutdown(fd, SHUT_RDWR);
@@ -40,10 +48,14 @@ ClientConnection::~ClientConnection() {
 }
 
 void ClientConnection::handleInput() {
-    char buffer[1024];
-    const ssize_t bytesRead = read(fd, buffer, sizeof(buffer));
+    char buffer[40001];
+    const ssize_t bytesRead = read(fd, buffer, 40000);
     if (bytesRead < 0) {
-        Logger::log(LogLevel::ERROR, "Failed to read from client");
+        Logger::log(LogLevel::ERROR, "Failed to read from client fd: " + std::to_string(fd));
+        // log errno
+        Logger::log(LogLevel::ERROR, strerror(errno));
+        Logger::log(LogLevel::ERROR, "should close client fd: " + std::to_string(shouldClose));
+
         return;
     }
 
@@ -51,144 +63,123 @@ void ClientConnection::handleInput() {
         shouldClose = true;
         return;
     }
-    this->buffer += std::string(buffer, bytesRead);
-    //std::cout << clientConnection.buffer << std::endl;
-    //  std::cout << "-------------------------" << std::endl;
+
+    buffer[bytesRead] = '\0';
+
+
+    //std::cout << "Received data from client fd: " << fd << " size: " << bytesRead << std::endl;
+    //std::cout << buffer << std::endl;
+
+    // std::cout << "-------------------------" << std::endl;
 
     if (parser.parse(buffer, bytesRead)) {
         const auto request = parser.getRequest();
-        request->body = "test";
 
         keepAlive = request->getHeader("Connection") == "keep-alive";
 
         Logger::log(LogLevel::INFO, "Request Parsed");
-        //  request->printRequest();
 
-        requestHandler = std::make_optional(std::make_unique<RequestHandler>(this, *request, config));
+        requestHandler = std::make_optional(std::make_unique<RequestHandler>(this, request, config));
         requestHandler.value()->execute();
+        parser.reset();
+        debugBuffer.clear();
         return;
     }
 
     if (parser.hasError()) {
-        std::cout << buffer << std::endl;
 
         const HttpResponse response = HttpResponse::html(HttpResponse::StatusCode::BAD_REQUEST);
         setResponse(RequestHandler::handleCustomErrorPage(response, config, std::nullopt));
+        parser.reset();
+        debugBuffer.clear();
     }
 }
 
 void ClientConnection::handleOutput() {
     if (hasPendingResponse()) {
         HttpResponse &response = getResponse().value();
+        if (response.getBody()->isStillWriting())
+            return;
         if (keepAlive)
             response.setHeader("Connection", "keep-alive");
         else
             response.setHeader("Connection", "close");
 
-        if (response.isChunkedEncoding()) {
-            handleFileOutput();
-            return;
-        }
-        const std::string responseBuffer = response.toString();
-        const size_t bytesWritten = write(fd, responseBuffer.c_str(), responseBuffer.size());
-
-        if (bytesWritten < responseBuffer.size()) {
-            Logger::log(LogLevel::ERROR, "Failed to write full response to client");
-            return;
-        }
-
-        lastPackageSend = std::time(nullptr);
-        Logger::log(LogLevel::INFO, "Client response sent");
-        clearResponse();
+        handleFileOutput();
     }
 }
 
 void ClientConnection::handleFileOutput() {
     if (!response.value().alreadySendHeader) {
         const std::string header = response.value().toHeaderString();
-        if (write(fd, header.c_str(), header.length()) < 0) {
+        std::cout << header << std::endl;
+        if (send(fd, header.c_str(), header.length(), MSG_NOSIGNAL) < 0) {
             Logger::log(LogLevel::ERROR, "Failed to write header to client");
             clearResponse();
             return;
         }
         response.value().alreadySendHeader = true;
-    }
-
-    const int bodyFd = response.value().getBodyFd();
-    char buffer[config.send_body_buffer_size];
-
-    pollfd pollfd{};
-    pollfd.fd = bodyFd;
-    pollfd.events = POLLIN;
-
-    const int pollResult = poll(&pollfd, 1, READ_FILE_TIMEOUT);
-    if (pollResult < 0) {
-        Logger::log(LogLevel::ERROR, "Poll error while reading from client");
-        clearResponse();
         return;
     }
 
-    if (pollResult == 0) {
-        Logger::log(LogLevel::ERROR, "Timeout while reading from client");
-        clearResponse();
-        return;
+
+    std::shared_ptr<SmartBuffer> body = response->getBody();
+    body->read(1024);
+
+    const std::string readBuffer = body->getReadBuffer();
+
+    if (!readBuffer.empty()) {
+        std::stringstream chunkHeader;
+        chunkHeader << std::hex << readBuffer.length() << "\r\n";
+        const std::string chunkHeaderStr = chunkHeader.str();
+
+        // Write the chunk header
+        if (send(fd, chunkHeaderStr.c_str(), chunkHeaderStr.length(), MSG_NOSIGNAL) <= 0) {
+            Logger::log(LogLevel::ERROR, "Failed to write chunk header to client");
+            clearResponse();
+            return;
+        }
+
+
+        ssize_t bytesWritten = send(fd, readBuffer.c_str(), readBuffer.length(), MSG_NOSIGNAL);
+        // Write the chunk data
+        if (bytesWritten < 0) {
+            Logger::log(LogLevel::ERROR, "Failed to write chunk data to client");
+            clearResponse();
+            return;
+        }
+
+        body->cleanReadBuffer(bytesWritten);
+
+        // Write the trailing CRLF
+        if (send(fd, "\r\n", 2, MSG_NOSIGNAL) < 0) {
+            Logger::log(LogLevel::ERROR, "Failed to write chunk trailing CRLF to client");
+            clearResponse();
+        }
     }
 
-    const ssize_t bytesRead = read(bodyFd, buffer, sizeof(buffer));
 
-    if (bytesRead < 0) {
-        Logger::log(LogLevel::ERROR, "Failed to read from file descriptor");
-        clearResponse();
-        return;
-    }
-
-    if (bytesRead == 0) {
-        if (write(fd, "0\r\n\r\n", 5) < 0)
+    if (body->getReadPos() >= body->getSize()) {
+        if (write(fd, "0\r\n\r\n", 5) <= 0)
             Logger::log(LogLevel::ERROR, "Failed to write final chunk to client");
         lastPackageSend = std::time(nullptr);
         Logger::log(LogLevel::INFO, "Client response sent");
-        clearResponse();
-        return;
-    }
-
-    std::stringstream chunkHeader;
-    chunkHeader << std::hex << bytesRead << "\r\n";
-    const std::string header = chunkHeader.str();
-
-    // Write the chunk header
-    if (write(fd, header.c_str(), header.length()) < 0) {
-        Logger::log(LogLevel::ERROR, "Failed to write chunk header to client");
-        clearResponse();
-    }
-
-    // Write the chunk data
-    if (write(fd, buffer, bytesRead) < 0) {
-        Logger::log(LogLevel::ERROR, "Failed to write chunk data to client");
-        clearResponse();
-    }
-
-    // Write the trailing CRLF
-    if (write(fd, "\r\n", 2) < 0) {
-        Logger::log(LogLevel::ERROR, "Failed to write chunk trailing CRLF to client");
         clearResponse();
     }
 }
 
 
 void ClientConnection::clearResponse() {
-    if (response != std::nullopt && response.value().getBodyFd()) {
-        close(response.value().getBodyFd());
-    }
-    response = std::nullopt;
-    if (!keepAlive)
+    response.reset();
+    if (!keepAlive) {
         shouldClose = true;
+    }
 
     requestHandler.reset();
 }
 
 void ClientConnection::setResponse(const HttpResponse &response) {
     this->response = response;
-    buffer.clear();
     parser.reset();
     requestCount++;
 }
