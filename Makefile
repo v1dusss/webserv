@@ -1,15 +1,19 @@
 CC = c++
-CFLAGS = -Wall -Wextra -Werror -std=c++17 -g
+CFLAGS = -Wall -Wextra -Werror -std=c++17 -O0 -g #-fsanitize=address -fsanitize=undefined -pthread
+
+#sudo sysctl -w net.inet.tcp.msl=100
 
 VPATH = src \
 		src/common \
 		src/config \
 		src/parser \
 		src/parser/config \
+		src/parser/cgi \
 		src/parser/http \
 		src/server \
 		src/server/requestHandler \
-		src/server/response
+		src/server/response \
+		src/server/buffer
 
 SRC = main.cpp \
 	Logger.cpp \
@@ -27,7 +31,9 @@ SRC = main.cpp \
 	CGIRequest.cpp \
 	ConfigParser.cpp \
 	ConfigBlock.cpp \
-	FdHandler.cpp
+	FdHandler.cpp \
+	CgiParser.cpp \
+	SmartBuffer.cpp
 
 OBJ_DIR = obj
 INCLUDE_DIR = src
