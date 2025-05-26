@@ -16,15 +16,19 @@ void FdHandler::addFd(const int fd, const short events, const std::function<bool
     fdCallbacks[fd] = callback;
 }
 
-void FdHandler::removeFd(const int fd) {
-    fdCallbacks.erase(fd);
+std::vector<pollfd>::iterator FdHandler::removeFd(const int fd) {
     const auto it = std::remove_if(pollfds.begin(), pollfds.end(), [fd](const pollfd &pfd) {
         return pfd.fd == fd;
     });
+
+    fdCallbacks.erase(fd);
+
     if (it != pollfds.end()) {
-        pollfds.erase(it, pollfds.end());
+        return pollfds.erase(it, pollfds.end());
     }
+    return pollfds.end();
 }
+
 
 void FdHandler::pollFds() {
     while (!fdQueue.empty() && pollfds.size() < 1024) {
@@ -32,7 +36,7 @@ void FdHandler::pollFds() {
         fdQueue.pop();
     }
 
-    const int ret = poll(pollfds.data(), pollfds.size(), 0);
+    const int ret = poll(pollfds.data(), pollfds.size(), 100);
     if (ret < 0) {
         std::cerr << "Poll error: " << strerror(errno) << std::endl;
         return;
@@ -42,19 +46,20 @@ void FdHandler::pollFds() {
     while (it != pollfds.end()) {
         if (it->revents & POLLERR) {
             std::cerr << "Poll error on fd: " << it->fd << std::endl;
-            it = pollfds.erase(it);
+            std::cerr << errno << ": " << strerror(errno) << std::endl;
+            it = removeFd(it->fd);
             continue;
         }
         if (it->revents & POLLNVAL) {
-            std::cerr << "Poll invalid fd: " << it->fd << std::endl;
-            it = pollfds.erase(it);
+            it = removeFd(it->fd);
             continue;
         }
-        if (it->revents & POLLIN || it->revents & POLLOUT)
+        if (it->revents & POLLIN || it->revents & POLLOUT || it->revents & POLLHUP) {
             if (fdCallbacks[it->fd](it->fd, it->revents)) {
-                it = pollfds.erase(it);
+                it = removeFd(it->fd);
                 continue;
             }
+        }
         ++it;
     }
 }

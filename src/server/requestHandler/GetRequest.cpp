@@ -24,7 +24,7 @@ static HttpResponse handleServeFile(const std::string &path) {
         return HttpResponse::html(HttpResponse::NOT_FOUND);
 
     HttpResponse response(HttpResponse::StatusCode::OK);
-    response.enableChunkedEncoding(fd);
+    response.enableChunkedEncoding(std::make_shared<SmartBuffer>(fd));
     response.setHeader("Content-Type", RequestHandler::getMimeType(path));
     return response;
 }

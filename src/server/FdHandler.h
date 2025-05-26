@@ -24,7 +24,7 @@ private:
 
 public:
     static void addFd(int fd, short events, const std::function<bool(int, short)> &callback);
-    static void removeFd(int fd);
+    static std::vector<pollfd>::iterator removeFd(int fd);
 
     static void pollFds();
 };

@@ -26,11 +26,9 @@ public:
     bool keepAlive = false;
     bool shouldClose = false;
     ServerConfig &config;
+    std::string debugBuffer;
 
     std::optional<std::unique_ptr<RequestHandler>> requestHandler = std::nullopt;
-
-    // used for debugging
-    std::string buffer = "";
 
 private:
     std::optional<HttpResponse> response = std::nullopt;
@@ -53,7 +51,7 @@ public:
     void clearResponse();
 
     [[nodiscard]] bool hasPendingResponse() const {
-        return response != std::nullopt;
+        return response.has_value();
     }
 
     std::optional<HttpResponse> &getResponse() {
