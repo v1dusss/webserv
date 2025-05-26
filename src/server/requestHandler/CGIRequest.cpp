@@ -31,6 +31,7 @@ static bool setupPipes(int input_pipe[2], int output_pipe[2]) {
         Logger::log(LogLevel::ERROR, "Failed to create pipes for CGI");
         return false;
     }
+
     return true;
 }
 
@@ -38,14 +39,19 @@ void RequestHandler::configureCgiChildProcess(int input_pipe[2], int output_pipe
     const std::string filePath = getFilePath();
     dup2(input_pipe[0], STDIN_FILENO);
     dup2(output_pipe[1], STDOUT_FILENO);
+    //int devNull = open("/dev/null", O_WRONLY);
+    //dup2(devNull, STDERR_FILENO);
+    //close(devNull);
 
+    close(input_pipe[0]);
     close(input_pipe[1]);
     close(output_pipe[0]);
+    close(output_pipe[1]);
 
     std::unordered_map<std::string, std::string> env;
 
 
-    for (const auto &header: request.headers) {
+    for (const auto &header: request->headers) {
         std::string name = header.first;
         std::string value = header.second;
 
@@ -61,16 +67,16 @@ void RequestHandler::configureCgiChildProcess(int input_pipe[2], int output_pipe
         env[envName] = value;
     }
 
-    env["QUERY_STRING"] = request.getQueryString();
-    env["REQUEST_METHOD"] = request.getMethodString();
-    env["CONTENT_TYPE"] = request.getHeader("Content-Type");
-    env["CONTENT_LENGTH"] = std::to_string(request.body.size());
+    env["QUERY_STRING"] = request->getQueryString();
+    env["REQUEST_METHOD"] = request->getMethodString();
+    env["CONTENT_TYPE"] = request->getHeader("Content-Type");
+    env["CONTENT_LENGTH"] = std::to_string(request->totalBodySize);
     env["SERVER_PROTOCOL"] = "HTTP/1.1";
     env["SERVER_SOFTWARE"] = "Webserv/1.0";
     env["GATEWAY_INTERFACE"] = "CGI/1.1";
     env["SERVER_NAME"] = serverConfig.host;
     env["SERVER_PORT"] = std::to_string(serverConfig.port);
-    env["PATH_INFO"] = request.getPath();
+    env["PATH_INFO"] = request->getPath();
 
 
     std::vector<char *> envp;
@@ -83,7 +89,7 @@ void RequestHandler::configureCgiChildProcess(int input_pipe[2], int output_pipe
     execve(cgiPath.c_str(), argv, envp.data());
 
     Logger::log(LogLevel::ERROR, "Failed to execute CGI script");
-    exit(EXIT_FAILURE);
+    _exit(EXIT_FAILURE);
 }
 
 static void cleanupCgiProcess(const pid_t pid) {
@@ -97,53 +103,8 @@ static void cleanupCgiProcess(const pid_t pid) {
     }
 }
 
-static HttpResponse parseCgiOutput(const std::string &cgiOutput) {
-    HttpResponse response;
 
-    const size_t headerEnd = cgiOutput.find("\r\n\r\n");
-    if (headerEnd == std::string::npos) {
-        response = HttpResponse(HttpResponse::StatusCode::OK);
-        response.setHeader("Content-Type", "text/html");
-        response.setBody(cgiOutput);
-        return response;
-    }
-
-    const std::string headers = cgiOutput.substr(0, headerEnd);
-    const std::string body = cgiOutput.substr(headerEnd + 4);
-
-    response = HttpResponse(HttpResponse::StatusCode::OK);
-
-    std::istringstream headerStream(headers);
-    std::string line;
-    while (std::getline(headerStream, line)) {
-        if (line.empty() || line == "\r") continue;
-
-        if (!line.empty() && line[line.size() - 1] == '\r') {
-            line.erase(line.size() - 1);
-        }
-
-        const size_t colonPos = line.find(':');
-        if (colonPos != std::string::npos) {
-            std::string name = line.substr(0, colonPos);
-            std::string value = line.substr(colonPos + 1);
-
-            while (!value.empty() && value[0] == ' ') {
-                value.erase(0, 1);
-            }
-
-            if (name == "Status") {
-                const int statusCode = std::stoi(value.substr(0, 3));
-                response.setStatus(statusCode);
-            } else {
-                response.setHeader(name, value);
-            }
-        }
-    }
-
-    response.setBody(body);
-    return response;
-}
-
+//TODO: save file descriptor in the class so they can be closed in the destructor
 std::optional<HttpResponse> RequestHandler::handleCgi() {
     int input_pipe[2]; // Parent -> Child
     int output_pipe[2]; // Child -> Parent
@@ -168,47 +129,111 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
     if (pid == 0) {
         configureCgiChildProcess(input_pipe, output_pipe);
     }
+    Logger::log(LogLevel::INFO, "CGI started with PID: " + std::to_string(pid));
+
+    cgiProcessId = pid;
 
     close(input_pipe[0]);
     close(output_pipe[1]);
 
-    const int pipeFd = input_pipe[1];
-    FdHandler::addFd(pipeFd, POLLOUT, [ this](int fd, short events) {
+    cgiParser = std::make_unique<CgiParser>();
+
+    cgiInputFd = input_pipe[1];
+    // TODO: use poll for reading from file
+
+    std::cout << "request->totalBodySize: " << request->totalBodySize << " " << request->body->getSize() << std::endl;
+
+    if (fcntl(cgiInputFd, F_SETFL, O_NONBLOCK) == -1) {
+        perror("fcntl F_SETFL");
+        return 1;
+    }
+
+    FdHandler::addFd(cgiInputFd, POLLOUT | POLLHUP, [this](const int fd, const short events) {
         (void) fd;
         (void) events;
-        const ssize_t bytesToWrite = std::min(static_cast<ssize_t>(1024),
-                                              static_cast<ssize_t>(request.body.size() - bytesWrittenToCgi));
+
+        if (events & POLLHUP) {
+            std::cout << "CGI process closed writing" << std::endl;
+            return true;
+        }
+
+        if (request->body->isStillWriting())
+            return false;
 
 
-        if (bytesToWrite == 0) {
+        request->body->read(3000);
+
+        if (static_cast<size_t>(bytesWrittenToCgi) >= request->totalBodySize) {
+            std::cout << "Finished writing to CGI process" << std::endl;
             close(fd);
             return true;
         }
 
-        const ssize_t written = write(fd, request.body.c_str() + bytesWrittenToCgi,
-                                      bytesToWrite);
-        bytesWrittenToCgi += written;
+        const std::string readBuffer = request->body->getReadBuffer();
+        if (!readBuffer.empty()) {
+            const ssize_t written = write(fd, readBuffer.data(), readBuffer.length());
+            bytesWrittenToCgi += written;
+            request->body->cleanReadBuffer(written);
+        }
+
+
         return false;
     });
+    cgiOutputFd = output_pipe[0];
+
+    if (fcntl(cgiOutputFd, F_SETFL, O_NONBLOCK) == -1) {
+        perror("fcntl F_SETFL");
+        return 1;
+    }
+
     FdHandler::addFd(output_pipe[0], POLLIN | POLLHUP, [pid, this](int fd, short events) {
         (void) events;
 
-        ssize_t bytesRead = 0;
-        char buffer[4096];
-        bytesRead = read(fd, buffer, sizeof(buffer) - 1);
-        if (bytesRead > 0) {
-            buffer[bytesRead] = '\0';
-            cgiOutputBuffer.append(buffer, bytesRead);
-            return false;
-        }
 
-        if (bytesRead == 0 || events & (POLLHUP)) {
+        ssize_t bytesRead = 0;
+        char buffer[60000];
+        bytesRead = read(fd, buffer, sizeof(buffer) - 1);
+        if (bytesRead == -1)
+            return false;
+        if (bytesRead >= 0) {
+            buffer[bytesRead] = '\0';
+        }
+        if ((cgiParser->parse(buffer, bytesRead)) || bytesRead == 0) {
             close(fd);
             cleanupCgiProcess(pid);
-            const HttpResponse response = parseCgiOutput(cgiOutputBuffer);
+            const auto result = cgiParser->getResult();
+            HttpResponse response(HttpResponse::StatusCode::OK);
+            for (const auto &header: result.headers)
+                if (header.first == "Status") {
+                    const int statusCode = std::stoi(header.second.substr(0, 3));
+                    response.setStatus(statusCode);
+                } else if (!header.first.empty())
+                    response.setHeader(header.first, header.second);
+            response.enableChunkedEncoding(result.body);
+
             client->setResponse(response);
             return true;
         }
+
+        if (cgiParser->hasError()) {
+            close(fd);
+            cleanupCgiProcess(pid);
+            Logger::log(LogLevel::ERROR, "CGI process error parsing error");
+            const HttpResponse response = HttpResponse::html(HttpResponse::StatusCode::INTERNAL_SERVER_ERROR,
+                                                             "CGI Error: Could not parse output");
+            client->setResponse(response);
+            return true;
+        }
+
+
+        if (events & POLLHUP) {
+         Logger::log(LogLevel::ERROR, "CGI process error reading");
+         const HttpResponse response = HttpResponse::html(HttpResponse::StatusCode::OK,
+                                                          "CGI Error: Could not parse output");
+         client->setResponse(response);
+         return true;
+     }
+
         return false;
     });
     return std::nullopt;
