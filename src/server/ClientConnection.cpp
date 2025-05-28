@@ -87,7 +87,6 @@ void ClientConnection::handleInput() {
     }
 
     if (parser.hasError()) {
-
         const HttpResponse response = HttpResponse::html(HttpResponse::StatusCode::BAD_REQUEST);
         setResponse(RequestHandler::handleCustomErrorPage(response, config, std::nullopt));
         parser.reset();
@@ -134,7 +133,7 @@ void ClientConnection::handleFileOutput() {
         const std::string chunkHeaderStr = chunkHeader.str();
 
         // Write the chunk header
-        if (send(fd, chunkHeaderStr.c_str(), chunkHeaderStr.length(), MSG_NOSIGNAL) <= 0) {
+        if (send(fd, chunkHeaderStr.c_str(), chunkHeaderStr.length(), MSG_NOSIGNAL) < 0) {
             Logger::log(LogLevel::ERROR, "Failed to write chunk header to client");
             clearResponse();
             return;
@@ -160,7 +159,7 @@ void ClientConnection::handleFileOutput() {
 
 
     if (body->getReadPos() >= body->getSize()) {
-        if (write(fd, "0\r\n\r\n", 5) <= 0)
+        if (send(fd, "0\r\n\r\n", 5, MSG_NOSIGNAL) < 0)
             Logger::log(LogLevel::ERROR, "Failed to write final chunk to client");
         lastPackageSend = std::time(nullptr);
         Logger::log(LogLevel::INFO, "Client response sent");
