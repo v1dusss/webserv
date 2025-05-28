@@ -378,15 +378,15 @@ void ConfigParser::parseDirective(const std::string &line, ConfigBlock &block) {
         if (!validateListenValue(tokens[0])) {
             return;
         }
-    } else if ((key == "client_max_body_size" || key == "client_max_header_size") && !tokens.empty()) {
-        const std::regex sizeRegex("^\\d+[kmg]?$", std::regex::icase);
+    } else if ((key == "client_max_body_size" || key == "client_max_header_size" || key == "body_buffer_size") && !tokens.empty()) {
+        const std::regex sizeRegex("^\\d+(\\.\\d+)?([kmgt]b?|[kmgt]i?bytes|bytes)?$", std::regex::icase);
         if (!std::regex_match(tokens[0], sizeRegex)) {
             reportError("Invalid value for " + key + ": " + tokens[0]);
             parseSuccessful = false;
             return;
         }
     } else if ((key == "keepalive_timeout" || key == "keepalive_requests" || key == "client_header_timeout" || key ==
-                "client_body_timeout" || key == "send_body_buffer_size" || key == "body_buffer_size") && !tokens.
+                "client_body_timeout" || key == "send_body_buffer_size") && !tokens.
                empty()) {
         if (!validateDigitsOnly(tokens[0], key))
             return;
