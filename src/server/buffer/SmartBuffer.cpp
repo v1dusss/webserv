@@ -37,14 +37,16 @@ SmartBuffer::~SmartBuffer() {
         if (close(fd) < 0)
             Logger::log(LogLevel::ERROR,
                         "Failed to close file descriptor: " + std::to_string(fd) + ": " + strerror(errno));
-        if (!tmpFileName.empty() && std::filesystem::exists(tmpFileName)) {
-            try {
-                std::filesystem::remove(tmpFileName);
-            } catch (const std::filesystem::filesystem_error &e) {
-                Logger::log(LogLevel::ERROR, "Failed to remove temporary file: " + tmpFileName + ": " + e.what());
-            }
-        }
         fd = -1;
+    }
+
+    if (!tmpFileName.empty() && std::filesystem::exists(tmpFileName)) {
+        try {
+            Logger::log(LogLevel::INFO, "Removing temporary file: " + tmpFileName);
+            std::filesystem::remove(tmpFileName);
+        } catch (const std::filesystem::filesystem_error &e) {
+            Logger::log(LogLevel::ERROR, "Failed to remove temporary file: " + tmpFileName + ": " + e.what());
+        }
     }
 }
 
@@ -103,7 +105,7 @@ void SmartBuffer::switchToFile() {
         std::cerr << "Failed to create temporary file: " << tmpFileName << std::endl;
         return;
     }
-    std::cout << "created temporary file " << std::to_string(fd) << std::endl;
+    std::cout << "created temporary file " << tmpFileName << std::endl;
 
     writeBuffer.append(buffer);
     buffer.clear();
