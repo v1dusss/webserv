@@ -39,12 +39,15 @@ ClientConnection::ClientConnection(const int clientFd, const sockaddr_in clientA
 ClientConnection::~ClientConnection() {
     FdHandler::removeFd(this->fd);
     this->clearResponse();
+    parser.reset();
     if (fd != -1) {
         shutdown(fd, SHUT_RDWR);
         close(fd);
         Logger::log(LogLevel::DEBUG, "closed client fd: " + std::to_string(fd));
         fd = -1;
     }
+    delete requestHandler;
+    requestHandler = nullptr;
 }
 
 void ClientConnection::handleInput() {
@@ -79,8 +82,10 @@ void ClientConnection::handleInput() {
 
         Logger::log(LogLevel::INFO, "Request Parsed");
 
-        requestHandler = std::make_optional(std::make_unique<RequestHandler>(this, request, config));
-        requestHandler.value()->execute();
+
+        delete requestHandler;
+        requestHandler = new RequestHandler(this, request, config);
+        requestHandler->execute();
         parser.reset();
         debugBuffer.clear();
         return;
@@ -174,7 +179,8 @@ void ClientConnection::clearResponse() {
         shouldClose = true;
     }
 
-    requestHandler.reset();
+    delete requestHandler;
+    requestHandler = nullptr;
 }
 
 void ClientConnection::setResponse(const HttpResponse &response) {

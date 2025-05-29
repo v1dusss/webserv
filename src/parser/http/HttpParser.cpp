@@ -304,6 +304,7 @@ std::shared_ptr<HttpRequest> HttpParser::getRequest() const {
 
 void HttpParser::reset() {
     state = ParseState::REQUEST_LINE;
+    request.reset();
     request = std::make_shared<HttpRequest>();
     buffer.clear();
     contentLength = 0;

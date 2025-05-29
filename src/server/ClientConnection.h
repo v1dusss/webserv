@@ -18,20 +18,20 @@
 
 class ClientConnection {
 public:
-    int fd{};
+    int fd = -1;
     sockaddr_in clientAddr{};
-    HttpParser parser{};
+    HttpParser parser;
     size_t requestCount = 0;
     std::time_t lastPackageSend = 0;
     bool keepAlive = false;
     bool shouldClose = false;
-    ServerConfig &config;
-    std::string debugBuffer;
 
-    std::optional<std::unique_ptr<RequestHandler>> requestHandler = std::nullopt;
 
 private:
     std::optional<HttpResponse> response = std::nullopt;
+    RequestHandler* requestHandler = nullptr;
+    ServerConfig &config;
+    std::string debugBuffer;
 
 public:
     ClientConnection() = delete;

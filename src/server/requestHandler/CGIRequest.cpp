@@ -136,8 +136,6 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
     close(input_pipe[0]);
     close(output_pipe[1]);
 
-    cgiParser = std::make_unique<CgiParser>();
-
     cgiInputFd = input_pipe[1];
     // TODO: use poll for reading from file
 
@@ -161,7 +159,7 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
             return false;
 
 
-        request->body->read(3000);
+        request->body->read(30000);
 
         if (static_cast<size_t>(bytesWrittenToCgi) >= request->totalBodySize) {
             std::cout << "Finished writing to CGI process" << std::endl;
@@ -198,10 +196,10 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
         if (bytesRead >= 0) {
             buffer[bytesRead] = '\0';
         }
-        if ((cgiParser->parse(buffer, bytesRead)) || bytesRead == 0) {
+        if ((cgiParser.parse(buffer, bytesRead)) || bytesRead == 0) {
             close(fd);
             cleanupCgiProcess(pid);
-            const auto result = cgiParser->getResult();
+            const auto result = cgiParser.getResult();
             HttpResponse response(HttpResponse::StatusCode::OK);
             for (const auto &header: result.headers)
                 if (header.first == "Status") {
@@ -215,7 +213,7 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
             return true;
         }
 
-        if (cgiParser->hasError()) {
+        if (cgiParser.hasError()) {
             close(fd);
             cleanupCgiProcess(pid);
             Logger::log(LogLevel::ERROR, "CGI process error parsing error");
