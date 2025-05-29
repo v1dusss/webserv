@@ -17,7 +17,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-ssize_t CgiParser::tmpFileCount = 0;
 
 CgiParser::CgiParser()
     : state(CgiParseState::HEADERS) {

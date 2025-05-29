@@ -28,7 +28,6 @@ public:
     };
 
 private:
-    static ssize_t tmpFileCount;
     CgiParseState state;
     std::string buffer;
     CgiResult result;
