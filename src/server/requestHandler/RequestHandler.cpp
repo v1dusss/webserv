@@ -11,7 +11,7 @@
 #include <algorithm>
 #include <fstream>
 #include <regex>
-#include <signal.h>
+#include <csignal>
 #include <string>
 
 
@@ -24,7 +24,8 @@
 #include "webserv.h"
 #include "server/ClientConnection.h"
 
-RequestHandler::RequestHandler(ClientConnection *connection, const std::shared_ptr<HttpRequest> request,
+
+RequestHandler::RequestHandler(ClientConnection *connection, const std::shared_ptr<HttpRequest>& request,
                                ServerConfig &serverConfig): request(request), client(connection),
                                                             serverConfig(serverConfig) {
     char ipStr[INET_ADDRSTRLEN];
@@ -46,7 +47,7 @@ RequestHandler::~RequestHandler() {
     if (cgiOutputFd != -1) {
         FdHandler::removeFd(cgiOutputFd);
         close(cgiOutputFd);
-        cgiInputFd = -1;
+        cgiOutputFd = -1;
     }
     if (fileWriteFd != -1) {
         FdHandler::removeFd(fileWriteFd);

@@ -13,7 +13,7 @@
 
 class ClientConnection;
 
-enum class  MultipartParseStateEnum {
+enum class MultipartParseStateEnum {
     LOOKING_FOR_BOUNDARY,
     READING_HEADERS,
     READING_FILE_CONTENT
@@ -49,10 +49,10 @@ private:
     int cgiInputFd = -1;
     int cgiProcessId = -1;
     int fileWriteFd = -1;
-    std::unique_ptr<CgiParser> cgiParser;
+    CgiParser cgiParser;
 
 public:
-    RequestHandler(ClientConnection *connection, std::shared_ptr<HttpRequest>,
+    RequestHandler(ClientConnection *connection, const std::shared_ptr<HttpRequest> &request,
                    ServerConfig &serverConfig);
 
     ~RequestHandler();
