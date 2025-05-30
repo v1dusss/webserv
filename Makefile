@@ -17,6 +17,7 @@ VPATH = src \
 
 SRC = main.cpp \
 	Logger.cpp \
+	SessionManager.cpp \
 	Server.cpp \
 	ServerPool.cpp \
 	ClientConnection.cpp \

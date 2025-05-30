@@ -65,6 +65,11 @@ static HttpResponse handleAutoIndex(const std::string &path) {
 }
 
 HttpResponse RequestHandler::handleGet() const {
+    // if client asked for ?autoindex, always return a real directory listing
+    if (!isFile && request.getQueryString() == "autoindex") {
+        Logger::log(LogLevel::DEBUG, "Forced autoindex for " + routePath);
+        return handleAutoIndex(routePath);
+    }
     if (!isFile) {
         Logger::log(LogLevel::DEBUG, "Route is a directory");
         if (hasValidIndexFile) {

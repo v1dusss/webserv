@@ -2,7 +2,5 @@ obj
 .idea
 *.o
 webserv
-/www
-config.yaml
 .vscode
 .DS_Store

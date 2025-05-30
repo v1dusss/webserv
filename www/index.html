@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Webserv</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style type="text/tailwindcss">
+  @layer components {
+    .btn-home {
+      @apply w-48 px-6 py-3
+             bg-indigo-600 text-white rounded-lg shadow
+             hover:bg-indigo-500
+             focus:outline-none focus:ring-2 focus:ring-indigo-400;
+    }
+  }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-gray-50">
+  <main class="flex-grow container mx-auto px-16 py-16 flex flex-col items-center justify-center">
+    <h2 class="text-4xl font-extrabold text-gray-900 mb-2">Welcome to our Webserv!</h2>
+
+    <p class="text-lg text-gray-600 mb-16 text-center">
+      Created by <span class="font-semibold text-indigo-600">eebert, vsivanat, and dilin</span>.
+    </p>
+
+    <div class="flex flex-col gap-4 items-center">
+      <button
+        onclick="location.href='/list'" class="btn-home"
+      >
+        Show File Listing
+      </button>
+
+      <button
+        onclick="location.href='/upload'" class="btn-home"
+      >
+        Show Gallery
+      </button>
+
+      <button
+        onclick="location.href='/cgi/test.py'" class="btn-home"
+      >
+        Run CGI Demo
+      </button>
+    </div>
+  </main>
+</body>
+</html>

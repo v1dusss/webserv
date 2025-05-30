@@ -31,6 +31,7 @@ typedef enum {
     OPTIONS
 } HttpMethod;
 
+// TODO: regex is not allowed. subject says: "routes wont be using regexp"
 enum class LocationType {
     EXACT,
     PREFIX,

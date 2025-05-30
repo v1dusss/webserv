@@ -68,6 +68,8 @@ public:
 
     static std::string getFileExtension(const std::string &path);
 
+    static std::string urlDecode(const std::string& in);
+
 private:
     void findRoute();
 
@@ -90,7 +92,7 @@ private:
 
     [[nodiscard]] std::optional<HttpResponse> handlePostTestFile();
 
-    HttpResponse handlePut();
+    HttpResponse handlePut() const;
 
     [[nodiscard]] HttpResponse handleDelete() const;
 
