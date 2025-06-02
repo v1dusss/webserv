@@ -11,11 +11,11 @@
   
     error_page 404 www/error.html;
     
-    body_buffer_size 10000;
-    client_max_body_size 10000000000;
-  
-   
-    
+    body_buffer_size 250KB;
+    client_max_body_size 200KB;
+    client_max_header_size 10KB;
+    send_body_buffer_size 250KB;
+
     location / {
     index www/index.html;
 

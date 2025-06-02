@@ -41,7 +41,7 @@ size_t ConfigBlock::getSizeValue(const std::string &key, size_t defaultValue) co
     };
 
     if (values.empty()) return defaultValue;
-    if (key == "client_max_body_size" || key == "client_max_header_size" || key == "body_buffer_size") {
+    if (key == "client_max_body_size" || key == "client_max_header_size" || key == "body_buffer_size" || key == "send_body_buffer_size") {
         std::string str = values[0];
         std::transform(str.begin(), str.end(), str.begin(), ::tolower);
 
