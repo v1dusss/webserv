@@ -25,6 +25,13 @@
   </main>
 
   <script>
+    function formatFileSize(bytes) {
+      if (bytes === 0) return "0 Bytes";
+      const units = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(1024));
+      return `${parseFloat((bytes / Math.pow(1024, i)).toFixed(2))} ${units[i]}`;
+    }
+
     fetch("/cgi/list.py")
       .then(async res => {
         const data = await res.json();
@@ -37,7 +44,7 @@
         const table = document.getElementById("file-table");
         table.innerHTML = "";
         data.forEach(entry => {
-          const size = entry.type === "file" ? (entry.size / 1024).toFixed(1) + " KB" : "-";
+          const size = entry.type === "file" ? formatFileSize(entry.size) : "-";
           table.innerHTML += `
             <tr>
               <td class="px-6 py-4"><a href="/list/${entry.name}" class="text-indigo-600 hover:underline">${entry.name}</a></td>
