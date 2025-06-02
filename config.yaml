@@ -1,7 +1,7 @@
 server {
     listen                 8080;
     server_name            example.com;
-    client_max_body_size   52428800;    # 50 MB * 1024 * 1024
+    client_max_body_size   50MB;
     client_max_header_size 10000;
     keepalive_timeout      10;
     client_header_timeout  5;
@@ -18,7 +18,8 @@ server {
 
     # Directory listing
     location /list {
-        root ./;
+        root ./www/list;
+        index index.html;
         autoindex on;
     }
 
@@ -32,7 +33,7 @@ server {
     # CGI scripts
     location /cgi {
         allowed_methods POST GET PUT DELETE;
-        root ./www;
+        root ./www/cgi;
         index index.html test.py;
         cgi .py /usr/bin/python3;
     }
