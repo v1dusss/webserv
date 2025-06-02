@@ -136,6 +136,10 @@ bool HttpParser::parseHeaders() {
             if (!contentLengthStr.empty()) {
                 try {
                     contentLength = std::stoi(contentLengthStr);
+                    if (contentLength < 0) {
+                        state = ParseState::ERROR;
+                        return false;
+                    }
                 } catch (...) {
                     state = ParseState::ERROR;
                     return false;

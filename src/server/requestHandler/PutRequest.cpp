@@ -2,9 +2,10 @@
 #include <fstream>
 #include <filesystem>
 #include <sstream>
-
+// TODO: refactor to smart buffer
 HttpResponse RequestHandler::handlePut() const {
     // raw filename from URI
+    /*
     std::string raw = request.uri.substr(request.uri.find_last_of('/') + 1);
     std::string name = urlDecode(raw);
 
@@ -23,5 +24,6 @@ HttpResponse RequestHandler::handlePut() const {
         return HttpResponse(500);  // write error
     }
 
+*/
     return HttpResponse(201);  // Created
 }
