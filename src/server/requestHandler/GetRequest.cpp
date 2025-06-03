@@ -29,34 +29,83 @@ static HttpResponse handleServeFile(const std::string &path) {
     return response;
 }
 
-// TODO: maybe we have to use poll here I don't know
 static HttpResponse handleAutoIndex(const std::string &path) {
     Logger::log(LogLevel::DEBUG, "Auto indexing path: " + path);
-    DIR *dir = opendir(path.c_str());
-    if (!dir)
-        return HttpResponse::html(HttpResponse::NOT_FOUND);
 
     if (access(path.c_str(), R_OK) == -1)
         return HttpResponse::html(HttpResponse::StatusCode::FORBIDDEN);
 
-    std::vector<std::string> entries;
-    dirent *entry;
+    DIR *dir = opendir(path.c_str());
+    if (!dir)
+        return HttpResponse::html(HttpResponse::StatusCode::NOT_FOUND);
+
+    typedef std::pair<std::string, struct stat> Entry;
+    std::vector<Entry> entries;
+    struct dirent *entry;
+
     while ((entry = readdir(dir)) != nullptr) {
         std::string name = entry->d_name;
         if (name == ".") continue;
-        entries.push_back(name + (entry->d_type == DT_DIR ? "/" : ""));
+
+        std::string fullPath = path + "/" + name;
+        struct stat fileStat;
+        if (stat(fullPath.c_str(), &fileStat) == -1)
+            continue;
+
+        if (S_ISDIR(fileStat.st_mode))
+            name += "/";
+
+        entries.push_back(std::make_pair(name, fileStat));
     }
     closedir(dir);
 
-    std::sort(entries.begin(), entries.end());
+    std::sort(entries.begin(), entries.end(), [](const Entry &a, const Entry &b) {
+        return a.first < b.first;
+    });
 
     std::ostringstream html;
-    html << "<html><head><title>Index of " << path << "</title></head><body>";
-    html << "<h1>Index of " << path << "</h1><ul>";
-    for (const auto &name: entries) {
-        html << "<li><a href=\"" << name << "\">" << name << "</a></li>";
+    html << "<!DOCTYPE html>\n";
+    html << "<html lang=\"en\">\n<head>\n";
+    html << "  <meta charset=\"UTF-8\">\n";
+    html << "  <title>Index of " << path << "</title>\n";
+    html << "  <style>\n";
+    html << "    body { font-family: sans-serif; padding: 20px; background: #f9f9f9; }\n";
+    html << "    h1 { border-bottom: 1px solid #ccc; }\n";
+    html << "    table { width: 100%; border-collapse: collapse; margin-top: 1em; }\n";
+    html << "    th, td { padding: 8px; border-bottom: 1px solid #ddd; text-align: left; }\n";
+    html << "    th { background-color:rgba(0, 0, 0, 0.4); }\n";
+    html << "    tr:nth-child(odd) { background-color:rgba(0, 0, 0, 0.05); }\n";
+    html << "    a { text-decoration: none; color: #0366d6; }\n";
+    html << "    a:hover { text-decoration: underline; }\n";
+    html << "  </style>\n";
+    html << "</head>\n<body>\n";
+    html << "<h1>Index of " << path << "</h1>\n";
+    html << "<table>\n";
+    html << "  <tr><th>Name</th><th>Size</th><th>Last Modified</th></tr>\n";
+
+    for (std::vector<Entry>::const_iterator it = entries.begin(); it != entries.end(); ++it) {
+        const std::string &name = it->first;
+        const struct stat &info = it->second;
+
+        std::ostringstream sizeStr;
+        if (S_ISDIR(info.st_mode))
+            sizeStr << "-";
+        else
+            sizeStr << info.st_size << " Bytes";
+
+        char timebuf[64];
+        std::tm *mtime = std::localtime(&info.st_mtime);
+        std::strftime(timebuf, sizeof(timebuf), "%Y-%m-%d %H:%M", mtime);
+
+        html << "  <tr>";
+        html << "<td><a href=\"" << name << "\">" << name << "</a></td>";
+        html << "<td>" << sizeStr.str() << "</td>";
+        html << "<td>" << timebuf << "</td>";
+        html << "</tr>\n";
     }
-    html << "</ul></body></html>";
+
+    html << "</table>\n";
+    html << "</body>\n</html>";
 
     HttpResponse response(HttpResponse::StatusCode::OK);
     response.setHeader("Content-Type", "text/html");
