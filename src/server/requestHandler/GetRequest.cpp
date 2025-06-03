@@ -10,6 +10,9 @@
 #include <unistd.h>
 #include <common/Logger.h>
 #include <sys/fcntl.h>
+#include <ctime>
+#include <iomanip>
+#include <string>
 
 static HttpResponse handleServeFile(const std::string &path) {
     struct stat fileStat{};
@@ -27,6 +30,42 @@ static HttpResponse handleServeFile(const std::string &path) {
     response.enableChunkedEncoding(std::make_shared<SmartBuffer>(fd));
     response.setHeader("Content-Type", RequestHandler::getMimeType(path));
     return response;
+}
+
+static std::string formatSize(off_t sizeInBytes) {
+    const char* units[] = { "Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" };
+    const int maxUnitIndex = sizeof(units) / sizeof(units[0]) - 1;
+
+    if (sizeInBytes < 0) {
+        return "Invalid size";
+    } else if (sizeInBytes == 0) {
+        return "0 Bytes";
+    }
+
+    double size = static_cast<double>(sizeInBytes);
+    int unitIndex = 0;
+
+    while (size >= 1024.0 && unitIndex < maxUnitIndex) {
+        size /= 1024.0;
+        ++unitIndex;
+    }
+
+std::ostringstream stream;
+    stream << std::fixed << std::setprecision(2);
+    stream << size;
+
+    std::string sizeStr = stream.str();
+
+    // Trim trailing ".00" or ".0"
+    if (sizeStr.find('.') != std::string::npos) {
+        // Remove ".00" or ".0" at the end
+        sizeStr.erase(sizeStr.find_last_not_of('0') + 1);
+        if (sizeStr.back() == '.') {
+            sizeStr.pop_back();
+        }
+    }
+
+    return sizeStr + " " + units[unitIndex];
 }
 
 static HttpResponse handleAutoIndex(const std::string &path) {
@@ -91,7 +130,7 @@ static HttpResponse handleAutoIndex(const std::string &path) {
         if (S_ISDIR(info.st_mode))
             sizeStr << "-";
         else
-            sizeStr << info.st_size << " Bytes";
+            sizeStr << formatSize(info.st_size);
 
         char timebuf[64];
         std::tm *mtime = std::localtime(&info.st_mtime);
@@ -114,14 +153,6 @@ static HttpResponse handleAutoIndex(const std::string &path) {
 }
 
 HttpResponse RequestHandler::handleGet() const {
-    // if client asked for ?autoindex, always return a real directory listing
-    // TODO: I don't really understand why we need this
-    /*
-    if (!isFile && request.getQueryString() == "autoindex") {
-        Logger::log(LogLevel::DEBUG, "Forced autoindex for " + routePath);
-        return handleAutoIndex(routePath);
-    }
-    */
     if (!isFile) {
         Logger::log(LogLevel::DEBUG, "Route is a directory");
         if (hasValidIndexFile) {
