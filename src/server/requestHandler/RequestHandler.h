@@ -49,6 +49,7 @@ private:
     int cgiInputFd = -1;
     int cgiProcessId = -1;
     int fileWriteFd = -1;
+    ssize_t postRequestCallbackId = -1;
     CgiParser cgiParser;
 
 public:
@@ -68,7 +69,7 @@ public:
 
     static std::string getFileExtension(const std::string &path);
 
-    static std::string urlDecode(const std::string& in);
+    static std::string urlDecode(const std::string &in);
 
 private:
     void findRoute();

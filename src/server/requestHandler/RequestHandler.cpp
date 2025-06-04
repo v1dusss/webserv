@@ -17,6 +17,7 @@
 
 #include <sys/types.h>
 #include <arpa/inet.h>
+#include <server/CallbackHandler.h>
 #include <server/FdHandler.h>
 #include <sys/poll.h>
 
@@ -56,6 +57,10 @@ RequestHandler::~RequestHandler() {
     }
     if (cgiProcessId != -1) {
         kill(cgiProcessId, SIGINT);
+    }
+    if (postRequestCallbackId != -1) {
+        CallbackHandler::unregisterCallback(postRequestCallbackId);
+        postRequestCallbackId = -1;
     }
 }
 

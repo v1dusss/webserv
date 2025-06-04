@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <sys/poll.h>
 #include <fcntl.h>
+#include <server/CallbackHandler.h>
 
 std::optional<HttpResponse> RequestHandler::handlePost() {
     if (!std::filesystem::exists(routePath)) {
@@ -100,9 +101,7 @@ std::optional<HttpResponse> RequestHandler::handlePostMultipart(const std::strin
 
     state->parseBuffer = "";
 
-    FdHandler::addFd(request->body->getFd(), POLLIN, [this, state](const int fd, const short events) {
-        (void) events;
-            (void) fd;
+    this->postRequestCallbackId = CallbackHandler::registerCallback([this, state]() {
         request->body->read(8192);
         std::string chunk = request->body->getReadBuffer();
 
@@ -136,6 +135,7 @@ std::optional<HttpResponse> RequestHandler::handlePostMultipart(const std::strin
     return std::nullopt;
 }
 
+// TODO: use fdcallback for writing to file
 void RequestHandler::processMultipartBuffer(MultipartParseState *state) {
     while (!state->parseBuffer.empty()) {
         switch (state->currentState) {

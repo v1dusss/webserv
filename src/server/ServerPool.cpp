@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <parser/config/ConfigParser.h>
 
+#include "CallbackHandler.h"
 #include "FdHandler.h"
 
 ServerPool::ServerPool() : running(false) {
@@ -75,6 +76,7 @@ void ServerPool::serverLoop() {
         for (const auto &shared_ptr: servers)
             shared_ptr->closeConnections();
         FdHandler::pollFds();
+        CallbackHandler::executeCallbacks();
     }
     cleanUp();
 }

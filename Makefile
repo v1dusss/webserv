@@ -34,7 +34,8 @@ SRC = main.cpp \
 	ConfigBlock.cpp \
 	FdHandler.cpp \
 	CgiParser.cpp \
-	SmartBuffer.cpp
+	SmartBuffer.cpp \
+	CallbackHandler.cpp
 
 OBJ_DIR = obj
 INCLUDE_DIR = src
