@@ -178,7 +178,6 @@ std::optional<HttpResponse> RequestHandler::handleRequest() {
 
     validateTargetPath();
 
-
     if (isCgiRequest()) {
         Logger::log(LogLevel::DEBUG, "request is a CGI request");
 

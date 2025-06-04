@@ -55,8 +55,8 @@ void ClientConnection::handleInput() {
     const ssize_t bytesRead = read(fd, buffer, 40000);
     if (bytesRead < 0) {
         Logger::log(LogLevel::ERROR, "Failed to read from client fd: " + std::to_string(fd));
-        // log errno
         Logger::log(LogLevel::ERROR, strerror(errno));
+
         Logger::log(LogLevel::ERROR, "should close client fd: " + std::to_string(shouldClose));
 
         return;

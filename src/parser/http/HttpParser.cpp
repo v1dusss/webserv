@@ -135,11 +135,13 @@ bool HttpParser::parseHeaders() {
             std::string contentLengthStr = request->getHeader("Content-Length");
             if (!contentLengthStr.empty()) {
                 try {
-                    contentLength = std::stoi(contentLengthStr);
-                    if (contentLength < 0) {
+                    if (!contentLengthStr.empty() && contentLengthStr[0] == '-') {
+                        Logger::log(LogLevel::ERROR, "Content-Length cannot be negative");
                         state = ParseState::ERROR;
                         return false;
                     }
+                    contentLength = std::stoi(contentLengthStr);
+
                 } catch (...) {
                     state = ParseState::ERROR;
                     return false;

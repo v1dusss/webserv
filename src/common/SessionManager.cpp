@@ -3,6 +3,12 @@
 #include <sstream>
 #include <iomanip>
 #include <cstring>
+#include <algorithm>
+#include <mutex>
+#include <unordered_map>
+#include <vector>
+#include <string>
+#include <iterator>
 
 std::unordered_map<std::string,std::vector<std::string>> SessionManager::sessions;
 std::mutex SessionManager::mutex_;
