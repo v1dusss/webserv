@@ -1,7 +1,7 @@
 server {
     listen                 8080;
     server_name            example.com;
-    client_max_body_size   50MB;
+    client_max_body_size   52428800;
     client_max_header_size 10000;
     keepalive_timeout      10;
     client_header_timeout  5;
