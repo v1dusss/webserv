@@ -8,10 +8,12 @@ import subprocess
 import re
 
 def get_cpu_load():
-    try:
-        return os.getloadavg()[0]
-    except:
-        return 0.0
+    out = subprocess.check_output(["top", "-l", "1"]).decode()
+    m = re.search(r"CPU usage: ([\d.]+)% user, ([\d.]+)% sys", out)
+    if m:
+        user, sys = map(float, m.groups())
+        return user + sys
+    return 0.0
 
 def get_memory():
     """
