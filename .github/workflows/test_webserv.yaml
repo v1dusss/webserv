@@ -1,6 +1,8 @@
 name: Test Webserv
 
 on: [ push, pull_request ]
+branches:
+  - tester
 
 jobs:
   build-and-test:
