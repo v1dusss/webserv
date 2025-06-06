@@ -89,7 +89,7 @@ private:
 
     [[nodiscard]] std::optional<HttpResponse> handlePostMultipart(const std::string &contentType);
 
-    void processMultipartBuffer(MultipartParseState *state);
+    void RequestHandler::processMultipartBuffer(std::shared_ptr<MultipartParseState> state);
 
     [[nodiscard]] std::optional<HttpResponse> handlePostTestFile();
 

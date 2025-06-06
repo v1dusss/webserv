@@ -12,8 +12,8 @@
    # error_page 404 www/error.html;
     
     body_buffer_size 250KB;
-    client_max_body_size 200KB;
-    client_max_header_size 10KB;
+    client_max_body_size 100MB;
+    client_max_header_size 2MB;
     send_body_buffer_size 250KB;
 
     location / {
