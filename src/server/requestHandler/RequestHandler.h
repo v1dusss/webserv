@@ -71,6 +71,8 @@ public:
 
     static std::string urlDecode(const std::string &in);
 
+    [[nodiscard]] std::optional<HttpResponse> handleMetrics() const;
+
 private:
     void findRoute();
 

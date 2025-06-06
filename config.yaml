@@ -30,6 +30,12 @@ server {
         allowed_methods  GET PUT DELETE;
     }
 
+    location /dashboard {
+      root ./www/dashboard;
+      index index.html;
+      autoindex off;
+    }
+
     # CGI scripts
     location /cgi {
         allowed_methods POST GET PUT DELETE;
