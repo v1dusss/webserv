@@ -11,6 +11,8 @@
 #include <cstring>
 #include <server/FdHandler.h>
 #include <unistd.h>
+#include <filesystem>
+
 #include "common/Logger.h"
 
 ServerPool serverPool;
@@ -26,17 +28,14 @@ static void setupSignalHandler() {
     sa.sa_flags = SA_RESTART;
     sigemptyset(&sa.sa_mask);
 
-    if (sigaction(SIGINT, &sa, nullptr) == -1) {
+        if (sigaction(SIGINT, &sa, nullptr) == -1) {
         Logger::log(LogLevel::ERROR, "Failed to set up signal handler");
         exit(1);
     }
 }
 
 static void createTempDir() {
-    if (mkdir(TEMP_DIR_NAME, 0777) == -1 && errno != EEXIST) {
-        Logger::log(LogLevel::ERROR, "Failed to create temporary directory: " + std::string(strerror(errno)));
-        exit(1);
-    }
+    std::filesystem::create_directory(TEMP_DIR_NAME);
 }
 
 int main(const int argc, char **argv) {
