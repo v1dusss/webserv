@@ -1,5 +1,5 @@
 CC = c++
-CFLAGS = -Wall -Wextra -Werror -std=c++17 -O0 -g -Iinclude #-fsanitize=address -fsanitize=undefined -pthread
+CFLAGS = -Wall -Wextra -Werror -std=c++17 -O0 -g #-fsanitize=address -fsanitize=undefined -pthread
 
 #sudo sysctl -w net.inet.tcp.msl=100
 
