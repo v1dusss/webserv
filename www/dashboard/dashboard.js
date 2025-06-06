@@ -32,7 +32,7 @@ const diskChart = makeChart(document.getElementById('diskChart').getContext('2d'
 
 async function fetchMetrics() {
   try {
-    const res  = await fetch('/dashboard/metrics');
+    const res  = await fetch('/cgi/metrics.py');
     const json = await res.json();
 
     // shift old, push new

@@ -25,18 +25,6 @@
 #include "webserv.h"
 #include "server/ClientConnection.h"
 
-// Dashboard
-#ifdef __linux__
-#  include <sys/sysinfo.h>
-#  include <sys/statvfs.h>
-#else
-#  include <unistd.h>
-#  include <sys/types.h>
-#  include <sys/sysctl.h>
-#  include <mach/mach.h>
-#  include <sys/mount.h>
-#endif
-
 
 
 RequestHandler::RequestHandler(ClientConnection *connection, const std::shared_ptr<HttpRequest>& request,
@@ -183,88 +171,7 @@ void RequestHandler::execute() {
     }
 }
 
-std::optional<HttpResponse> RequestHandler::handleMetrics() const {
-#ifdef __linux__
-    struct sysinfo si;
-    if (sysinfo(&si) != 0)
-        return HttpResponse::html(HttpResponse::INTERNAL_SERVER_ERROR, "sysinfo failed");
-    double load1    = si.loads[0]   / double(1 << SI_LOAD_SHIFT);
-    uint64_t totalRam = si.totalram * si.mem_unit;
-    uint64_t freeRam  = si.freeram  * si.mem_unit;
-    uint64_t usedRam  = totalRam - freeRam;
-    struct statvfs fs;
-    if (statvfs(serverConfig.root.c_str(), &fs) != 0)
-        return HttpResponse::html(HttpResponse::INTERNAL_SERVER_ERROR, "statvfs failed");
-    uint64_t totalDisk = fs.f_blocks * fs.f_frsize;
-    uint64_t freeDisk  = fs.f_bfree  * fs.f_frsize;
-    uint64_t usedDisk  = totalDisk - freeDisk;
-#else
-    // CPU load
-    double loads[1] = {0};
-    if (getloadavg(loads, 1) == -1)
-        return HttpResponse::html(HttpResponse::INTERNAL_SERVER_ERROR, "getloadavg failed");
-    double load1 = loads[0];
-
-    // Memory
-    uint64_t totalRam = 0, freeRam = 0, usedRam = 0;
-    size_t len = sizeof(totalRam);
-    if (sysctlbyname("hw.memsize", &totalRam, &len, NULL, 0) != 0)
-        return HttpResponse::html(HttpResponse::INTERNAL_SERVER_ERROR, "sysctl hw.memsize failed");
-
-    mach_port_t host = mach_host_self();
-    vm_size_t pageSize;
-    if (host_page_size(host, &pageSize) != KERN_SUCCESS)
-        return HttpResponse::html(HttpResponse::INTERNAL_SERVER_ERROR, "host_page_size failed");
-
-    vm_statistics64_data_t vmStat;
-    mach_msg_type_number_t count = HOST_VM_INFO64_COUNT;
-    if (host_statistics64(host, HOST_VM_INFO64,
-                         reinterpret_cast<host_info64_t>(&vmStat),
-                         &count) != KERN_SUCCESS)
-        return HttpResponse::html(HttpResponse::INTERNAL_SERVER_ERROR, "host_statistics failed");
-
-    freeRam = uint64_t(vmStat.free_count) * pageSize;
-    usedRam = totalRam - freeRam;
-
-    // Disk
-    struct statfs fs;
-    // try configured root, else fall back to '/' mount
-    if (statfs(serverConfig.root.c_str(), &fs) != 0) {
-        if (statfs("/", &fs) != 0) {
-            return HttpResponse::html(HttpResponse::INTERNAL_SERVER_ERROR, "statfs failed");
-        }
-    }
-    uint64_t totalDisk = uint64_t(fs.f_blocks) * fs.f_bsize;
-    uint64_t freeDisk  = uint64_t(fs.f_bfree)  * fs.f_bsize;
-    uint64_t usedDisk  = totalDisk - freeDisk;
-#endif
-
-    // build JSON response
-    std::ostringstream js;
-    js << "{"
-       << "\"cpu_load\":" << load1 << ","
-       << "\"memory\":{"
-          << "\"total\":" << totalRam << ","
-          << "\"used\":"  << usedRam  << "},"
-       << "\"disk\":{"
-          << "\"total\":" << totalDisk << ","
-          << "\"used\":"  << usedDisk  << "}"
-       << "}";
-    auto body = js.str();
-
-    HttpResponse resp(HttpResponse::OK);
-    resp.setHeader("Content-Type", "application/json");
-    resp.setHeader("Content-Length", std::to_string(body.size()));
-    resp.setBody(body);
-    return resp;
-}
-
 std::optional<HttpResponse> RequestHandler::handleRequest() {
-    auto path = request->getPath();
-    if (path == "/dashboard/metrics") {
-        return handleMetrics();
-    }
-
     if (!matchedRoute.has_value())
         return HttpResponse::html(HttpResponse::NOT_FOUND);
 
