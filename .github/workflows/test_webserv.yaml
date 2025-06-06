@@ -21,10 +21,10 @@ jobs:
           sleep 2
 
       - name: Make ubuntu_cgi_tester executable
-        run: chmod +x ./ubuntu_cgi_tester
+        run: chmod +x ./ubuntu_tester
 
       - name: Run ubuntu_cgi_tester
-        run: printf '\n\n\n\n\n' | ./ubuntu_cgi_tester http://localhost:8080 || exit $?
+        run: printf '\n\n\n\n\n' | ./ubuntu_tester http://localhost:8080 || exit $?
 
 
       - name: Check exit code
