@@ -34,7 +34,7 @@ server {
     location /cgi {
         allowed_methods POST GET PUT DELETE;
         root ./www/cgi;
-        index index.html test.py;
+        index index.html;
         cgi .py /usr/bin/python3;
     }
 }
