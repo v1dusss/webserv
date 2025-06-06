@@ -26,8 +26,9 @@ server {
     # Gallery
     location /upload {
         root             ./www/upload;
-        index            index.html;
+        index            index.html list.py;
         allowed_methods  GET PUT DELETE;
+        cgi             .py /usr/bin/python3;
     }
 
     location /dashboard {
