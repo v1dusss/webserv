@@ -91,6 +91,42 @@ std::vector<ServerConfig> ConfigParser::getServerConfigs() const {
     return servers;
 }
 
+void printconfig(ServerConfig config)
+{
+    std::cout << std::endl;
+    std::cout << "----------------------------------------" << std::endl;
+    std::cout << std::endl;
+    std::cout << MAGENTA BOLD << "ServerConfig:" << RESET << std::endl;
+    std::cout << "  Port: " << config.port << std::endl;
+    std::cout << "  Host: " << config.host << std::endl;
+    std::cout << "  Server Names: ";
+    for (const auto &name: config.server_names) {
+        std::cout << name << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "  Root: " << config.root << std::endl;
+    std::cout << "  Index: " << config.index << std::endl;
+    std::cout << "  Client Max Body Size: " << config.client_max_body_size << std::endl;
+    std::cout << "  Client Max Header Size: " << config.client_max_header_size << std::endl;
+    std::cout << "  Client Header Timeout: " << config.client_header_timeout << std::endl;
+    std::cout << "  Client Body Timeout: " << config.client_body_timeout << std::endl;
+    std::cout << "  Keepalive Timeout: " << config.keepalive_timeout << std::endl;
+    std::cout << "  Keepalive Requests: " << config.keepalive_requests << std::endl;
+    std::cout << "  Send Body Buffer Size: " << config.send_body_buffer_size << std::endl;
+    std::cout << "  Body Buffer Size: " << config.body_buffer_size << std::endl;
+    std::cout << "  Error Pages: " << std::endl;
+    for (const auto &errorPage: config.error_pages) {
+        std::cout << "\t" << errorPage.first << ": " << errorPage.second << std::endl;
+    }
+    std::cout << "  location: " << std::endl;
+    for (const auto &route: config.routes) {
+        std::cout << "\t" << route.location << ": " << route.root << std::endl;
+    }
+    std::cout << std::endl;
+    std::cout << "----------------------------------------" << std::endl;
+    std::cout << std::endl;
+}
+
 ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
     ServerConfig config;
 
@@ -136,6 +172,8 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
             config.routes.push_back(parseRouteBlock(child, config));
         }
     }
+
+    printconfig(config);
 
     return config;
 }
@@ -340,15 +378,16 @@ void ConfigParser::parseDirective(const std::string &line, ConfigBlock &block) {
         if (!validateListenValue(tokens[0])) {
             return;
         }
-    } else if ((key == "client_max_body_size" || key == "client_max_header_size") && !tokens.empty()) {
-        const std::regex sizeRegex("^\\d+[kmg]?$", std::regex::icase);
+    } else if ((key == "client_max_body_size" || key == "client_max_header_size" || 
+                key == "body_buffer_size"  || key == "send_body_buffer_size") && !tokens.empty()) {
+        const std::regex sizeRegex("^\\d+(\\.\\d+)?([kmgt]b?|[kmgt]i?bytes|bytes)?$", std::regex::icase);
         if (!std::regex_match(tokens[0], sizeRegex)) {
             reportError("Invalid value for " + key + ": " + tokens[0]);
             parseSuccessful = false;
             return;
         }
-    } else if ((key == "keepalive_timeout" || key == "keepalive_requests" || key == "client_header_timeout" || key ==
-                "client_body_timeout" || key == "send_body_buffer_size" || key == "body_buffer_size") && !tokens.
+    } else if ((key == "keepalive_timeout" || key == "keepalive_requests" || key == "client_header_timeout" ||
+                key == "client_body_timeout") && !tokens.
                empty()) {
         if (!validateDigitsOnly(tokens[0], key))
             return;
