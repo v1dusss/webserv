@@ -81,7 +81,6 @@ std::optional<HttpResponse> RequestHandler::handlePostTestFile() {
     return std::nullopt;
 }
 
-//TODO: handle the case in which the file body is saved in a file and not in memory
 std::optional<HttpResponse> RequestHandler::handlePostMultipart(const std::string &contentType) {
     std::smatch match;
     std::regex boundaryRegex("boundary\\s*=\\s*([^;]+)");
@@ -102,6 +101,7 @@ std::optional<HttpResponse> RequestHandler::handlePostMultipart(const std::strin
     state->parseBuffer = "";
 
     this->postRequestCallbackId = CallbackHandler::registerCallback([this, state]() {
+        // TODO: fix magic number 8192
         request->body->read(8192);
         std::string chunk = request->body->getReadBuffer();
 
@@ -135,7 +135,6 @@ std::optional<HttpResponse> RequestHandler::handlePostMultipart(const std::strin
     return std::nullopt;
 }
 
-// TODO: use fdcallback for writing to file
 void RequestHandler::processMultipartBuffer(MultipartParseState *state) {
     while (!state->parseBuffer.empty()) {
         switch (state->currentState) {
@@ -217,10 +216,20 @@ void RequestHandler::processMultipartBuffer(MultipartParseState *state) {
                 }
 
                 if (contentEnd > 0) {
-                    if (write(state->fileWriteFd, state->parseBuffer.data(), contentEnd) == -1) {
-                        Logger::log(LogLevel::ERROR, "Failed to write to file: " +
-                                                     std::to_string(state->fileWriteFd) + ": " + strerror(errno));
-                    }
+                    pollfd pfd{};
+                    pfd.fd = state->fileWriteFd;
+                    pfd.events = POLLOUT;
+                    pfd.revents = 0;
+
+                    poll(&pfd, 1, 0);
+                    if (pfd.revents & POLLOUT) {
+                        if (write(state->fileWriteFd, state->parseBuffer.data(), contentEnd) == -1) {
+                            Logger::log(LogLevel::ERROR, "Failed to write to file: " +
+                                                         std::to_string(state->fileWriteFd) + ": " + strerror(errno));
+                        }
+                    } else
+                        Logger::log(LogLevel::ERROR, "File descriptor not ready for writing: " +
+                                                     std::to_string(state->fileWriteFd));
                 }
 
                 close(state->fileWriteFd);
