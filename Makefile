@@ -28,6 +28,7 @@ SRC = main.cpp \
 	GetRequest.cpp \
 	DeleteRequest.cpp \
 	PutRequest.cpp \
+	AutoIndexing.cpp \
 	RequestHandlerUtils.cpp \
 	CGIRequest.cpp \
 	ConfigParser.cpp \

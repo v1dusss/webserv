@@ -83,8 +83,7 @@ private:
 
     [[nodiscard]] std::string getFilePath() const;
 
-
-    [[nodiscard]] HttpResponse handleGet() const;
+    [[nodiscard]] HttpResponse handleGet();
 
     [[nodiscard]] std::optional<HttpResponse> handlePost();
 
@@ -99,6 +98,8 @@ private:
     [[nodiscard]] HttpResponse handleDelete() const;
 
     [[nodiscard]] std::optional<HttpResponse> handleCgi();
+
+    HttpResponse handleAutoIndex(const std::string &path);
 
     bool writeRequestBodyToCgi(int pipe_fd, const std::string &body);
 
