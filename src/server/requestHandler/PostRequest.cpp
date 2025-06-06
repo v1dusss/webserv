@@ -120,7 +120,6 @@ std::optional<HttpResponse> RequestHandler::handlePostMultipart(const std::strin
                                                        " file(s) uploaded successfully"));
             }
 
-            delete state;
             return true;
         }
 
