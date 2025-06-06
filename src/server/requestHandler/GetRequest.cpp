@@ -15,8 +15,7 @@
 #include <string>
 
 static HttpResponse handleServeFile(const std::string &path) {
-    struct stat fileStat{};
-    if (stat(path.c_str(), &fileStat) != 0 || S_ISDIR(fileStat.st_mode))
+    if (!std::filesystem::exists(path) || std::filesystem::is_directory(path))
         return HttpResponse::html(HttpResponse::NOT_FOUND);
 
     if (access(path.c_str(), R_OK) != 0)
