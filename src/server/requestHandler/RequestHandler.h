@@ -39,6 +39,7 @@ private:
     std::string routePath;
     std::string cgiPath;
     bool isFile = false;
+    bool isDirectory = false;
     bool hasValidIndexFile = false;
     std::string indexFilePath;
 
