@@ -13,6 +13,7 @@
 #include <ctime>
 #include <iomanip>
 #include <string>
+#include <filesystem>
 
 static HttpResponse handleServeFile(const std::string &path) {
     if (!std::filesystem::exists(path) || std::filesystem::is_directory(path))

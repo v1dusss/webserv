@@ -1,6 +1,6 @@
 name: Test Webserv
 
-on: [push, pull_request]
+on: [ push, pull_request ]
 
 jobs:
   build-and-test:
@@ -21,7 +21,8 @@ jobs:
           sleep 2
 
       - name: Run ubuntu_cgi_tester
-        run: ./ubuntu_cgi_tester http://localhost:8080
+        run: printf '\n\n\n\n\n' | ./ubuntu_cgi_tester http://localhost:8080 || exit $?
+
 
       - name: Check exit code
         run: |
