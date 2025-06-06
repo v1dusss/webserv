@@ -26,7 +26,6 @@
 #include "server/ClientConnection.h"
 
 // Dashboard
-#include <nlohmann/json.hpp>
 #ifdef __linux__
 #  include <sys/sysinfo.h>
 #  include <sys/statvfs.h>
