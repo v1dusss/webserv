@@ -91,7 +91,7 @@ std::optional<HttpResponse> RequestHandler::handlePostMultipart(const std::strin
     std::string boundary = "--" + match[1].str();
     std::string endBoundary = boundary + "--";
 
-    auto *state = new MultipartParseState();
+    auto state = std::make_shared<MultipartParseState>();
     state->boundary = boundary;
     state->endBoundary = endBoundary;
     state->uploadedFiles = 0;
@@ -135,7 +135,7 @@ std::optional<HttpResponse> RequestHandler::handlePostMultipart(const std::strin
     return std::nullopt;
 }
 
-void RequestHandler::processMultipartBuffer(MultipartParseState *state) {
+void RequestHandler::processMultipartBuffer(std::shared_ptr<MultipartParseState> state) {
     while (!state->parseBuffer.empty()) {
         switch (state->currentState) {
             case MultipartParseStateEnum::LOOKING_FOR_BOUNDARY: {
