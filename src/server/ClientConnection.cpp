@@ -19,11 +19,20 @@
 #include <fcntl.h>
 
 
-ClientConnection::ClientConnection(const int clientFd, const sockaddr_in clientAddr, ServerConfig &config): config(
-    config) {
-    this->fd = clientFd;
-    this->clientAddr = clientAddr;
-    parser.setClientLimits(config.client_max_body_size, config.headerConfig.client_max_header_size, config.body_buffer_size);
+ClientConnection::ClientConnection(const int clientFd,
+                                   const sockaddr_in clientAddr,
+                                   const Server *connectedServer): fd(clientFd),
+                                                                    clientAddr(clientAddr), parser(this),
+                                                                    connectedServer(connectedServer) {
+    // TODO: change to http config part
+    parser.setClientLimits(100000, 1000, 100000);
+    config.client_body_timeout = 0;
+    config.keepalive_timeout = 0;
+    config.keepalive_requests = 0;
+    config.headerConfig.client_header_timeout = 2;
+    config.headerConfig.client_max_header_size = 8192;
+    config.headerConfig.client_max_header_count = 100;
+
     FdHandler::addFd(clientFd, POLLIN | POLLOUT, [this](const int fd, const short events) {
         (void) fd;
         if (shouldClose)
@@ -51,6 +60,7 @@ ClientConnection::~ClientConnection() {
 }
 
 void ClientConnection::handleInput() {
+    // TODO: fix magic number
     char buffer[40001];
     const ssize_t bytesRead = read(fd, buffer, 40000);
     if (bytesRead < 0) {

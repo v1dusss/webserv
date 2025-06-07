@@ -16,6 +16,8 @@
 #include "response/HttpResponse.h"
 #include <iostream>
 
+class Server;
+
 class ClientConnection {
 public:
     int fd = -1;
@@ -25,18 +27,18 @@ public:
     std::time_t lastPackageSend = 0;
     bool keepAlive = false;
     bool shouldClose = false;
-
+    const Server *connectedServer;
+    ServerConfig config;
 
 private:
     std::optional<HttpResponse> response = std::nullopt;
-    RequestHandler* requestHandler = nullptr;
-    ServerConfig &config;
+    RequestHandler *requestHandler = nullptr;
     std::string debugBuffer;
 
 public:
     ClientConnection() = delete;
 
-    ClientConnection(int clientFd, struct sockaddr_in clientAddr, ServerConfig &config);
+    ClientConnection(int clientFd, struct sockaddr_in clientAddr, const Server *connectedServer);
 
     ~ClientConnection();
 
