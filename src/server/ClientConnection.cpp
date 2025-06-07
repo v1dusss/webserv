@@ -23,7 +23,7 @@ ClientConnection::ClientConnection(const int clientFd, const sockaddr_in clientA
     config) {
     this->fd = clientFd;
     this->clientAddr = clientAddr;
-    parser.setClientLimits(config.client_max_body_size, config.client_max_header_size, config.body_buffer_size);
+    parser.setClientLimits(config.client_max_body_size, config.headerConfig.client_max_header_size, config.body_buffer_size);
     FdHandler::addFd(clientFd, POLLIN | POLLOUT, [this](const int fd, const short events) {
         (void) fd;
         if (shouldClose)

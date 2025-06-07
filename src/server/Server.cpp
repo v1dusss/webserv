@@ -104,7 +104,7 @@ void Server::closeConnections() {
         }
 
         if (client->parser.headerStart != 0 &&
-            currentTime - client->parser.headerStart > static_cast<long>(config.client_header_timeout)) {
+            currentTime - client->parser.headerStart > static_cast<long>(config.headerConfig.client_header_timeout)) {
             clientsToClose.push_back(fd);
             Logger::log(LogLevel::INFO, "Client connection header timed out");
             continue;

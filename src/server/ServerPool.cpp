@@ -16,7 +16,11 @@
 #include "CallbackHandler.h"
 #include "FdHandler.h"
 
-ServerPool::ServerPool() : running(false) {
+std::vector<std::shared_ptr<Server> > ServerPool::servers;
+std::atomic<bool> ServerPool::running{false};
+
+ServerPool::ServerPool() {
+    running = true;
 }
 
 ServerPool::~ServerPool() {

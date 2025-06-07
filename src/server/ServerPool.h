@@ -15,17 +15,14 @@
 
 class ServerPool {
 private:
-    std::vector<std::shared_ptr<Server> > servers;
-    std::atomic<bool> running;
+    static std::vector<std::shared_ptr<Server>> servers;
+    static std::atomic<bool> running;
 
 public:
     ServerPool();
 
     ~ServerPool();
 
-    void registerFdToServer(int fd, Server *server, short events);
-
-    void unregisterFdFromServer(int fd);
 
     bool loadConfig(const std::string &configFile);
 
