@@ -19,6 +19,8 @@ enum class ParseState {
     ERROR
 };
 
+class ClientConnection; // Forward declaration to avoid circular dependency
+
 class HttpParser {
 private:
     static ssize_t tmpFileCount;
@@ -30,6 +32,7 @@ private:
     size_t body_buffer_size;
     size_t client_max_body_size;
     size_t client_max_header_size;
+    ClientConnection* clientConnection;
 
     unsigned long chunkSize = 0;
     bool hasChunkSize = false;
@@ -38,7 +41,7 @@ public:
     std::time_t headerStart = 0;
     std::time_t bodyStart = 0;
 
-    HttpParser();
+    HttpParser(ClientConnection* clientConnection);
 
     ~HttpParser();
 
