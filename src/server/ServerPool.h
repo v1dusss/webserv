@@ -15,25 +15,29 @@
 
 class ServerPool {
 private:
-    static std::vector<std::shared_ptr<Server>> servers;
+    static std::vector<std::shared_ptr<Server> > servers;
     static std::atomic<bool> running;
+    static std::unordered_map<int, std::shared_ptr<ClientConnection> > clients;
+    static std::vector<ServerConfig> configs;
 
 public:
-    ServerPool();
+    static void registerClient(int clientFd, const sockaddr_in &clientAddr, const Server *connectedServer);
 
-    ~ServerPool();
+    static bool loadConfig(const std::string &configFile);
 
+    static void matchVirtualServer(ClientConnection *client, const std::string &hostHeader);
 
-    bool loadConfig(const std::string &configFile);
+    static void start();
 
-    void start();
-
-    void stop();
+    static void stop();
 
 private:
-    void serverLoop();
+    static void serverLoop();
 
-    void cleanUp();
+    static void cleanUp();
+
+    static void closeConnections();
+
 };
 
 

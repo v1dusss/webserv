@@ -18,13 +18,82 @@
 
 std::vector<std::shared_ptr<Server> > ServerPool::servers;
 std::atomic<bool> ServerPool::running{false};
+std::unordered_map<int, std::shared_ptr<ClientConnection> > ServerPool::clients;
+std::vector<ServerConfig> ServerPool::configs;
 
-ServerPool::ServerPool() {
-    running = true;
+void ServerPool::registerClient(int clientFd, const sockaddr_in &clientAddr, const Server *connectedServer) {
+    clients[clientFd] = std::make_shared<ClientConnection>(clientFd, clientAddr, connectedServer);
 }
 
-ServerPool::~ServerPool() {
-    stop();
+void ServerPool::matchVirtualServer(ClientConnection *client, const std::string &hostHeader) {
+    if (!client || !client->connectedServer) {
+        return;
+    }
+
+    std::string hostname = hostHeader;
+    size_t colonPos = hostname.find(':');
+    if (colonPos != std::string::npos) {
+        hostname = hostname.substr(0, colonPos);
+    }
+
+    const int port = client->connectedServer->getPort();
+    const std::string connectedHost = client->connectedServer->getHost();
+
+    ServerConfig *defaultServer = nullptr;
+    ServerConfig *wildcardPrefixMatch = nullptr;
+    ServerConfig *wildcardSuffixMatch = nullptr;
+    size_t longestPrefixMatch = 0;
+    size_t longestSuffixMatch = 0;
+
+    for (auto &serverConfig: configs) {
+        if (serverConfig.port != port ||
+            (connectedHost != "0.0.0.0" && serverConfig.host != connectedHost && serverConfig.host != "0.0.0.0")) {
+            continue;
+        }
+
+        if (!defaultServer)
+            defaultServer = &serverConfig;
+
+        for (const std::string &serverName: serverConfig.server_names) {
+            if (serverName == hostname) {
+                client->config = serverConfig;
+                return;
+            }
+
+            if (serverName.size() > 2 && serverName[0] == '*' && serverName[1] == '.') {
+                std::string suffix = serverName.substr(1);
+                if (hostname.size() >= suffix.size() &&
+                    hostname.compare(hostname.size() - suffix.size(), suffix.size(), suffix) == 0) {
+                    if (suffix.size() > longestPrefixMatch) {
+                        longestPrefixMatch = suffix.size();
+                        wildcardPrefixMatch = &serverConfig;
+                    }
+                }
+            }
+
+            if (serverName.size() > 2 && serverName.back() == '*' && serverName[serverName.size() - 2] == '.') {
+                std::string prefix = serverName.substr(0, serverName.size() - 1);
+                if (hostname.size() >= prefix.size() &&
+                    hostname.compare(0, prefix.size(), prefix) == 0) {
+                    if (prefix.size() > longestSuffixMatch) {
+                        longestSuffixMatch = prefix.size();
+                        wildcardSuffixMatch = &serverConfig;
+                    }
+                }
+            }
+        }
+    }
+
+    if (wildcardPrefixMatch) {
+        client->config = *wildcardPrefixMatch;
+        std::cout << "Matched wildcard prefix: " << wildcardPrefixMatch->host << std::endl;
+    } else if (wildcardSuffixMatch) {
+        client->config = *wildcardSuffixMatch;
+        std::cout << "Matched wildcard suffix: " << wildcardSuffixMatch->host << std::endl;
+    } else if (defaultServer) {
+        client->config = *defaultServer;
+        std::cout << "Using default server: " << defaultServer->host << std::endl;
+    }
 }
 
 bool ServerPool::loadConfig(const std::string &configFile) {
@@ -37,14 +106,16 @@ bool ServerPool::loadConfig(const std::string &configFile) {
         return false;
     }
 
-    const std::vector<ServerConfig> serverConfigs = parser.getServerConfigs();
+    configs = parser.getServerConfigs();
 
-    for (const auto &server_config: serverConfigs) {
-        auto server = std::make_shared<Server>(server_config);
+    for (const auto &serverConfig: configs) {
+        auto server = std::make_shared<Server>(serverConfig.port, serverConfig.host, serverConfig);
         if (!server->createSocket()) {
             continue;
         }
 
+        Logger::log(LogLevel::DEBUG, "Socket created on port: " + std::to_string(serverConfig.port) +
+                                     " with host: " + serverConfig.host);
         servers.emplace_back(server);
     }
     return true;
@@ -77,15 +148,56 @@ void ServerPool::stop() {
 
 void ServerPool::serverLoop() {
     while (running.load()) {
-        for (const auto &shared_ptr: servers)
-            shared_ptr->closeConnections();
+        closeConnections();
         FdHandler::pollFds();
         CallbackHandler::executeCallbacks();
     }
     cleanUp();
 }
 
+void ServerPool::closeConnections() {
+    const time_t currentTime = std::time(nullptr);
+    std::vector<int> clientsToClose;
+    for (auto &[fd, client]: clients) {
+        if ((client->shouldClose) || client->requestCount > client->config.
+            keepalive_requests) {
+            clientsToClose.push_back(fd);
+            continue;
+        }
+
+        if (client->keepAlive && !client->hasPendingResponse() && client->lastPackageSend != 0 &&
+            currentTime - client->lastPackageSend > static_cast<long>(client->config.keepalive_timeout)) {
+            clientsToClose.push_back(fd);
+            Logger::log(LogLevel::INFO, "Client connection timed out");
+            continue;
+        }
+
+        if (client->parser.headerStart != 0 &&
+            currentTime - client->parser.headerStart > static_cast<long>(client->config.headerConfig.
+                client_header_timeout)) {
+            clientsToClose.push_back(fd);
+            Logger::log(LogLevel::INFO, "Client connection header timed out");
+            continue;
+        }
+
+        if (client->parser.getState() == ParseState::BODY && client->parser.bodyStart != 0 &&
+            currentTime - client->parser.bodyStart > static_cast<long>(client->config.client_body_timeout)) {
+            clientsToClose.push_back(fd);
+            Logger::log(LogLevel::INFO, "Client connection body timed out");
+        }
+    }
+
+    for (int fd: clientsToClose) {
+        if (clients.find(fd) != clients.end()) {
+            Logger::log(LogLevel::INFO, "Closed client connection");
+            clients.erase(fd);
+        }
+    }
+}
+
 void ServerPool::cleanUp() {
+    clients.clear();
+    configs.clear();
     servers.clear();
     Logger::log(LogLevel::INFO, "Server pool cleaned up.");
 }
