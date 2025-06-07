@@ -1,5 +1,5 @@
 server {
-    listen                 8080;
+    listen                 0.0.0.0:8080;
     server_name            example.com;
     client_max_body_size   200MB;
     client_max_header_size 10000;
@@ -36,5 +36,16 @@ server {
         root ./www/cgi;
         index index.html;
         cgi .py /usr/bin/python3;
+    }
+}
+
+server {
+    listen                 0.0.0.0:8080;
+    server_name            test.localhost;
+    
+    location /test {
+        root ./www;
+        index index.html;
+        autoindex off;
     }
 }
