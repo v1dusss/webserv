@@ -19,7 +19,6 @@ public:
     std::string version;
     std::unordered_map<std::string, std::string> headers;
     std::shared_ptr<SmartBuffer> body;
-    size_t totalHeaderSize = 0;
     size_t totalBodySize = 0;
 
     HttpRequest() : method(GET) {

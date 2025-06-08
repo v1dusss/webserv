@@ -40,7 +40,6 @@ std::optional<HttpResponse> RequestHandler::handlePost() {
 }
 
 std::optional<HttpResponse> RequestHandler::handlePostTestFile() {
-    // TODO: create a config for the maximum size of the request body for uploads
     if (request->totalBodySize > 100)
         return HttpResponse::html(HttpResponse::StatusCode::CONTENT_TOO_LARGE);
     const std::string filename = "test_file_" + std::to_string(std::time(nullptr)) + ".txt";

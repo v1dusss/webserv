@@ -1,6 +1,19 @@
-server {
-    listen                 8080;
-    server_name            example.com;
+  server {
+    listen        127.0.0.1:8080;
+    server_name   localhost;
+    
+    client_max_body_size   10;
+    
+    location /test {
+    root ./www;
+    index index.html;
+    autoindex off;
+  }
+  }
+    
+    server {
+    listen                 0.0.0.0:8080;
+    server_name            test.localhost;
     client_max_body_size   200MB;
     client_max_header_size 10000;
     keepalive_timeout      10;
@@ -8,33 +21,34 @@ server {
     client_body_timeout    5;
     keepalive_requests     4;
     error_page 404         /404.html;
-
+    
     # Home page
     location / {
-        root ./www;
-        index index.html;
-        autoindex off;
+    root ./www;
+    index index.html;
+    autoindex off;
     }
-
+    
     # Directory listing
     location /list {
-        root ./www/list;
-        index index.html;
-        autoindex on;
+    root ./www/list;
+    index index.html;
+    autoindex on;
     }
-
+    
     # Gallery
     location /upload {
-        root             ./www/upload;
-        index            index.html;
-        allowed_methods  GET POST PUT DELETE;
+    root             ./www/upload;
+    index            index.html;
+    allowed_methods  GET POST PUT DELETE;
     }
-
+    
     # CGI scripts
     location /cgi {
-        allowed_methods POST GET PUT DELETE;
-        root ./www/cgi;
-        index index.html;
-        cgi .py /usr/bin/python3;
+    allowed_methods POST GET PUT DELETE;
+    root ./www/cgi;
+    index index.html;
+    cgi .py /usr/bin/python3;
     }
-}
+  }
+

@@ -15,10 +15,9 @@
 
 #include "common/Logger.h"
 
-ServerPool serverPool;
 
 static void signalHandler(const int signum) {
-    serverPool.stop();
+    ServerPool::stop();
     (void) signum;
 }
 
@@ -28,7 +27,7 @@ static void setupSignalHandler() {
     sa.sa_flags = SA_RESTART;
     sigemptyset(&sa.sa_mask);
 
-        if (sigaction(SIGINT, &sa, nullptr) == -1) {
+    if (sigaction(SIGINT, &sa, nullptr) == -1) {
         Logger::log(LogLevel::ERROR, "Failed to set up signal handler");
         exit(1);
     }
@@ -37,6 +36,7 @@ static void setupSignalHandler() {
 static void createTempDir() {
     std::filesystem::create_directory(TEMP_DIR_NAME);
 }
+
 
 int main(const int argc, char **argv) {
     if (argc < 2) {
@@ -47,14 +47,13 @@ int main(const int argc, char **argv) {
 
     //::signal(SIGPIPE, SIG_IGN);
 
-
     std::cout << "start pid: " << getpid() << std::endl;
 
     createTempDir();
-    if (!serverPool.loadConfig(argv[1]))
+    if (!ServerPool::loadConfig(argv[1]))
         return 1;
 
     setupSignalHandler();
-    serverPool.start();
+    ServerPool::start();
     return 0;
 }

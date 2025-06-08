@@ -10,7 +10,7 @@ ConfigParser::ConfigParser() : rootBlock{"root", {}, {}}, currentLine(0), curren
     serverDirectives = {
         "listen", "server_name", "root", "index", "client_max_body_size",
         "client_body_timeout", "body_buffer_size", "send_body_buffer_size", "client_header_timeout",
-        "client_max_header_size",
+        "client_max_header_size", "client_max_header_count",
         "keepalive_timeout",
         "keepalive_requests", "error_page"
     };
@@ -91,8 +91,7 @@ std::vector<ServerConfig> ConfigParser::getServerConfigs() const {
     return servers;
 }
 
-void printconfig(ServerConfig config)
-{
+void printconfig(ServerConfig config) {
     std::cout << std::endl;
     std::cout << "----------------------------------------" << std::endl;
     std::cout << std::endl;
@@ -107,8 +106,8 @@ void printconfig(ServerConfig config)
     std::cout << "  Root: " << config.root << std::endl;
     std::cout << "  Index: " << config.index << std::endl;
     std::cout << "  Client Max Body Size: " << config.client_max_body_size << std::endl;
-    std::cout << "  Client Max Header Size: " << config.client_max_header_size << std::endl;
-    std::cout << "  Client Header Timeout: " << config.client_header_timeout << std::endl;
+    std::cout << "  Client Max Header Size: " << config.headerConfig.client_max_header_size << std::endl;
+    std::cout << "  Client Header Timeout: " << config.headerConfig.client_header_timeout << std::endl;
     std::cout << "  Client Body Timeout: " << config.client_body_timeout << std::endl;
     std::cout << "  Keepalive Timeout: " << config.keepalive_timeout << std::endl;
     std::cout << "  Keepalive Requests: " << config.keepalive_requests << std::endl;
@@ -132,12 +131,6 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
 
     config.port = 80;
     config.host = "0.0.0.0";
-    config.client_header_timeout = 60;
-    config.client_body_timeout = 60;
-    config.client_max_body_size = 1 * 1024 * 1024;
-    config.client_max_header_size = 8192;
-    config.keepalive_timeout = 65;
-    config.keepalive_requests = 100;
 
     auto listen = block.getDirective("listen");
     if (!listen.empty()) {
@@ -156,8 +149,9 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
     config.root = block.getStringValue("root", "/var/www/html");
     config.index = block.getStringValue("index", "index.html");
     config.client_max_body_size = block.getSizeValue("client_max_body_size", 1 * 1024 * 1024);
-    config.client_max_header_size = block.getSizeValue("client_max_header_size", 8192);
-    config.client_header_timeout = block.getSizeValue("client_header_timeout", 60);
+    config.headerConfig.client_max_header_size = block.getSizeValue("client_max_header_size", 8192);
+    config.headerConfig.client_header_timeout = block.getSizeValue("client_header_timeout", 60);
+    config.headerConfig.client_max_header_count = block.getSizeValue("client_max_header_count", 10);
     config.client_body_timeout = block.getSizeValue("client_body_timeout", 60);
     config.keepalive_timeout = block.getSizeValue("keepalive_timeout", 65);
     config.keepalive_requests = block.getSizeValue("keepalive_requests", 100);
@@ -378,8 +372,8 @@ void ConfigParser::parseDirective(const std::string &line, ConfigBlock &block) {
         if (!validateListenValue(tokens[0])) {
             return;
         }
-    } else if ((key == "client_max_body_size" || key == "client_max_header_size" || 
-                key == "body_buffer_size"  || key == "send_body_buffer_size") && !tokens.empty()) {
+    } else if ((key == "client_max_body_size" || key == "client_max_header_size" ||
+                key == "body_buffer_size" || key == "send_body_buffer_size") && !tokens.empty()) {
         const std::regex sizeRegex("^\\d+(\\.\\d+)?([kmgt]b?|[kmgt]i?bytes|bytes)?$", std::regex::icase);
         if (!std::regex_match(tokens[0], sizeRegex)) {
             reportError("Invalid value for " + key + ": " + tokens[0]);

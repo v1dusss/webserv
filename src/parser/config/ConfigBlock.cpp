@@ -4,6 +4,7 @@
 
 #include "ConfigBlock.h"
 #include <algorithm>
+#include <iostream>
 #include <unordered_map>
 
 std::vector<std::string> ConfigBlock::getDirective(const std::string &key) const {
@@ -51,6 +52,9 @@ size_t ConfigBlock::getSizeValue(const std::string &key, size_t defaultValue) co
 
         numberPart = str.substr(0, i);
         suffixPart = str.substr(i);
+    }else {
+        numberPart = values[0];
+        suffixPart = "";
     }
     try {
         double value = std::stod(numberPart);

@@ -19,28 +19,33 @@ class ServerPool;
 class Server {
 private:
     int serverFd{};
-    ServerConfig config;
-    std::unordered_map<int, std::shared_ptr<ClientConnection>> clients;
+    const int port;
+    const std::string host;
+    const ServerConfig config;
 
 public:
-    Server(const ServerConfig& config);
+    Server(int port, std::string host, const ServerConfig &config);
 
     ~Server();
 
     bool createSocket();
 
-    bool listen();
+    [[nodiscard]] bool listen() const;
 
     void stop();
 
     void handleFdEvent(int fd, short events);
 
-    void closeConnections();
+    [[nodiscard]] int getFd() const { return serverFd; }
 
-    int getFd() const { return serverFd; }
+    [[nodiscard]] int getPort() const { return port; }
+
+    [[nodiscard]] const std::string &getHost() const { return host; }
+
+    [[nodiscard]] const ServerConfig &getConfig() const { return config; }
 
 private:
-    void handleNewConnections();
+    void handleNewConnections() const;
 };
 
 

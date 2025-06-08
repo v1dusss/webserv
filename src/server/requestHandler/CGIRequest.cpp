@@ -104,7 +104,6 @@ static void cleanupCgiProcess(const pid_t pid) {
 }
 
 
-//TODO: save file descriptor in the class so they can be closed in the destructor
 std::optional<HttpResponse> RequestHandler::handleCgi() {
     int input_pipe[2]; // Parent -> Child
     int output_pipe[2]; // Child -> Parent
@@ -137,7 +136,6 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
     close(output_pipe[1]);
 
     cgiInputFd = input_pipe[1];
-    // TODO: use poll for reading from file
 
     std::cout << "request->totalBodySize: " << request->totalBodySize << " " << request->body->getSize() << std::endl;
 
@@ -159,6 +157,7 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
             return false;
 
 
+        // TODO: magic number, look at max bytes for pipes to write
         request->body->read(30000);
 
         if (static_cast<size_t>(bytesWrittenToCgi) >= request->totalBodySize) {
