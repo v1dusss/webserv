@@ -26,7 +26,8 @@
 #include "server/ClientConnection.h"
 
 
-RequestHandler::RequestHandler(ClientConnection *connection, const std::shared_ptr<HttpRequest> &request,
+RequestHandler::RequestHandler(ClientConnection *connection, const std::shared_ptr<HttpRequest>& request,
+
                                ServerConfig &serverConfig): request(request), client(connection),
                                                             serverConfig(serverConfig) {
     char ipStr[INET_ADDRSTRLEN];
@@ -183,7 +184,6 @@ void RequestHandler::execute() {
         client->setResponse(handleCustomErrorPage(response.value(), serverConfig, matchedRoute));
     }
 }
-
 
 std::optional<HttpResponse> RequestHandler::handleRequest() {
     if (!matchedRoute.has_value())

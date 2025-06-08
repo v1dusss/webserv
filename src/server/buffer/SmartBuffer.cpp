@@ -6,6 +6,7 @@
 #include <common/Logger.h>
 #include <sys/stat.h>
 #include <filesystem>
+#include <vector>
 
 #include "../FdHandler.h"
 #include "webserv.h"
@@ -75,16 +76,16 @@ bool SmartBuffer::onFileEvent(const int fd, const short events) {
             return false;
         }
         toRead = std::min(toRead, static_cast<size_t>(60000));
-        char buffer[toRead + 1];
-        const ssize_t bytesRead = ::read(fd, buffer, toRead);
+        std::vector<char> buf(toRead + 1);
+        const ssize_t bytesRead = ::read(fd, buf.data(), toRead);
         if (bytesRead <= 0) {
             close(fd);
             this->fd = -1;
             return true;
         }
 
-        buffer[bytesRead] = '\0';
-        readBuffer.append(buffer, bytesRead);
+        buf[bytesRead] = '\0';
+        readBuffer.append(buf.data(), bytesRead);
         readPos += bytesRead;
         toRead -= bytesRead;
     }
