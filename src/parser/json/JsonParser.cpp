@@ -239,5 +239,63 @@ std::shared_ptr<JsonValue> JsonParser::parseObject() {
     }
 }
 
+std::shared_ptr<JsonValue> JsonParser::parseValue() {
+    skipWhitespace();
+
+    switch (peek()) {
+        case '"': return std::make_shared<JsonValue>(parseString());
+        case '{': return parseObject();
+        case '[': return parseArray();
+        case 't':
+        case 'f':
+        case 'n':
+            return parseLiteral();
+        case '-':
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+            return parseNumber();
+        case '\0':
+            throw JsonParseError("Unexpected end of input", line, column);
+        default:
+            throw JsonParseError("Unexpected character", line, column);
+    }
+}
+
+std::shared_ptr<JsonValue> JsonParser::parse(const std::string &json) {
+    input = json;
+    position = 0;
+    line = 1;
+    column = 1;
+
+    std::shared_ptr<JsonValue> root = parseValue();
+    skipWhitespace();
+
+    if (position < input.length())
+        throw JsonParseError("Expected end of input", line, column);
+
+    return root;
+}
+
+bool JsonParser::validate(const std::string &json, std::string &error) {
+    try {
+        parse(json);
+        return true;
+    } catch (const JsonParseError &e) {
+        error = e.what();
+        return false;
+    } catch (const std::exception &e) {
+        error = e.what();
+        return false;
+    }
+}
+
 
 
