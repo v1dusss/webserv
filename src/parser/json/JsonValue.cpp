@@ -80,7 +80,7 @@ JsonValue::JsonObject JsonValue::asObject() const {
 std::size_t JsonValue::size() const {
     if (isArray())
         return std::get<JsonArray>(value).size();
-    else if (isObject())
+    if (isObject())
         return std::get<JsonObject>(value).size();
     return 0;
 }
