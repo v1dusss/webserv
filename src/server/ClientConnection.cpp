@@ -80,6 +80,9 @@ void ClientConnection::handleInput() {
 
     buffer[bytesRead] = '\0';
 
+    // so it doasn't timeout while reading the request
+    lastPackageSend = 0;
+
 
     //std::cout << "Received data from client fd: " << fd << " size: " << bytesRead << std::endl;
     //std::cout << buffer << std::endl;
@@ -112,6 +115,7 @@ void ClientConnection::handleInput() {
 
 void ClientConnection::handleOutput() {
     if (hasPendingResponse()) {
+        lastPackageSend = 0;
         HttpResponse &response = getResponse().value();
         if (response.getBody()->isStillWriting())
             return;
@@ -187,7 +191,8 @@ void ClientConnection::handleFileOutput() {
 
 void ClientConnection::clearResponse() {
     response.reset();
-    if (!keepAlive) {
+    if (!keepAlive || requestCount > config.
+        keepalive_requests) {
         shouldClose = true;
     }
 

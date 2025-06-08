@@ -23,7 +23,7 @@ std::optional<HttpResponse> RequestHandler::handlePost() {
                                   "Target must be a directory for file uploads");
     }
 
-    if (request->body->getSize() == 0)
+    if (request->totalBodySize == 0)
         return HttpResponse::html(HttpResponse::StatusCode::NO_CONTENT,
                                   "Empty request body");
 

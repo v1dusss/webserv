@@ -159,8 +159,7 @@ void ServerPool::closeConnections() {
     const time_t currentTime = std::time(nullptr);
     std::vector<int> clientsToClose;
     for (auto &[fd, client]: clients) {
-        if ((client->shouldClose) || client->requestCount > client->config.
-            keepalive_requests) {
+        if (client->shouldClose) {
             clientsToClose.push_back(fd);
             continue;
         }

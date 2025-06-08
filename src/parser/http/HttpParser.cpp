@@ -26,8 +26,7 @@ HttpParser::HttpParser(ClientConnection *clientConnection)
       body_buffer_size(0),
       client_max_body_size(0),
       client_max_header_size(0),
-      clientConnection(clientConnection),
-      headerStart(std::time(nullptr)) {
+      clientConnection(clientConnection) {
 }
 
 HttpParser::~HttpParser() {
@@ -120,6 +119,7 @@ bool HttpParser::parseRequestLine() {
     request->version = version;
 
     state = ParseState::HEADERS;
+    headerStart = std::time(nullptr);
     return true;
 }
 

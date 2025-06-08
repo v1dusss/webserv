@@ -17,11 +17,10 @@
     server_name            test.localhost;
     client_max_body_size   200MB;
     client_max_header_size 10000;
-    keepalive_timeout      10;
+    keepalive_timeout      2;
     client_header_timeout  5;
-    client_body_timeout    5;
-    keepalive_requests     4;
-    error_page 404         /404.html;
+    client_body_timeout    20;
+    keepalive_requests     2;
     
     # Home page
     location / {
@@ -42,7 +41,7 @@
 
         root             ./www/upload;
         index            index.html list.py;
-        allowed_methods  GET PUT DELETE;
+        allowed_methods  GET PUT DELETE POST;
         cgi             .py /usr/bin/python3;
     }
 
