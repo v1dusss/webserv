@@ -290,7 +290,6 @@ bool HttpParser::parseBody() {
     return isBodyComplete;
 }
 
-//TODO: use poll for writing to file
 //TODO: handle edge cases for example what happens if the file can't be opened or written to, maybe we should decrease the totalBodySize in that case
 //TODO: handle case if the bytes saved are larger as the contentLength
 bool HttpParser::appendToBody(const std::string &data) {
@@ -298,6 +297,7 @@ bool HttpParser::appendToBody(const std::string &data) {
         request->totalBodySize > client_max_body_size) {
         Logger::log(LogLevel::ERROR, "Body exceeds maximum allowed size");
         state = ParseState::ERROR;
+        errorCode = HttpResponse::StatusCode::CONTENT_TOO_LARGE;
         return false;
     }
 
@@ -325,6 +325,7 @@ std::shared_ptr<HttpRequest> HttpParser::getRequest() const {
 }
 
 void HttpParser::reset() {
+    errorCode = HttpResponse::StatusCode::BAD_REQUEST;
     state = ParseState::REQUEST_LINE;
     request.reset();
     request = std::make_shared<HttpRequest>();
