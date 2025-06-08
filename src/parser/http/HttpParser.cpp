@@ -72,10 +72,12 @@ bool HttpParser::parseRequestLine() {
     if (endPos == std::string::npos)
         return false;
 
+    // TODO: replace with config value
     constexpr size_t MAX_REQUEST_LINE_LENGTH = 8192;
     if (endPos > MAX_REQUEST_LINE_LENGTH) {
         Logger::log(LogLevel::ERROR, "Request line too long");
         state = ParseState::ERROR;
+        errorCode = HttpResponse::StatusCode::REQUEST_URI_TOO_LONG;
         return false;
     }
 
