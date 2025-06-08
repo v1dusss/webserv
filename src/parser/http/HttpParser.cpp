@@ -271,7 +271,8 @@ bool HttpParser::parseBody() {
 
             if (client_max_body_size > 0 &&
                 request->totalBodySize + chunkSize > client_max_body_size) {
-                Logger::log(LogLevel::ERROR, "Chunked body exceeds maximum allowed size");
+                Logger::log(LogLevel::ERROR, "Chunked body exceeds maximum allowed size of " +
+                                             std::to_string(client_max_body_size));
                 state = ParseState::ERROR;
                 return false;
             }

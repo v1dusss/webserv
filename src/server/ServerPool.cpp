@@ -56,7 +56,7 @@ void ServerPool::matchVirtualServer(ClientConnection *client, const std::string 
 
         for (const std::string &serverName: serverConfig.server_names) {
             if (serverName == hostname) {
-                client->config = serverConfig;
+                client->setConfig(serverConfig);
                 return;
             }
 
@@ -85,13 +85,13 @@ void ServerPool::matchVirtualServer(ClientConnection *client, const std::string 
     }
 
     if (wildcardPrefixMatch) {
-        client->config = *wildcardPrefixMatch;
+        client->setConfig(*wildcardPrefixMatch);
         std::cout << "Matched wildcard prefix: " << wildcardPrefixMatch->host << std::endl;
     } else if (wildcardSuffixMatch) {
-        client->config = *wildcardSuffixMatch;
+        client->setConfig(*wildcardSuffixMatch);
         std::cout << "Matched wildcard suffix: " << wildcardSuffixMatch->host << std::endl;
     } else if (defaultServer) {
-        client->config = *defaultServer;
+        client->setConfig(*defaultServer);
         std::cout << "Using default server: " << defaultServer->host << std::endl;
     }
 }

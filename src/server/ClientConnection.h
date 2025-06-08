@@ -59,6 +59,8 @@ public:
     std::optional<HttpResponse> &getResponse() {
         return response;
     }
+
+    void setConfig(const ServerConfig &config);
 };
 
 

@@ -22,8 +22,8 @@
 ClientConnection::ClientConnection(const int clientFd,
                                    const sockaddr_in clientAddr,
                                    const Server *connectedServer): fd(clientFd),
-                                                                    clientAddr(clientAddr), parser(this),
-                                                                    connectedServer(connectedServer) {
+                                                                   clientAddr(clientAddr), parser(this),
+                                                                   connectedServer(connectedServer) {
     // TODO: change to http config part
     parser.setClientLimits(100000, 1000, 100000);
     config.client_body_timeout = 0;
@@ -197,4 +197,11 @@ void ClientConnection::setResponse(const HttpResponse &response) {
     this->response = response;
     parser.reset();
     requestCount++;
+}
+
+void ClientConnection::setConfig(const ServerConfig &config) {
+    this->config = config;
+    parser.setClientLimits(config.client_max_body_size,
+                           config.headerConfig.client_max_header_size,
+                           config.body_buffer_size);
 }
