@@ -28,17 +28,18 @@
     root ./www;
     index index.html;
     autoindex off;
-    }
+  }
     
     # Directory listing
     location /list {
     root ./www/list;
     index index.html;
     autoindex on;
-    }
+  }
     
     # Gallery
     location /upload {
+
         root             ./www/upload;
         index            index.html list.py;
         allowed_methods  GET PUT DELETE;
@@ -55,8 +56,9 @@
     location /cgi {
     allowed_methods POST GET PUT DELETE;
     root ./www/cgi;
-    index index.html;
+    autoindex on;
+    index list.py;
     cgi .py /usr/bin/python3;
-    }
+  }
   }
 
