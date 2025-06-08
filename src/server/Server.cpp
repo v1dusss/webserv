@@ -14,8 +14,8 @@
 #include "requestHandler/RequestHandler.h"
 #include "response/HttpResponse.h"
 
-Server::Server(const ServerConfig &config) : config(config) {
-    Logger::log(LogLevel::INFO, "Server created with config: " + config.host + ":" + std::to_string(config.port));
+Server::Server(const int port, std::string host, const ServerConfig &config) : port(port), host(host), config(config) {
+    Logger::log(LogLevel::INFO, "Server created with config: " + host + ":" + std::to_string(port));
 }
 
 Server::~Server() {
@@ -28,7 +28,6 @@ bool Server::createSocket() {
         Logger::log(LogLevel::ERROR, "Failed to create socket");
         return false;
     }
-    Logger::log(LogLevel::DEBUG, "Socket created with fd: " + std::to_string(serverFd));
 
     constexpr int opt = 1;
     if (setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
@@ -40,19 +39,17 @@ bool Server::createSocket() {
     sockaddr_in serverAddr{};
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_addr.s_addr = INADDR_ANY;
-    serverAddr.sin_port = htons(config.port);
-    serverAddr.sin_addr.s_addr = inet_addr(config.host.c_str());
+    serverAddr.sin_port = htons(port);
+    serverAddr.sin_addr.s_addr = inet_addr(host.c_str());
 
 
-    if (bind(serverFd, reinterpret_cast<struct sockaddr *>(&serverAddr), sizeof(serverAddr)) < 0) {
-        Logger::log(LogLevel::ERROR, "Failed to bind socket");
+    if (bind(serverFd, reinterpret_cast<struct sockaddr *>(&serverAddr), sizeof(serverAddr)) < 0)
         return false;
-    }
 
     return true;
 }
 
-bool Server::listen() {
+bool Server::listen() const {
     if (::listen(serverFd, 5024) < 0) {
         Logger::log(LogLevel::ERROR, "Failed to listen on socket");
         return false;
@@ -60,7 +57,7 @@ bool Server::listen() {
 
     Logger::log(LogLevel::DEBUG, "Listening on fd: " + std::to_string(serverFd));
 
-    FdHandler::addFd(serverFd, POLLIN, [this](const int fd, short events) {
+    FdHandler::addFd(serverFd, POLLIN, [this](const int fd, const short events) {
         (void) fd;
         (void) events;
         handleNewConnections();
@@ -69,7 +66,7 @@ bool Server::listen() {
     return true;
 }
 
-void Server::handleNewConnections() {
+void Server::handleNewConnections() const {
     sockaddr_in clientAddr{};
     socklen_t addrLen = sizeof(clientAddr);
     const int clientFd = accept(serverFd, reinterpret_cast<struct sockaddr *>(&clientAddr), &addrLen);
@@ -78,58 +75,18 @@ void Server::handleNewConnections() {
         return;
     }
 
-    int opt = 1;
+    constexpr int opt = 1;
     setsockopt(clientFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
     Logger::log(LogLevel::INFO, "Accepted new client connection");
     Logger::log(LogLevel::DEBUG, "Client fd: " + std::to_string(clientFd));
-    clients[clientFd] = std::make_shared<ClientConnection>(clientFd, clientAddr, config);
-}
-
-void Server::closeConnections() {
-    const time_t currentTime = std::time(nullptr);
-    std::vector<int> clientsToClose;
-    for (auto &[fd, client]: clients) {
-        if ((client->shouldClose) || client->requestCount > config.
-            keepalive_requests) {
-            clientsToClose.push_back(fd);
-            continue;
-        }
-
-        if (client->keepAlive && !client->hasPendingResponse() && client->lastPackageSend != 0 &&
-            currentTime - client->lastPackageSend > static_cast<long>(config.keepalive_timeout)) {
-            clientsToClose.push_back(fd);
-            Logger::log(LogLevel::INFO, "Client connection timed out");
-            continue;
-        }
-
-        if (client->parser.headerStart != 0 &&
-            currentTime - client->parser.headerStart > static_cast<long>(config.client_header_timeout)) {
-            clientsToClose.push_back(fd);
-            Logger::log(LogLevel::INFO, "Client connection header timed out");
-            continue;
-        }
-
-        if (client->parser.getState() == ParseState::BODY && client->parser.bodyStart != 0 &&
-            currentTime - client->parser.bodyStart > static_cast<long>(config.client_body_timeout)) {
-            clientsToClose.push_back(fd);
-            Logger::log(LogLevel::INFO, "Client connection body timed out");
-        }
-    }
-
-    for (int fd: clientsToClose) {
-        if (clients.find(fd) != clients.end()) {
-            Logger::log(LogLevel::INFO, "Closed client connection");
-            clients.erase(fd);
-        }
-    }
+    ServerPool::registerClient(clientFd, clientAddr, this);
 }
 
 
 void Server::stop() {
     if (serverFd >= 0) {
         Logger::log(LogLevel::DEBUG, "Stopping server on fd: " + std::to_string(serverFd));
-        clients.clear();
 
         close(serverFd);
         serverFd = -1;

@@ -26,8 +26,8 @@
 #include "server/ClientConnection.h"
 
 
-
 RequestHandler::RequestHandler(ClientConnection *connection, const std::shared_ptr<HttpRequest>& request,
+
                                ServerConfig &serverConfig): request(request), client(connection),
                                                             serverConfig(serverConfig) {
     char ipStr[INET_ADDRSTRLEN];
@@ -128,6 +128,13 @@ void RequestHandler::validateTargetPath() {
     isFile = std::filesystem::is_regular_file(routePath);
     if (isFile)
         return;
+
+    isDirectory = std::filesystem::is_directory(routePath);
+    if (!isDirectory) {
+        Logger::log(LogLevel::ERROR, "Target path is neither a file nor a directory: " + routePath);
+        return;
+    }
+
 
     const RouteConfig route = matchedRoute.value();
     if (route.index.empty() && serverConfig.index.empty())

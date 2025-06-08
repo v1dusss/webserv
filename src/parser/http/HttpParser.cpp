@@ -14,10 +14,11 @@
 #include <sys/fcntl.h>
 #include <sys/stat.h>
 #include <cstring>
+#include <server/ServerPool.h>
 
 ssize_t HttpParser::tmpFileCount = 0;
 
-HttpParser::HttpParser()
+HttpParser::HttpParser(ClientConnection *clientConnection)
     : state(ParseState::REQUEST_LINE),
       request(std::make_shared<HttpRequest>()),
       contentLength(0),
@@ -25,6 +26,7 @@ HttpParser::HttpParser()
       body_buffer_size(0),
       client_max_body_size(0),
       client_max_header_size(0),
+      clientConnection(clientConnection),
       headerStart(std::time(nullptr)) {
 }
 
@@ -70,10 +72,12 @@ bool HttpParser::parseRequestLine() {
     if (endPos == std::string::npos)
         return false;
 
+    // TODO: replace with config value
     constexpr size_t MAX_REQUEST_LINE_LENGTH = 8192;
     if (endPos > MAX_REQUEST_LINE_LENGTH) {
         Logger::log(LogLevel::ERROR, "Request line too long");
         state = ParseState::ERROR;
+        errorCode = HttpResponse::StatusCode::REQUEST_URI_TOO_LONG;
         return false;
     }
 
@@ -141,7 +145,6 @@ bool HttpParser::parseHeaders() {
                         return false;
                     }
                     contentLength = std::stoi(contentLengthStr);
-
                 } catch (...) {
                     state = ParseState::ERROR;
                     return false;
@@ -160,15 +163,13 @@ bool HttpParser::parseHeaders() {
             return true;
         }
 
-        if (client_max_header_size > 0 &&
-            (request->totalHeaderSize + endPos > client_max_header_size)) {
+        if (client_max_header_size > 0 && endPos > client_max_header_size) {
             Logger::log(LogLevel::ERROR, "Headers exceed maximum allowed size");
             state = ParseState::ERROR;
             return false;
         }
 
-        request->totalHeaderSize += endPos + 2;
-
+        // TODO: replace with config value
         if (++headerCount > MAX_HEADERS) {
             Logger::log(LogLevel::ERROR, "Too many headers in request");
             state = ParseState::ERROR;
@@ -190,6 +191,22 @@ bool HttpParser::parseHeaders() {
         std::string value = line.substr(colonPos + 1);
 
         value.erase(0, value.find_first_not_of(" \t"));
+
+        if (name == "Host") {
+            if (request->headers.find("Host") != request->headers.end()) {
+                Logger::log(LogLevel::ERROR, "Duplicate Host header");
+                state = ParseState::ERROR;
+                return false;
+            }
+
+            if (value.empty()) {
+                Logger::log(LogLevel::ERROR, "Host header cannot be empty");
+                state = ParseState::ERROR;
+                return false;
+            }
+
+            ServerPool::matchVirtualServer(clientConnection, value);
+        }
 
         if (!name.empty())
             request->headers[name] = value;
@@ -256,7 +273,8 @@ bool HttpParser::parseBody() {
 
             if (client_max_body_size > 0 &&
                 request->totalBodySize + chunkSize > client_max_body_size) {
-                Logger::log(LogLevel::ERROR, "Chunked body exceeds maximum allowed size");
+                Logger::log(LogLevel::ERROR, "Chunked body exceeds maximum allowed size of " +
+                                             std::to_string(client_max_body_size));
                 state = ParseState::ERROR;
                 return false;
             }
@@ -274,7 +292,6 @@ bool HttpParser::parseBody() {
     return isBodyComplete;
 }
 
-//TODO: use poll for writing to file
 //TODO: handle edge cases for example what happens if the file can't be opened or written to, maybe we should decrease the totalBodySize in that case
 //TODO: handle case if the bytes saved are larger as the contentLength
 bool HttpParser::appendToBody(const std::string &data) {
@@ -282,6 +299,7 @@ bool HttpParser::appendToBody(const std::string &data) {
         request->totalBodySize > client_max_body_size) {
         Logger::log(LogLevel::ERROR, "Body exceeds maximum allowed size");
         state = ParseState::ERROR;
+        errorCode = HttpResponse::StatusCode::CONTENT_TOO_LARGE;
         return false;
     }
 
@@ -309,6 +327,7 @@ std::shared_ptr<HttpRequest> HttpParser::getRequest() const {
 }
 
 void HttpParser::reset() {
+    errorCode = HttpResponse::StatusCode::BAD_REQUEST;
     state = ParseState::REQUEST_LINE;
     request.reset();
     request = std::make_shared<HttpRequest>();

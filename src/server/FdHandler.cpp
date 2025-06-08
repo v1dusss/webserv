@@ -55,6 +55,11 @@ void FdHandler::pollFds() {
             continue;
         }
         if (it->revents & POLLIN || it->revents & POLLOUT || it->revents & POLLHUP) {
+            if (auto fdCallbacksIt = fdCallbacks.find(it->fd); fdCallbacksIt == fdCallbacks.end()) {
+                it = removeFd(it->fd);
+                continue;
+            }
+
             if (fdCallbacks[it->fd](it->fd, it->revents)) {
                 it = removeFd(it->fd);
                 continue;

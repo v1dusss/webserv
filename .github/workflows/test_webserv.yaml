@@ -1,0 +1,40 @@
+name: Test Webserv
+
+on:
+  push:
+    branches:
+      - tester
+  pull_request:
+    branches:
+      - tester
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y build-essential
+
+      - name: Build webserv
+        run: make webserv -j4
+
+      - name: Start webserv
+        run: |
+          ./webserv tester_linux.yaml &
+          echo $! > webserv_pid
+          sleep 2
+
+      - name: Make ubuntu_cgi_tester executable
+        run: chmod +x ./ubuntu_tester
+
+      - name: Run ubuntu_cgi_tester
+        run: printf '\n\n\n\n\n' | ./ubuntu_tester http://localhost:8080 || exit $?
+
+
+      - name: Check exit code
+        run: |
+          EXIT_CODE=$?
+          kill $(cat webserv_pid)
+          exit $EXIT_CODE

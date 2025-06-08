@@ -19,16 +19,26 @@
 #include <fcntl.h>
 
 
-ClientConnection::ClientConnection(const int clientFd, const sockaddr_in clientAddr, ServerConfig &config): config(
-    config) {
-    this->fd = clientFd;
-    this->clientAddr = clientAddr;
-    parser.setClientLimits(config.client_max_body_size, config.client_max_header_size, config.body_buffer_size);
+ClientConnection::ClientConnection(const int clientFd,
+                                   const sockaddr_in clientAddr,
+                                   const Server *connectedServer): fd(clientFd),
+                                                                   clientAddr(clientAddr), parser(this),
+                                                                   connectedServer(connectedServer) {
+    // TODO: change to http config part
+    // the only important thing here is maxHeaderSize because the other things will be overwritten by the server config when the virtual-host matching is done
+    parser.setClientLimits(100000, 1000, 100000);
+    config.client_body_timeout = 0;
+    config.keepalive_timeout = 0;
+    config.keepalive_requests = 0;
+    config.headerConfig.client_header_timeout = 2;
+    config.headerConfig.client_max_header_size = 8192;
+    config.headerConfig.client_max_header_count = 100;
+
     FdHandler::addFd(clientFd, POLLIN | POLLOUT, [this](const int fd, const short events) {
         (void) fd;
         if (shouldClose)
             return true;
-        if (events & POLLIN)
+        if (events & POLLIN && !hasPendingResponse())
             this->handleInput();
         if (events & POLLOUT)
             this->handleOutput();
@@ -51,6 +61,7 @@ ClientConnection::~ClientConnection() {
 }
 
 void ClientConnection::handleInput() {
+    // TODO: fix magic number
     char buffer[40001];
     const ssize_t bytesRead = read(fd, buffer, 40000);
     if (bytesRead < 0) {
@@ -92,7 +103,7 @@ void ClientConnection::handleInput() {
     }
 
     if (parser.hasError()) {
-        const HttpResponse response = HttpResponse::html(HttpResponse::StatusCode::BAD_REQUEST);
+        const HttpResponse response = HttpResponse::html(parser.getErrorCode());
         setResponse(RequestHandler::handleCustomErrorPage(response, config, std::nullopt));
         parser.reset();
         debugBuffer.clear();
@@ -128,6 +139,7 @@ void ClientConnection::handleFileOutput() {
 
 
     std::shared_ptr<SmartBuffer> body = response->getBody();
+    // TODO: fix magic number number should probably be higher
     body->read(1024);
 
     const std::string readBuffer = body->getReadBuffer();
@@ -187,4 +199,11 @@ void ClientConnection::setResponse(const HttpResponse &response) {
     this->response = response;
     parser.reset();
     requestCount++;
+}
+
+void ClientConnection::setConfig(const ServerConfig &config) {
+    this->config = config;
+    parser.setClientLimits(config.client_max_body_size,
+                           config.headerConfig.client_max_header_size,
+                           config.body_buffer_size);
 }

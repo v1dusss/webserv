@@ -6,7 +6,7 @@
 /*   By: eebert <eebert@student.42heilbronn.de>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/01 13:19:13 by eebert            #+#    #+#             */
-/*   Updated: 2025/05/11 19:35:34 by eebert           ###   ########.fr       */
+/*   Updated: 2025/06/07 17:39:34 by eebert           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,6 +53,12 @@ typedef struct {
     std::map<std::string, std::string> return_directive; // Redirects
 } RouteConfig;
 
+struct ClientHeaderConfig {
+    size_t client_header_timeout; // In seconds
+    size_t client_max_header_size; // In bytes the max size of a single header
+    size_t client_max_header_count; // Max number of headers
+};
+
 typedef struct {
     int port;
     std::string host;
@@ -62,13 +68,12 @@ typedef struct {
     std::string index;
     std::map<int, std::string> error_pages; // Status code to error page mapping
 
+    ClientHeaderConfig headerConfig;
     // Connection settings
     size_t client_body_timeout; // In seconds
-    size_t client_header_timeout; // In seconds
     size_t client_max_body_size; // In bytes
     size_t send_body_buffer_size;
     size_t body_buffer_size;
-    size_t client_max_header_size; // In bytes
     size_t keepalive_timeout; // In seconds
     size_t keepalive_requests; // Max requests per connection
 } ServerConfig;

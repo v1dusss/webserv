@@ -39,6 +39,7 @@ private:
     std::string routePath;
     std::string cgiPath;
     bool isFile = false;
+    bool isDirectory = false;
     bool hasValidIndexFile = false;
     std::string indexFilePath;
 
@@ -82,14 +83,13 @@ private:
 
     [[nodiscard]] std::string getFilePath() const;
 
-
-    [[nodiscard]] HttpResponse handleGet() const;
+    [[nodiscard]] HttpResponse handleGet();
 
     [[nodiscard]] std::optional<HttpResponse> handlePost();
 
     [[nodiscard]] std::optional<HttpResponse> handlePostMultipart(const std::string &contentType);
 
-    void processMultipartBuffer(MultipartParseState *state);
+    void processMultipartBuffer(std::shared_ptr<MultipartParseState> state);
 
     [[nodiscard]] std::optional<HttpResponse> handlePostTestFile();
 
@@ -98,6 +98,8 @@ private:
     [[nodiscard]] HttpResponse handleDelete() const;
 
     [[nodiscard]] std::optional<HttpResponse> handleCgi();
+
+    HttpResponse handleAutoIndex(const std::string &path);
 
     bool writeRequestBodyToCgi(int pipe_fd, const std::string &body);
 

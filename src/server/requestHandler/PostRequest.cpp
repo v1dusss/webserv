@@ -40,7 +40,6 @@ std::optional<HttpResponse> RequestHandler::handlePost() {
 }
 
 std::optional<HttpResponse> RequestHandler::handlePostTestFile() {
-    // TODO: create a config for the maximum size of the request body for uploads
     if (request->totalBodySize > 100)
         return HttpResponse::html(HttpResponse::StatusCode::CONTENT_TOO_LARGE);
     const std::string filename = "test_file_" + std::to_string(std::time(nullptr)) + ".txt";
@@ -81,7 +80,6 @@ std::optional<HttpResponse> RequestHandler::handlePostTestFile() {
     return std::nullopt;
 }
 
-//TODO: handle the case in which the file body is saved in a file and not in memory
 std::optional<HttpResponse> RequestHandler::handlePostMultipart(const std::string &contentType) {
     std::smatch match;
     std::regex boundaryRegex("boundary\\s*=\\s*([^;]+)");
@@ -92,7 +90,7 @@ std::optional<HttpResponse> RequestHandler::handlePostMultipart(const std::strin
     std::string boundary = "--" + match[1].str();
     std::string endBoundary = boundary + "--";
 
-    auto *state = new MultipartParseState();
+    auto state = std::make_shared<MultipartParseState>();
     state->boundary = boundary;
     state->endBoundary = endBoundary;
     state->uploadedFiles = 0;
@@ -102,6 +100,7 @@ std::optional<HttpResponse> RequestHandler::handlePostMultipart(const std::strin
     state->parseBuffer = "";
 
     this->postRequestCallbackId = CallbackHandler::registerCallback([this, state]() {
+        // TODO: fix magic number 8192
         request->body->read(8192);
         std::string chunk = request->body->getReadBuffer();
 
@@ -120,7 +119,6 @@ std::optional<HttpResponse> RequestHandler::handlePostMultipart(const std::strin
                                                        " file(s) uploaded successfully"));
             }
 
-            delete state;
             return true;
         }
 
@@ -135,8 +133,7 @@ std::optional<HttpResponse> RequestHandler::handlePostMultipart(const std::strin
     return std::nullopt;
 }
 
-// TODO: use fdcallback for writing to file
-void RequestHandler::processMultipartBuffer(MultipartParseState *state) {
+void RequestHandler::processMultipartBuffer(std::shared_ptr<MultipartParseState> state) {
     while (!state->parseBuffer.empty()) {
         switch (state->currentState) {
             case MultipartParseStateEnum::LOOKING_FOR_BOUNDARY: {
@@ -217,10 +214,20 @@ void RequestHandler::processMultipartBuffer(MultipartParseState *state) {
                 }
 
                 if (contentEnd > 0) {
-                    if (write(state->fileWriteFd, state->parseBuffer.data(), contentEnd) == -1) {
-                        Logger::log(LogLevel::ERROR, "Failed to write to file: " +
-                                                     std::to_string(state->fileWriteFd) + ": " + strerror(errno));
-                    }
+                    pollfd pfd{};
+                    pfd.fd = state->fileWriteFd;
+                    pfd.events = POLLOUT;
+                    pfd.revents = 0;
+
+                    poll(&pfd, 1, 0);
+                    if (pfd.revents & POLLOUT) {
+                        if (write(state->fileWriteFd, state->parseBuffer.data(), contentEnd) == -1) {
+                            Logger::log(LogLevel::ERROR, "Failed to write to file: " +
+                                                         std::to_string(state->fileWriteFd) + ": " + strerror(errno));
+                        }
+                    } else
+                        Logger::log(LogLevel::ERROR, "File descriptor not ready for writing: " +
+                                                     std::to_string(state->fileWriteFd));
                 }
 
                 close(state->fileWriteFd);

@@ -10,6 +10,7 @@
 #include <string>
 #include <optional>
 #include <ctime>
+#include <server/response/HttpResponse.h>
 
 enum class ParseState {
     REQUEST_LINE,
@@ -18,6 +19,8 @@ enum class ParseState {
     COMPLETE,
     ERROR
 };
+
+class ClientConnection; // Forward declaration to avoid circular dependency
 
 class HttpParser {
 private:
@@ -30,6 +33,9 @@ private:
     size_t body_buffer_size;
     size_t client_max_body_size;
     size_t client_max_header_size;
+    ClientConnection *clientConnection;
+    HttpResponse::StatusCode errorCode = HttpResponse::StatusCode::BAD_REQUEST;
+
 
     unsigned long chunkSize = 0;
     bool hasChunkSize = false;
@@ -38,7 +44,7 @@ public:
     std::time_t headerStart = 0;
     std::time_t bodyStart = 0;
 
-    HttpParser();
+    HttpParser(ClientConnection *clientConnection);
 
     ~HttpParser();
 
@@ -75,6 +81,8 @@ public:
     static bool isHttpStatusCode(int statusCode);
 
     [[nodiscard]] ParseState getState() const { return state; }
+
+    [[nodiscard]] HttpResponse::StatusCode getErrorCode() const { return errorCode; }
 };
 
 

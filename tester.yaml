@@ -1,24 +1,24 @@
   server {
     listen 8080;
     server_name example.com;
-    keepalive_timeout 5;
-    client_header_timeout 1;
-    client_body_timeout 5;
-    keepalive_requests 2;
-
+    keepalive_timeout 140;
+    client_header_timeout 10;
+    client_body_timeout 100;
+    keepalive_requests 100;
+    
     
     root ./;
-  
-    error_page 404 www/error.html;
     
-    body_buffer_size 10000;
-    client_max_body_size 10000000000;
-  
-   
+    # error_page 404 www/error.html;
+    
+    body_buffer_size 250KB;
+    client_max_body_size 100MB;
+    client_max_header_size 2MB;
+    send_body_buffer_size 250KB;
     
     location / {
     index www/index.html;
-
+    
     allowed_methods GET;
   }
     
