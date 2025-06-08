@@ -155,6 +155,13 @@ bool RequestHandler::isCgiRequest() {
 
     const std::string filePath = getFilePath();
 
+
+    if (!std::filesystem::is_regular_file(filePath) || access(filePath.c_str(), R_OK) != 0) {
+        Logger::log(LogLevel::ERROR, "File does not exist or is not readable: " + filePath);
+        return false;
+    }
+
+
     const std::string fileExtension = getFileExtension(filePath);
     if (fileExtension.empty())
         return false;
