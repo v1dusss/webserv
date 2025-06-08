@@ -154,3 +154,90 @@ std::shared_ptr<JsonValue> JsonParser::parseNumber() {
     }
 }
 
+std::shared_ptr<JsonValue> JsonParser::parseLiteral() {
+    if (input.substr(position, 4) == "null") {
+        position += 4;
+        column += 4;
+        return std::make_shared<JsonValue>();
+    }
+    if (input.substr(position, 4) == "true") {
+        position += 4;
+        column += 4;
+        return std::make_shared<JsonValue>(true);
+    }
+    if (input.substr(position, 5) == "false") {
+        position += 5;
+        column += 5;
+        return std::make_shared<JsonValue>(false);
+    }
+
+    throw JsonParseError("Invalid literal", line, column);
+}
+
+std::shared_ptr<JsonValue> JsonParser::parseArray() {
+    get();
+    skipWhitespace();
+
+    JsonValue::JsonArray array;
+
+    if (peek() == ']') {
+        get();
+        return std::make_shared<JsonValue>(array);
+    }
+
+    while (true) {
+        array.push_back(parseValue());
+        skipWhitespace();
+
+        if (peek() == ']') {
+            get();
+            return std::make_shared<JsonValue>(array);
+        }
+        if (peek() == ',') {
+            get();
+            skipWhitespace();
+        } else
+            throw JsonParseError("Expected ',' or ']'", line, column);
+    }
+}
+
+std::shared_ptr<JsonValue> JsonParser::parseObject() {
+    get();
+    skipWhitespace();
+
+    JsonValue::JsonObject object;
+
+    if (peek() == '}') {
+        get();
+        return std::make_shared<JsonValue>(object);
+    }
+
+    while (true) {
+        if (peek() != '"')
+            throw JsonParseError("Expected string as object key", line, column);
+
+        std::string key = parseString();
+        skipWhitespace();
+
+        if (peek() != ':')
+            throw JsonParseError("Expected ':' after object key", line, column);
+        get();
+        skipWhitespace();
+
+        object[key] = parseValue();
+        skipWhitespace();
+
+        if (peek() == '}') {
+            get();
+            return std::make_shared<JsonValue>(object);
+        }
+        if (peek() == ',') {
+            get();
+            skipWhitespace();
+        } else
+            throw JsonParseError("Expected ',' or '}'", line, column);
+    }
+}
+
+
+
