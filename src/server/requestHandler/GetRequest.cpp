@@ -33,7 +33,7 @@ static HttpResponse handleServeFile(const std::string &path) {
 }
 
 HttpResponse RequestHandler::handleGet() {
-    if (!isFile) {
+    if (isDirectory) {
         Logger::log(LogLevel::DEBUG, "Route is a directory");
         if (hasValidIndexFile) {
             Logger::log(LogLevel::DEBUG, "Serving index file: " + indexFilePath);
