@@ -25,6 +25,7 @@ ClientConnection::ClientConnection(const int clientFd,
                                                                    clientAddr(clientAddr), parser(this),
                                                                    connectedServer(connectedServer) {
     // TODO: change to http config part
+    // the only important thing here is maxHeaderSize because the other things will be overwritten by the server config when the virtual-host matching is done
     parser.setClientLimits(100000, 1000, 100000);
     config.client_body_timeout = 0;
     config.keepalive_timeout = 0;
