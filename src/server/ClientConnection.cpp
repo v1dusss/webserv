@@ -37,7 +37,7 @@ ClientConnection::ClientConnection(const int clientFd,
         (void) fd;
         if (shouldClose)
             return true;
-        if (events & POLLIN)
+        if (events & POLLIN && !hasPendingResponse())
             this->handleInput();
         if (events & POLLOUT)
             this->handleOutput();
@@ -102,7 +102,7 @@ void ClientConnection::handleInput() {
     }
 
     if (parser.hasError()) {
-        const HttpResponse response = HttpResponse::html(HttpResponse::StatusCode::BAD_REQUEST);
+        const HttpResponse response = HttpResponse::html(parser.getErrorCode());
         setResponse(RequestHandler::handleCustomErrorPage(response, config, std::nullopt));
         parser.reset();
         debugBuffer.clear();
@@ -138,6 +138,7 @@ void ClientConnection::handleFileOutput() {
 
 
     std::shared_ptr<SmartBuffer> body = response->getBody();
+    // TODO: fix magic number number should probably be higher
     body->read(1024);
 
     const std::string readBuffer = body->getReadBuffer();
