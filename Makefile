@@ -1,5 +1,5 @@
 CC = c++
-CFLAGS = -Wall -Wextra -Werror -std=c++17 -O0 -g #-fsanitize=address -fsanitize=undefined -pthread
+CFLAGS = -Wall -Wextra -Werror   -O0 -g --std=c++17 #-fsanitize=address -fsanitize=undefined -pthread
 
 #sudo sysctl -w net.inet.tcp.msl=100
 
@@ -10,6 +10,7 @@ VPATH = src \
 		src/parser/config \
 		src/parser/cgi \
 		src/parser/http \
+		src/parser/json \
 		src/server \
 		src/server/requestHandler \
 		src/server/response \
@@ -36,7 +37,11 @@ SRC = main.cpp \
 	FdHandler.cpp \
 	CgiParser.cpp \
 	SmartBuffer.cpp \
-	CallbackHandler.cpp
+	CallbackHandler.cpp \
+	JsonParser.cpp \
+	JsonValue.cpp \
+	JsonParseError.cpp \
+
 
 OBJ_DIR = obj
 INCLUDE_DIR = src
