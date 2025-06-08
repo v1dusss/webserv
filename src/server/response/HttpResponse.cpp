@@ -78,6 +78,7 @@ std::string HttpResponse::getStatusMessage(const int code) {
         case CONTENT_TOO_LARGE: return "Content Too Large";
         case METHOD_NOT_ALLOWED: return "Method Not Allowed";
         case INTERNAL_SERVER_ERROR: return "Internal Server Error";
+        case REQUEST_URI_TOO_LONG: return "Request URI Too Long";
         case NOT_IMPLEMENTED: return "Not Implemented";
         case FORBIDDEN: return "Forbidden";
         case CONFLICT: return "Conflict";

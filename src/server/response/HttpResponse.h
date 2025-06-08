@@ -36,6 +36,7 @@ public:
         NOT_FOUND = 404,
         CONFLICT = 409,
         CONTENT_TOO_LARGE = 413,
+        REQUEST_URI_TOO_LONG = 414,
         UNSUPPORTED_MEDIA_TYPE = 415,
         METHOD_NOT_ALLOWED = 405,
         INTERNAL_SERVER_ERROR = 500,
