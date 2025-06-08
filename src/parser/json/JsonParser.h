@@ -45,15 +45,7 @@ public:
 
     std::shared_ptr<JsonValue> parse(const std::string &json);
 
-    std::shared_ptr<JsonValue> parseFromFile(const std::string &filePath);
-
     bool validate(const std::string &json, std::string &error);
-
-    bool validateFromFile(const std::string &filePath, std::string &error);
-
-    bool validateAgainstSchema(const std::shared_ptr<JsonValue> &value,
-                               const std::shared_ptr<JsonValue> &schema,
-                               std::string &error);
 };
 
 #endif // JSONPARSER_H
