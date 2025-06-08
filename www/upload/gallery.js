@@ -36,13 +36,13 @@ async function uploadImage(ev) {
   const file = ev.target.file.files[0];
   if (!file) return;
 
-  // ALWAYS PUT to /upload/<filename>
-  const url = '/upload/' + encodeURIComponent(file.name);
+  const url = '/upload/';
+  const formData = new FormData();
+  formData.append('file', file);
 
   const res = await fetch(url, {
-    method: 'PUT',
-    headers: { 'Content-Type': file.type },
-    body: file
+    method: 'POST',
+    body: formData
   });
 
   const msg = document.getElementById('message');
