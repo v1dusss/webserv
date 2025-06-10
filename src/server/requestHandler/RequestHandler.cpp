@@ -26,7 +26,7 @@
 #include "server/ClientConnection.h"
 
 
-RequestHandler::RequestHandler(ClientConnection *connection, const std::shared_ptr<HttpRequest>& request,
+RequestHandler::RequestHandler(ClientConnection *connection, const std::shared_ptr<HttpRequest> &request,
 
                                ServerConfig &serverConfig): request(request), client(connection),
                                                             serverConfig(serverConfig) {
@@ -157,12 +157,6 @@ bool RequestHandler::isCgiRequest() {
     const std::string filePath = getFilePath();
 
 
-    if (!std::filesystem::is_regular_file(filePath) || access(filePath.c_str(), R_OK) != 0) {
-        Logger::log(LogLevel::ERROR, "File does not exist or is not readable: " + filePath);
-        return false;
-    }
-
-
     const std::string fileExtension = getFileExtension(filePath);
     if (fileExtension.empty())
         return false;
@@ -194,12 +188,10 @@ std::optional<HttpResponse> RequestHandler::handleRequest() {
         return HttpResponse::html(HttpResponse::StatusCode::METHOD_NOT_ALLOWED);
     }
 
-
     validateTargetPath();
 
     if (isCgiRequest()) {
         Logger::log(LogLevel::DEBUG, "request is a CGI request");
-
         return handleCgi();
     }
 
