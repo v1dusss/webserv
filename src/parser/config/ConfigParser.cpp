@@ -106,6 +106,7 @@ void printconfig(ServerConfig config) {
     std::cout << "  Root: " << config.root << std::endl;
     std::cout << "  Index: " << config.index << std::endl;
     std::cout << "  Client Max Body Size: " << config.client_max_body_size << std::endl;
+    std::cout << "  Client Max Header Count: " << config.headerConfig.client_max_header_count << std::endl;
     std::cout << "  Client Max Header Size: " << config.headerConfig.client_max_header_size << std::endl;
     std::cout << "  Client Header Timeout: " << config.headerConfig.client_header_timeout << std::endl;
     std::cout << "  Client Body Timeout: " << config.client_body_timeout << std::endl;
@@ -151,7 +152,7 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
     config.client_max_body_size = block.getSizeValue("client_max_body_size", 1 * 1024 * 1024);
     config.headerConfig.client_max_header_size = block.getSizeValue("client_max_header_size", 8192);
     config.headerConfig.client_header_timeout = block.getSizeValue("client_header_timeout", 60);
-    config.headerConfig.client_max_header_count = block.getSizeValue("client_max_header_count", 10);
+    config.headerConfig.client_max_header_count = block.getSizeValue("client_max_header_count", 100);
     config.client_body_timeout = block.getSizeValue("client_body_timeout", 60);
     config.keepalive_timeout = block.getSizeValue("keepalive_timeout", 65);
     config.keepalive_requests = block.getSizeValue("keepalive_requests", 100);

@@ -11,6 +11,7 @@
 #include <optional>
 #include <ctime>
 #include <server/response/HttpResponse.h>
+#include "config/Config.h"
 
 enum class ParseState {
     REQUEST_LINE,
@@ -30,15 +31,14 @@ private:
     std::string buffer;
     size_t contentLength;
     bool chunkedTransfer;
-    size_t body_buffer_size;
-    size_t client_max_body_size;
-    size_t client_max_header_size;
     ClientConnection *clientConnection;
     HttpResponse::StatusCode errorCode = HttpResponse::StatusCode::BAD_REQUEST;
 
 
     unsigned long chunkSize = 0;
     bool hasChunkSize = false;
+
+    bool parseChunkedBody();
 
 public:
     std::time_t headerStart = 0;
@@ -47,14 +47,6 @@ public:
     HttpParser(ClientConnection *clientConnection);
 
     ~HttpParser();
-
-    void setClientLimits(const size_t maxBodySize, const size_t maxHeaderSize,
-                         const size_t bodyBufferSize) {
-        client_max_body_size = maxBodySize;
-        client_max_header_size = maxHeaderSize;
-        body_buffer_size = bodyBufferSize;
-    }
-
 
     bool parseRequestLine();
 
