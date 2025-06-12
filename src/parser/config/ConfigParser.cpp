@@ -5,8 +5,13 @@
 #include <algorithm>
 #include <regex>
 #include <parser/http/HttpParser.h>
+#include "common/Logger.h"
 
 ConfigParser::ConfigParser() : rootBlock{"root", {}, {}}, currentLine(0), currentFilename(""), parseSuccessful(true) {
+    httpDirectives = {
+        "client_header_timeout", "client_max_header_size", "client_max_header_count"
+    };
+
     serverDirectives = {
         "listen", "server_name", "root", "index", "client_max_body_size",
         "client_body_timeout", "body_buffer_size", "send_body_buffer_size", "client_header_timeout",
@@ -39,6 +44,12 @@ bool ConfigParser::parse(const std::string &filename) {
 }
 
 bool ConfigParser::isValidDirective(const std::string &directive, const std::string &blockType) const {
+    // Logger::log(LogLevel::DEBUG, "isValidDirective: directive = " + directive + "blockType = " + blockType);
+    if (blockType == "http" &&
+        std::find(httpDirectives.begin(), httpDirectives.end(), directive) != httpDirectives.end()) {
+        return true;
+    }
+
     if (blockType == "server" &&
         std::find(serverDirectives.begin(), serverDirectives.end(), directive) != serverDirectives.end()) {
         return true;
@@ -82,13 +93,23 @@ bool ConfigParser::validateListenValue(const std::string &value) {
 std::vector<ServerConfig> ConfigParser::getServerConfigs() const {
     std::vector<ServerConfig> servers;
 
-    for (const auto &child: rootBlock.children) {
+    for (const auto &child: rootBlock.children[0].children) {
         if (child.name == "server") {
             servers.push_back(parseServerBlock(child));
         }
     }
 
     return servers;
+}
+
+HttpConfig ConfigParser::getHttpConfig() const {
+    for (const auto &child: rootBlock.children) {
+        if (child.name == "http") {
+            return(parseHttpBlock(child));
+        }
+    }
+
+    return HttpConfig(); // to return nothing
 }
 
 void printconfig(ServerConfig config) {
@@ -172,6 +193,21 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
     return config;
 }
 
+HttpConfig ConfigParser::parseHttpBlock(const ConfigBlock& block) const
+{
+    HttpConfig httpConfig;
+    ClientHeaderConfig headerConfig;
+
+    headerConfig.client_header_timeout = block.getSizeValue("client_header_timeout", 60);
+    headerConfig.client_max_header_size = block.getSizeValue("client_max_header_size", 8192);
+    headerConfig.client_max_header_count = block.getSizeValue("client_max_header_count", 10);
+
+    httpConfig.headerConfig = headerConfig;
+    httpConfig.max_request_line_size = block.getSizeValue("max_request_line_size", 50);
+
+    return httpConfig;
+}
+
 static LocationType getLocationType(const std::string &modifier) {
     if (modifier == "=")
         return LocationType::EXACT;
@@ -253,6 +289,7 @@ void ConfigParser::parseErrorPages(const std::vector<std::string> &tokens,
 
 bool ConfigParser::parseBlock(std::ifstream &file, ConfigBlock &block) {
     std::string line;
+    bool httpBlockFound = false;
 
     while (std::getline(file, line) && parseSuccessful) {
         currentLine++;
@@ -283,6 +320,16 @@ bool ConfigParser::parseBlock(std::ifstream &file, ConfigBlock &block) {
                     reportError("Invalid block type: " + blockType);
                     parseSuccessful = false;
                     return false;
+                }
+
+                if (blockType == "http" && httpBlockFound == true) {
+                    reportError("Do not parse multibile http blocks");
+                    parseSuccessful = false;
+                    return false;
+                }
+
+                if (blockType == "http") {
+                    httpBlockFound = true;
                 }
 
                 ConfigBlock childBlock;
@@ -329,6 +376,12 @@ bool ConfigParser::parseBlock(std::ifstream &file, ConfigBlock &block) {
         return false;
     }
 
+    if (httpBlockFound == false) {
+        reportError("Invalid cofig: http Block is missing");
+        parseSuccessful = false;
+        return false;
+    }
+
     return block.name == "root";
 }
 
@@ -339,7 +392,7 @@ void ConfigParser::parseDirective(const std::string &line, ConfigBlock &block) {
     const std::string key = tokens[0];
     tokens.erase(tokens.begin());
 
-    if (block.name == "server" || block.name == "location") {
+    if (block.name == "server" || block.name == "location" || block.name == "http") {
         if (!isValidDirective(key, block.name)) {
             reportError("Invalid directive '" + key + "' for " + block.name + " block");
             parseSuccessful = false;
@@ -347,7 +400,6 @@ void ConfigParser::parseDirective(const std::string &line, ConfigBlock &block) {
         }
     }
 
-    // TODO: clean up this code
     if (key == "error_page") {
         if (tokens.size() != 2) {
             reportError(
@@ -385,7 +437,7 @@ void ConfigParser::parseDirective(const std::string &line, ConfigBlock &block) {
                empty()) {
         if (!validateDigitsOnly(tokens[0], key))
             return;
-    }
+    } 
 
     block.directives[key] = tokens;
 }
@@ -443,5 +495,5 @@ void ConfigParser::reportError(const std::string &message) const {
                                      ? (currentFilename + ":" + std::to_string(currentLine))
                                      : "unknown location";
 
-    std::cerr << RED << "Error at " << location << ": " << message << RESET << std::endl;
+    Logger::log(LogLevel::ERROR, "at " + location + ": " + message);
 }

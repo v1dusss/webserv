@@ -16,12 +16,15 @@ public:
 
     [[nodiscard]] std::vector<ServerConfig> getServerConfigs() const;
 
+    [[nodiscard]] HttpConfig getHttpConfig() const;
+
 private:
     ConfigBlock rootBlock;
     int currentLine;
     std::string currentFilename;
     bool parseSuccessful;
 
+    std::vector<std::string> httpDirectives;
     std::vector<std::string> serverDirectives;
     std::vector<std::string> locationDirectives;
     std::vector<std::string> validDirectivePrefixes;
@@ -34,6 +37,8 @@ private:
     [[nodiscard]] ServerConfig parseServerBlock(const ConfigBlock& block) const;
 
     [[nodiscard]] RouteConfig parseRouteBlock(const ConfigBlock& block, const ServerConfig& serverConfig) const;
+
+    [[nodiscard]] HttpConfig parseHttpBlock(const ConfigBlock& block) const;
 
     bool parseBlock(std::ifstream& file, ConfigBlock& block);
 

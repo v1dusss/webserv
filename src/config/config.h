@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   config.h                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eebert <eebert@student.42heilbronn.de>     +#+  +:+       +#+        */
+/*   By: vsivanat <vsivanat@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/01 13:19:13 by eebert            #+#    #+#             */
-/*   Updated: 2025/06/07 17:39:34 by eebert           ###   ########.fr       */
+/*   Updated: 2025/06/12 15:20:14 by vsivanat         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,11 +53,11 @@ typedef struct {
     std::map<std::string, std::string> return_directive; // Redirects
 } RouteConfig;
 
-struct ClientHeaderConfig {
+typedef struct {
     size_t client_header_timeout; // In seconds
     size_t client_max_header_size; // In bytes the max size of a single header
     size_t client_max_header_count; // Max number of headers
-};
+} ClientHeaderConfig;
 
 typedef struct {
     int port;
@@ -77,5 +77,10 @@ typedef struct {
     size_t keepalive_timeout; // In seconds
     size_t keepalive_requests; // Max requests per connection
 } ServerConfig;
+
+typedef struct {
+    ClientHeaderConfig headerConfig;
+    size_t max_request_line_size;
+}HttpConfig;
 
 #endif //CONFIG_H
