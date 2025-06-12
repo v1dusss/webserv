@@ -12,20 +12,130 @@
 
 ConfigParser::ConfigParser() : rootBlock{"root", {}, {}}, currentLine(0), currentFilename(""), parseSuccessful(true) {
     httpDirectives = {
-        "client_header_timeout", "client_max_header_size", "client_max_header_count"
+        {
+            .name = "client_header_timeout",
+            .type = Directive::TIME,
+        },
+        {
+            .name = "client_max_header_size",
+            .type = Directive::SIZE,
+        },
+        {
+            .name = "client_max_header_count",
+            .type = Directive::COUNT,
+        }
     };
 
     serverDirectives = {
-        "listen", "server_name", "root", "index", "client_max_body_size",
-        "client_body_timeout", "body_buffer_size", "send_body_buffer_size", "client_header_timeout",
-        "client_max_header_size", "client_max_header_count",
-        "keepalive_timeout",
-        "keepalive_requests", "error_page", "internal_api"
+        {
+            .name = "listen",
+            .type = Directive::LIST,
+        },
+        {
+            .name = "server_name",
+            .type = Directive::LIST,
+            .max_arg = 10,
+        },
+        {
+            .name = "root",
+            .type = Directive::LIST,
+        },
+        {
+            .name = "index",
+            .type = Directive::LIST,
+        },
+        {
+            .name = "client_max_body_size",
+            .type = Directive::SIZE,
+        },
+        {
+            .name = "client_body_timeout",
+            .type = Directive::TIME,
+        },
+        {
+            .name = "body_buffer_size",
+            .type = Directive::SIZE,
+        },
+        {
+            .name = "send_body_buffer_size",
+            .type = Directive::SIZE,
+        },
+        {
+            .name = "client_header_timeout",
+            .type = Directive::TIME,
+        },
+        {
+            .name = "client_max_header_size",
+            .type = Directive::SIZE,
+        },
+        {
+            .name = "client_max_header_count",
+            .type = Directive::COUNT,
+        },
+        {
+            .name = "keepalive_timeout",
+            .type = Directive::TIME,
+        },
+        {
+            .name = "keepalive_requests",
+            .type = Directive::COUNT,
+        },
+        {
+            .name = "error_page",
+            .type = Directive::LIST,
+            .max_arg = 2,
+            .min_arg = 2,
+        },
+        {
+            .name = "internal_api",
+            .type = Directive::TOGGLE,
+        },
     };
 
     locationDirectives = {
-        "root", "index", "autoindex", "alias",
-        "deny", "allowed_methods", "error_page", "return", "cgi"
+        {
+            .name = "root",
+            .type = Directive::LIST,
+        },
+        {
+            .name = "index",
+            .type = Directive::LIST,
+        },
+        {
+            .name = "autoindex",
+            .type = Directive::TOGGLE,
+        },
+        {
+            .name = "alias",
+            .type = Directive::LIST,
+        },
+        {
+            .name = "deny",
+            .type = Directive::TOGGLE,
+        },
+        {
+            .name = "allowed_methods",
+            .type = Directive::LIST,
+            .max_arg = 7,
+        },
+        {
+            .name = "error_page",
+            .type = Directive::LIST,
+            .min_arg = 2,
+            .max_arg = 2,
+        },
+        {
+            .name = "return",
+            .type = Directive::LIST,
+            .min_arg = 2,
+            .max_arg = 2,
+        },
+        {
+            .name = "cgi",
+            .type = Directive::LIST,
+            .min_arg = 2,
+            .max_arg = 2,
+        },
     };
 }
 

@@ -24,10 +24,25 @@ private:
     std::string currentFilename;
     bool parseSuccessful;
 
-    std::vector<std::string> httpDirectives;
-    std::vector<std::string> serverDirectives;
-    std::vector<std::string> locationDirectives;
-    std::vector<std::string> validDirectivePrefixes;
+    struct Directive {
+        std::string name;
+
+        enum {
+            SIZE,
+            TIME,
+            COUNT,
+            TOGGLE,
+            LIST,
+        }type;
+
+        int max_arg = 1;
+        int min_arg = 1;
+    };
+
+    std::vector<Directive> httpDirectives;
+    std::vector<Directive> serverDirectives;
+    std::vector<Directive> locationDirectives;
+    std::vector<Directive> validDirectivePrefixes;
 
     [[nodiscard]] bool isValidDirective(const std::string& directive, const std::string& blockType) const;
     bool validateDigitsOnly(const std::string& value, const std::string& directive);
