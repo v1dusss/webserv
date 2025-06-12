@@ -144,7 +144,12 @@ bool HttpParser::parseHeaders() {
                         state = ParseState::ERROR;
                         return false;
                     }
-                    contentLength = std::stoi(contentLengthStr);
+                    contentLength = std::stoul(contentLengthStr);
+                    if (contentLength > clientConnection->config.client_max_body_size) {
+                        state = ParseState::ERROR;
+                        errorCode = HttpResponse::StatusCode::CONTENT_TOO_LARGE;
+                        return false;
+                    }
                 } catch (...) {
                     state = ParseState::ERROR;
                     return false;
