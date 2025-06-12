@@ -188,6 +188,11 @@ std::optional<HttpResponse> RequestHandler::handleRequest() {
         return HttpResponse::html(HttpResponse::StatusCode::METHOD_NOT_ALLOWED);
     }
 
+    if (matchedRoute->deny_all) {
+        Logger::log(LogLevel::WARNING, "Access denied for URI: " + request->uri);
+        return HttpResponse::html(HttpResponse::StatusCode::FORBIDDEN);
+    }
+
     validateTargetPath();
 
     if (isCgiRequest()) {
