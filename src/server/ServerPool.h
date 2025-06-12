@@ -19,6 +19,7 @@ private:
     static std::atomic<bool> running;
     static std::unordered_map<int, std::shared_ptr<ClientConnection> > clients;
     static std::vector<ServerConfig> configs;
+    static std::time_t startTime;
 
 public:
     static void registerClient(int clientFd, const sockaddr_in &clientAddr, const Server *connectedServer);
@@ -30,6 +31,10 @@ public:
     static void start();
 
     static void stop();
+
+    static int getClientCount();
+
+    static std::time_t getStartTime();
 
 private:
     static void serverLoop();
