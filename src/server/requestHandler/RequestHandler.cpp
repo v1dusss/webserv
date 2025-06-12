@@ -193,6 +193,13 @@ std::optional<HttpResponse> RequestHandler::handleRequest() {
         return HttpResponse::html(HttpResponse::StatusCode::FORBIDDEN);
     }
 
+    if (matchedRoute->return_directive.first != -1) {
+        HttpResponse response(matchedRoute->return_directive.first);
+        response.setHeader("Location", matchedRoute->return_directive.second);
+        response.setBody(matchedRoute->return_directive.second);
+        return response;
+    }
+
     validateTargetPath();
 
     if (isCgiRequest()) {

@@ -4,7 +4,11 @@
 #include <iostream>
 #include <algorithm>
 #include <regex>
+#include <unistd.h>
+#include <common/Logger.h>
+#include <parser/cgi/CgiParser.h>
 #include <parser/http/HttpParser.h>
+#include <sys/unistd.h>
 
 ConfigParser::ConfigParser() : rootBlock{"root", {}, {}}, currentLine(0), currentFilename(""), parseSuccessful(true) {
     serverDirectives = {
@@ -17,16 +21,24 @@ ConfigParser::ConfigParser() : rootBlock{"root", {}, {}}, currentLine(0), curren
 
     locationDirectives = {
         "root", "index", "autoindex", "alias",
-        "deny", "allowed_methods", "error_page", "return"
+        "deny", "allowed_methods", "error_page", "return", "cgi"
     };
-
-    validDirectivePrefixes = {"cgi"};
 }
 
 bool ConfigParser::parse(const std::string &filename) {
     std::ifstream file(filename);
     if (!file.is_open()) {
-        std::cerr << RED << "Failed to open config file: " << filename << RESET << std::endl;
+        Logger::log(LogLevel::ERROR, "Failed to open config file.");
+        return false;
+    }
+
+    if (std::filesystem::is_directory(filename)) {
+        Logger::log(LogLevel::ERROR, "Config file is a directory.");
+        return false;
+    }
+
+    if (access(filename.c_str(), R_OK) != 0) {
+        Logger::log(LogLevel::ERROR, "Config file is not readable.");
         return false;
     }
 
@@ -229,8 +241,11 @@ RouteConfig ConfigParser::parseRouteBlock(const ConfigBlock &block, const Server
 
     const auto returnDir = block.getDirective("return");
     if (returnDir.size() >= 2) {
-        route.return_directive[returnDir[0]] = returnDir[1];
-    }
+        const int statusCode = std::stoi(returnDir[0]);
+        route.return_directive.first = statusCode;
+        route.return_directive.second = returnDir[1];
+    } else
+        route.return_directive.first = -1;
 
     return route;
 }

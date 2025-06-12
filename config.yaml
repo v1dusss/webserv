@@ -5,10 +5,11 @@
     
     client_max_body_size   10;
     
-    location /test {
+    location /lost2 {
     root ./www;
     index index.html;
     autoindex off;
+    return 200 https://github.com;
   }
   }
     
