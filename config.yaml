@@ -1,8 +1,9 @@
-
 http{
+
    client_header_timeout 2;
    client_max_header_size 1MB;
    client_max_header_count 10;
+
     server {
     listen                 0.0.0.0:8080;
     server_name            test.localhost;

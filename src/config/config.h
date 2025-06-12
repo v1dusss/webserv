@@ -6,7 +6,7 @@
 /*   By: vsivanat <vsivanat@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/01 13:19:13 by eebert            #+#    #+#             */
-/*   Updated: 2025/06/12 15:20:14 by vsivanat         ###   ########.fr       */
+/*   Updated: 2025/06/12 20:36:38 by vsivanat         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,7 +50,7 @@ typedef struct {
     std::map<int, std::string> error_pages; // Status code to page path
     bool deny_all; // Access control
     std::map<std::string, std::string> cgi_params;
-    std::map<std::string, std::string> return_directive; // Redirects
+    std::pair<int, std::string> return_directive; // Redirects
 } RouteConfig;
 
 typedef struct {
