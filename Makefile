@@ -41,6 +41,7 @@ SRC = main.cpp \
 	JsonParser.cpp \
 	JsonValue.cpp \
 	JsonParseError.cpp \
+	InternalApi.cpp \
 
 
 OBJ_DIR = obj

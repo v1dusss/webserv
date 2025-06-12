@@ -188,6 +188,11 @@ std::optional<HttpResponse> RequestHandler::handleRequest() {
         return HttpResponse::html(HttpResponse::StatusCode::METHOD_NOT_ALLOWED);
     }
 
+    if (matchedRoute->internalHandler != nullptr) {
+        Logger::log(LogLevel::DEBUG, "Handling internal request for URI: " + request->uri);
+        return matchedRoute->internalHandler(request);
+    }
+
     if (matchedRoute->deny_all) {
         Logger::log(LogLevel::WARNING, "Access denied for URI: " + request->uri);
         return HttpResponse::html(HttpResponse::StatusCode::FORBIDDEN);

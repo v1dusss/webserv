@@ -6,7 +6,7 @@
 /*   By: eebert <eebert@student.42heilbronn.de>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/01 13:19:13 by eebert            #+#    #+#             */
-/*   Updated: 2025/06/12 15:39:10 by eebert           ###   ########.fr       */
+/*   Updated: 2025/06/12 17:41:56 by eebert           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,11 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <functional>
+#include <memory>
+
+class HttpRequest;
+class HttpResponse;
 
 typedef enum {
     GET,
@@ -51,6 +56,7 @@ typedef struct {
     bool deny_all; // Access control
     std::map<std::string, std::string> cgi_params;
     std::pair<int, std::string> return_directive; // Redirects
+    std::function<HttpResponse(const std::shared_ptr<HttpRequest> &request)> internalHandler;
 } RouteConfig;
 
 struct ClientHeaderConfig {

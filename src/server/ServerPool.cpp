@@ -20,6 +20,7 @@ std::vector<std::shared_ptr<Server> > ServerPool::servers;
 std::atomic<bool> ServerPool::running{false};
 std::unordered_map<int, std::shared_ptr<ClientConnection> > ServerPool::clients;
 std::vector<ServerConfig> ServerPool::configs;
+std::time_t ServerPool::startTime = 0;
 
 void ServerPool::registerClient(int clientFd, const sockaddr_in &clientAddr, const Server *connectedServer) {
     clients[clientFd] = std::make_shared<ClientConnection>(clientFd, clientAddr, connectedServer);
@@ -127,6 +128,8 @@ void ServerPool::start() {
         return;
     }
 
+    startTime = std::time(nullptr);
+
     int startedServers = 0;
     for (const auto &server: servers) {
         if (server->listen()) {
@@ -144,6 +147,7 @@ void ServerPool::start() {
 
 void ServerPool::stop() {
     running.store(false);
+    startTime = 0;
 }
 
 void ServerPool::serverLoop() {
@@ -199,4 +203,12 @@ void ServerPool::cleanUp() {
     configs.clear();
     servers.clear();
     Logger::log(LogLevel::INFO, "Server pool cleaned up.");
+}
+
+int ServerPool::getClientCount() {
+    return clients.size();
+}
+
+std::time_t ServerPool::getStartTime() {
+    return startTime;
 }

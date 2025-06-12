@@ -8,7 +8,9 @@
 #include <common/Logger.h>
 #include <parser/cgi/CgiParser.h>
 #include <parser/http/HttpParser.h>
+#include <server/requestHandler/InternalApi.h>
 #include <sys/unistd.h>
+#include <filesystem>
 
 ConfigParser::ConfigParser() : rootBlock{"root", {}, {}}, currentLine(0), currentFilename(""), parseSuccessful(true) {
     serverDirectives = {
@@ -16,7 +18,7 @@ ConfigParser::ConfigParser() : rootBlock{"root", {}, {}}, currentLine(0), curren
         "client_body_timeout", "body_buffer_size", "send_body_buffer_size", "client_header_timeout",
         "client_max_header_size", "client_max_header_count",
         "keepalive_timeout",
-        "keepalive_requests", "error_page"
+        "keepalive_requests", "error_page", "internal_api"
     };
 
     locationDirectives = {
@@ -179,6 +181,10 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
         }
     }
 
+    std::vector<std::string> internalApiDirectives = block.getDirective("internal_api");
+    if (!internalApiDirectives.empty() && internalApiDirectives[0] == "on")
+        InternalApi::registerRoutes(config);
+
     printconfig(config);
 
     return config;
@@ -199,6 +205,7 @@ RouteConfig ConfigParser::parseRouteBlock(const ConfigBlock &block, const Server
 
     route.autoindex = false;
     route.deny_all = false;
+    route.internalHandler = nullptr;
 
     const auto params = block.getDirective("_parameters");
     if (params.empty())

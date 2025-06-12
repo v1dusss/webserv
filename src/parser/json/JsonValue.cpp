@@ -142,7 +142,7 @@ std::string JsonValue::toString() const {
                     case '\t': result += "\\t";
                         break;
                     default:
-                        if (c >= 0 && c < 32) {
+                        if ( c < 32) {
                             char buf[8];
                             snprintf(buf, sizeof(buf), "\\u%04x", c);
                             result += buf;
