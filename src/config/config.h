@@ -6,7 +6,7 @@
 /*   By: eebert <eebert@student.42heilbronn.de>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/01 13:19:13 by eebert            #+#    #+#             */
-/*   Updated: 2025/06/12 17:41:56 by eebert           ###   ########.fr       */
+/*   Updated: 2025/06/12 15:39:10 by eebert           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,15 +55,16 @@ typedef struct {
     std::map<int, std::string> error_pages; // Status code to page path
     bool deny_all; // Access control
     std::map<std::string, std::string> cgi_params;
-    std::pair<int, std::string> return_directive; // Redirects
+    std::pair<int, std::string> return_directive;
     std::function<HttpResponse(const std::shared_ptr<HttpRequest> &request)> internalHandler;
+// Redirects
 } RouteConfig;
 
-struct ClientHeaderConfig {
+typedef struct  {
     size_t client_header_timeout; // In seconds
     size_t client_max_header_size; // In bytes the max size of a single header
     size_t client_max_header_count; // Max number of headers
-};
+} ClientHeaderConfig;
 
 typedef struct {
     int port;
@@ -83,5 +84,10 @@ typedef struct {
     size_t keepalive_timeout; // In seconds
     size_t keepalive_requests; // Max requests per connection
 } ServerConfig;
+
+typedef struct {
+    ClientHeaderConfig headerConfig;
+    size_t max_request_line_size;
+}HttpConfig;
 
 #endif //CONFIG_H

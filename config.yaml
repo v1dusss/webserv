@@ -1,18 +1,9 @@
+http{
 
-  server {
-    listen        127.0.0.1:8080;
-    server_name   localhost;
-    
-    client_max_body_size   10;
-    
-    location /lost2 {
-    root ./www;
-    index index.html;
-    autoindex off;
-    return 200 https://github.com;
-  }
-  }
-    
+   client_header_timeout 2;
+   client_max_header_size 1MB;
+   client_max_header_count 10;
+
     server {
     listen        127.0.0.1:8080;
     server_name   api.localhost;
@@ -70,4 +61,4 @@
     cgi .py /usr/bin/python3;
   }
   }
-
+}
