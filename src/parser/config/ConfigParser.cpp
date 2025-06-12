@@ -164,8 +164,7 @@ bool ConfigParser::parse(const std::string &filename) {
     return result && parseSuccessful;
 }
 
-bool ConfigParser::isValidDirective(const std::string &directive, const std::string &blockType) const {
-    // Logger::log(LogLevel::DEBUG, "isValidDirective: directive = " + directive + "blockType = " + blockType);
+bool ConfigParser::isValidDirective(const Directive &directive, const std::string &blockType) const {
     if (blockType == "http" &&
         std::find(httpDirectives.begin(), httpDirectives.end(), directive) != httpDirectives.end()) {
         return true;
@@ -179,12 +178,6 @@ bool ConfigParser::isValidDirective(const std::string &directive, const std::str
     if (blockType == "location" &&
         std::find(locationDirectives.begin(), locationDirectives.end(), directive) != locationDirectives.end()) {
         return true;
-    }
-
-    for (const auto &prefix: validDirectivePrefixes) {
-        if (directive.substr(0, prefix.length()) == prefix) {
-            return true;
-        }
     }
 
     return false;
@@ -456,6 +449,24 @@ bool ConfigParser::parseBlock(std::ifstream &file, ConfigBlock &block) {
                     httpBlockFound = true;
                 }
 
+                if (blockType == "http" && block.name != "root") {
+                    reportError("Http block must be a child of the root block");
+                    parseSuccessful = false;
+                    return false;
+                }
+
+                if (blockType == "server" && block.name != "http") {
+                    reportError("Server block must be a child of the http block");
+                    parseSuccessful = false;
+                    return false;
+                }
+
+                if (blockType == "location" && block.name != "server") {
+                    reportError("Location block must be a child of the server block");
+                    parseSuccessful = false;
+                    return false;
+                }
+
                 ConfigBlock childBlock;
                 childBlock.name = blockType;
                 tokens.erase(tokens.begin());
@@ -516,13 +527,12 @@ void ConfigParser::parseDirective(const std::string &line, ConfigBlock &block) {
     const std::string key = tokens[0];
     tokens.erase(tokens.begin());
 
-    if (block.name == "server" || block.name == "location" || block.name == "http") {
-        if (!isValidDirective(key, block.name)) {
-            reportError("Invalid directive '" + key + "' for " + block.name + " block");
-            parseSuccessful = false;
-            return;
-        }
+    if (!isValidDirective(key, block.name)) {
+        reportError("Invalid directive '" + key + "' for " + block.name + " block");
+        parseSuccessful = false;
+        return;
     }
+
 
     // TODO: clean up this code
     if (key == "error_page") {

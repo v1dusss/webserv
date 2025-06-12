@@ -44,7 +44,7 @@ private:
     std::vector<Directive> locationDirectives;
     std::vector<Directive> validDirectivePrefixes;
 
-    [[nodiscard]] bool isValidDirective(const std::string& directive, const std::string& blockType) const;
+    [[nodiscard]] bool isValidDirective(const Directive& directive, const std::string& blockType) const;
     bool validateDigitsOnly(const std::string& value, const std::string& directive);
     bool validateListenValue(const std::string& value);
 
