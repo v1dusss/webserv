@@ -156,6 +156,13 @@ bool HttpParser::parseHeaders() {
                 }
             }
 
+            if (request->headers.find("Host") == request->headers.end()) {
+                Logger::log(LogLevel::ERROR, "Host header is missing");
+                state = ParseState::ERROR;
+                errorCode = HttpResponse::StatusCode::BAD_REQUEST;
+                return false;
+            }
+
             std::string transferEncoding = request->getHeader("Transfer-Encoding");
             chunkedTransfer = (transferEncoding == "chunked");
 
