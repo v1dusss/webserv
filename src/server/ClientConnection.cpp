@@ -25,14 +25,14 @@ ClientConnection::ClientConnection(const int clientFd,
                                                                    clientAddr(clientAddr), parser(this),
                                                                    connectedServer(connectedServer) {
     // TODO: change to http config part
-    // the only important thing here is maxHeaderSize because the other things will be overwritten by the server config when the virtual-host matching is done
-    parser.setClientLimits(100000, 1000, 100000);
     config.client_body_timeout = 0;
     config.keepalive_timeout = 0;
     config.keepalive_requests = 0;
     config.headerConfig.client_header_timeout = 2;
     config.headerConfig.client_max_header_size = 8192;
     config.headerConfig.client_max_header_count = 100;
+    config.body_buffer_size = 8192;
+    config.client_max_body_size = 1 * 1024 * 1024; // 1 MB
 
     FdHandler::addFd(clientFd, POLLIN | POLLOUT, [this](const int fd, const short events) {
         (void) fd;
@@ -208,7 +208,4 @@ void ClientConnection::setResponse(const HttpResponse &response) {
 
 void ClientConnection::setConfig(const ServerConfig &config) {
     this->config = config;
-    parser.setClientLimits(config.client_max_body_size,
-                           config.headerConfig.client_max_header_size,
-                           config.body_buffer_size);
 }
