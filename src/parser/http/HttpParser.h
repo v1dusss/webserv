@@ -11,7 +11,7 @@
 #include <optional>
 #include <ctime>
 #include <server/response/HttpResponse.h>
-#include "config/Config.h"
+#include "config/config.h"
 
 enum class ParseState {
     REQUEST_LINE,
