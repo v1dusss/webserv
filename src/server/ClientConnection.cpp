@@ -18,19 +18,20 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#include "ServerPool.h"
+
 
 ClientConnection::ClientConnection(const int clientFd,
                                    const sockaddr_in clientAddr,
                                    const Server *connectedServer): fd(clientFd),
                                                                    clientAddr(clientAddr), parser(this),
                                                                    connectedServer(connectedServer) {
-    // TODO: change to http config part
     config.client_body_timeout = 0;
     config.keepalive_timeout = 0;
     config.keepalive_requests = 0;
-    config.headerConfig.client_header_timeout = 2;
-    config.headerConfig.client_max_header_size = 8192;
-    config.headerConfig.client_max_header_count = 100;
+    config.headerConfig.client_header_timeout = ServerPool::getHttpConfig().headerConfig.client_header_timeout;
+    config.headerConfig.client_max_header_size = ServerPool::getHttpConfig().headerConfig.client_max_header_size;
+    config.headerConfig.client_max_header_count = ServerPool::getHttpConfig().headerConfig.client_max_header_count;
     config.body_buffer_size = 8192;
     config.client_max_body_size = 1 * 1024 * 1024; // 1 MB
 
@@ -91,7 +92,6 @@ void ClientConnection::handleInput() {
 
     if (parser.parse(buffer, bytesRead)) {
         const auto request = parser.getRequest();
-
         keepAlive = request->getHeader("Connection") == "keep-alive";
 
         Logger::log(LogLevel::INFO, "Request Parsed");

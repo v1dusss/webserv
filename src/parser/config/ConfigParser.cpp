@@ -12,7 +12,7 @@
 
 ConfigParser::ConfigParser() : rootBlock{"root", {}, {}}, currentLine(0), currentFilename(""), parseSuccessful(true) {
     httpDirectives = {
-        "client_header_timeout", "client_max_header_size", "client_max_header_count"
+        "client_header_timeout", "client_max_header_size", "client_max_header_count", "max_request_line_size"
     };
 
     serverDirectives = {
@@ -116,7 +116,7 @@ std::vector<ServerConfig> ConfigParser::getServerConfigs() const {
 HttpConfig ConfigParser::getHttpConfig() const {
     for (const auto &child: rootBlock.children) {
         if (child.name == "http") {
-            return(parseHttpBlock(child));
+            return (parseHttpBlock(child));
         }
     }
 
@@ -205,8 +205,7 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
     return config;
 }
 
-HttpConfig ConfigParser::parseHttpBlock(const ConfigBlock& block) const
-{
+HttpConfig ConfigParser::parseHttpBlock(const ConfigBlock &block) const {
     HttpConfig httpConfig;
     ClientHeaderConfig headerConfig;
 
@@ -461,20 +460,21 @@ void ConfigParser::parseDirective(const std::string &line, ConfigBlock &block) {
 std::vector<std::string> ConfigParser::tokenize(const std::string &str) {
     std::vector<std::string> tokens;
     std::string token;
-    bool inQuotes = false;
+    bool inSingleQuotes = false;
+    bool inDoubleQuotes = false;
 
     for (char c: str) {
-        if (c == '"') {
-            inQuotes = !inQuotes;
-            token += c;
-        } else if ((c == ' ' || c == '\t') && !inQuotes) {
+        if (c == '"' && !inSingleQuotes)
+            inDoubleQuotes = !inDoubleQuotes;
+        else if (c == '\'' && !inDoubleQuotes)
+            inSingleQuotes = !inSingleQuotes;
+        else if ((c == ' ' || c == '\t') && !inDoubleQuotes && !inSingleQuotes) {
             if (!token.empty()) {
                 tokens.push_back(token);
                 token.clear();
             }
-        } else {
+        } else
             token += c;
-        }
     }
 
     if (!token.empty()) {

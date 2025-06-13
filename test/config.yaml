@@ -1,0 +1,15 @@
+http {
+  max_request_line_size 103;
+  client_max_header_count 1;
+
+  server {
+    listen 127.0.0.1:8080;
+  
+    client_max_header_size 1.1kb;
+    client_max_header_count 20;
+
+    location / {
+      return 200 "Hello, World!";
+    }
+  }
+}
