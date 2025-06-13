@@ -9,6 +9,7 @@
 #include <parser/cgi/CgiParser.h>
 #include <parser/http/HttpParser.h>
 #include <sys/unistd.h>
+#include <filesystem>
 
 ConfigParser::ConfigParser() : rootBlock{"root", {}, {}}, currentLine(0), currentFilename(""), parseSuccessful(true) {
     httpDirectives = {
@@ -30,10 +31,14 @@ ConfigParser::ConfigParser() : rootBlock{"root", {}, {}}, currentLine(0), curren
         {
             .name = "listen",
             .type = Directive::LIST,
+            .validate = [this](const std::vector<std::string> &tokens) {
+                return validateListenValue(tokens);
+            },
         },
         {
             .name = "server_name",
             .type = Directive::LIST,
+            .min_arg = 1,
             .max_arg = 10,
         },
         {
@@ -83,13 +88,16 @@ ConfigParser::ConfigParser() : rootBlock{"root", {}, {}}, currentLine(0), curren
         {
             .name = "error_page",
             .type = Directive::LIST,
-            .max_arg = 2,
             .min_arg = 2,
+            .max_arg = 2,
+            .validate = [this](const std::vector<std::string> &tokens) {
+                return validateErrorPage(tokens);
+            },
         },
         {
             .name = "internal_api",
             .type = Directive::TOGGLE,
-        },
+        }
     };
 
     locationDirectives = {
@@ -116,6 +124,7 @@ ConfigParser::ConfigParser() : rootBlock{"root", {}, {}}, currentLine(0), curren
         {
             .name = "allowed_methods",
             .type = Directive::LIST,
+            .min_arg = 1,
             .max_arg = 7,
         },
         {
@@ -135,8 +144,23 @@ ConfigParser::ConfigParser() : rootBlock{"root", {}, {}}, currentLine(0), curren
             .type = Directive::LIST,
             .min_arg = 2,
             .max_arg = 2,
-        },
+        }
     };
+
+    for (const auto &directive: httpDirectives) {
+        Logger::log(LogLevel::DEBUG, "Added HTTP directive: " + directive.name + " with type: " + std::to_string(directive.type) +
+                     ", min args: " + std::to_string(directive.min_arg) + ", max args: " + std::to_string(directive.max_arg));
+    }
+
+    for (const auto &directive: serverDirectives) {
+        Logger::log(LogLevel::DEBUG, "Added Server directive: " + directive.name + " with type: " + std::to_string(directive.type) +
+                     ", min args: " + std::to_string(directive.min_arg) + ", max args: " + std::to_string(directive.max_arg));
+    }
+
+    for (const auto &directive: locationDirectives) {
+        Logger::log(LogLevel::DEBUG, "Added Location directive: " + directive.name + " with type: " + std::to_string(directive.type) +
+                     ", min args: " + std::to_string(directive.min_arg) + ", max args: " + std::to_string(directive.max_arg));
+    }
 }
 
 bool ConfigParser::parse(const std::string &filename) {
@@ -164,23 +188,32 @@ bool ConfigParser::parse(const std::string &filename) {
     return result && parseSuccessful;
 }
 
-bool ConfigParser::isValidDirective(const Directive &directive, const std::string &blockType) const {
-    if (blockType == "http" &&
-        std::find(httpDirectives.begin(), httpDirectives.end(), directive) != httpDirectives.end()) {
-        return true;
+std::optional<ConfigParser::Directive> ConfigParser::getValidDirective(const std::string key, const std::string& blockType) const {
+    if (blockType == "http") {
+        for (const auto &directive: httpDirectives) {
+            if (directive.name == key) {
+                return std::make_optional(directive);
+            }
+        }
     }
 
-    if (blockType == "server" &&
-        std::find(serverDirectives.begin(), serverDirectives.end(), directive) != serverDirectives.end()) {
-        return true;
+    else if (blockType == "server") {
+        for (const auto &directive: serverDirectives) {
+            if (directive.name == key) {
+                return std::make_optional(directive);
+            }
+        }
     }
 
-    if (blockType == "location" &&
-        std::find(locationDirectives.begin(), locationDirectives.end(), directive) != locationDirectives.end()) {
-        return true;
+    else if (blockType == "location") {
+        for (const auto &directive: locationDirectives) {
+            if (directive.name == key) {
+                return std::make_optional(directive);
+            }
+        }
     }
 
-    return false;
+    return std::nullopt;
 }
 
 bool ConfigParser::validateDigitsOnly(const std::string &value, const std::string &directive) {
@@ -191,17 +224,6 @@ bool ConfigParser::validateDigitsOnly(const std::string &value, const std::strin
         return false;
     }
     return true;
-}
-
-bool ConfigParser::validateListenValue(const std::string &value) {
-    size_t colonPos = value.find(':');
-
-    if (colonPos == std::string::npos) {
-        return validateDigitsOnly(value, "listen");
-    }
-
-    std::string port = value.substr(colonPos + 1);
-    return validateDigitsOnly(port, "listen");
 }
 
 std::vector<ServerConfig> ConfigParser::getServerConfigs() const {
@@ -403,6 +425,45 @@ void ConfigParser::parseErrorPages(const std::vector<std::string> &tokens,
     }
 }
 
+bool ConfigParser::validateErrorPage(const std::vector<std::string> &tokens) {
+    if (tokens.size() != 2) {
+        Logger::log(LogLevel::ERROR, "Invalid error_page directive: " + tokens[0] + " - expected format: error_page <status_code> <path>");
+        return false;
+    }
+
+    int statusCode;
+    if (!tryParseInt(tokens[0], statusCode)) {
+        Logger::log(LogLevel::ERROR, "Invalid status code in error_page directive: " + tokens[0]);
+        return false;
+    }
+
+    if (!HttpParser::isHttpStatusCode(statusCode)) {
+        Logger::log(LogLevel::ERROR, "Invalid HTTP status code in error_page: " + std::to_string(statusCode));
+        return false;
+    }
+
+    return true;
+}
+
+bool ConfigParser::validateListenValue(const std::vector<std::string> &tokens) {
+    if (tokens.size() != 1) {
+        Logger::log(LogLevel::ERROR, "Invalid listen directive: " + tokens[0] + " - expected format: listen <port> or listen <host>:<port>");
+        return false;
+    }
+
+    const std::string &listenValue = tokens[0];
+    size_t colonPos = listenValue.find(':');
+
+    if (colonPos == std::string::npos) {
+        Logger::log(LogLevel::DEBUG, "listenValue: " + listenValue);
+        return validateDigitsOnly(listenValue, "listen");
+    }
+
+    std::string port = listenValue.substr(colonPos + 1);
+    Logger::log(LogLevel::DEBUG, "listenValue: " + listenValue + ", port: " + port);
+    return validateDigitsOnly(port, "listen");
+}
+
 
 bool ConfigParser::parseBlock(std::ifstream &file, ConfigBlock &block) {
     std::string line;
@@ -527,51 +588,46 @@ void ConfigParser::parseDirective(const std::string &line, ConfigBlock &block) {
     const std::string key = tokens[0];
     tokens.erase(tokens.begin());
 
-    if (!isValidDirective(key, block.name)) {
-        reportError("Invalid directive '" + key + "' for " + block.name + " block");
+    auto validDirective = getValidDirective(key, block.name);
+    if (!validDirective.has_value()) {
+        reportError("Unknown directive: " + key + " in " + block.name + " block");
         parseSuccessful = false;
         return;
     }
 
+    if (tokens.size() > validDirective->max_arg) {
+        reportError("Too many arguments for directive: " + key + ", currently " + std::to_string(tokens.size()) +
+                     ", expected max " + std::to_string(validDirective->max_arg));
+        parseSuccessful = false;
+        return;
+    } else if (tokens.size() < validDirective->min_arg) {
+        reportError("Not enough arguments for directive: " + key + ", currently " + std::to_string(tokens.size()) +
+                     ", expected at least " + std::to_string(validDirective->min_arg));
+        parseSuccessful = false;
+        return;
+    }
 
-    // TODO: clean up this code
-    if (key == "error_page") {
-        if (tokens.size() != 2) {
-            reportError(
-                "Invalid error_page directive: " + line + " - expected format: error_page <status_code> <path>");
-            parseSuccessful = false;
-            return;
-        }
-
-        int statusCode;
-        if (!tryParseInt(tokens[0], statusCode)) {
-            reportError("Invalid status code in error_page directive: " + tokens[0]);
-            parseSuccessful = false;
-            return;
-        }
-
-        if (!HttpParser::isHttpStatusCode(statusCode)) {
-            reportError("Invalid HTTP status code in error_page: " + std::to_string(statusCode));
-            parseSuccessful = false;
-            return;
-        }
-    } else if (key == "listen" && !tokens.empty()) {
-        if (!validateListenValue(tokens[0])) {
-            return;
-        }
-    } else if ((key == "client_max_body_size" || key == "client_max_header_size" ||
-                key == "body_buffer_size" || key == "send_body_buffer_size") && !tokens.empty()) {
+    if ((validDirective->type == Directive::SIZE)) {
         const std::regex sizeRegex("^\\d+(\\.\\d+)?([kmgt]b?|[kmgt]i?bytes|bytes)?$", std::regex::icase);
         if (!std::regex_match(tokens[0], sizeRegex)) {
             reportError("Invalid value for " + key + ": " + tokens[0]);
             parseSuccessful = false;
             return;
         }
-    } else if ((key == "keepalive_timeout" || key == "keepalive_requests" || key == "client_header_timeout" ||
-                key == "client_body_timeout") && !tokens.
-               empty()) {
+    } else if ((validDirective->type == Directive::COUNT || validDirective->type == Directive::TIME)) {
         if (!validateDigitsOnly(tokens[0], key))
             return;
+    } else if (validDirective->type == Directive::TOGGLE) {
+        if (tokens[0] != "on" && tokens[0] != "off") {
+            reportError("Invalid value for " + key + ": " + tokens[0] + " - expected 'on' or 'off'");
+            parseSuccessful = false;
+            return;
+        }
+    }
+    Logger::log(LogLevel::DEBUG, "Parsing directive: " + key + " in the " + std::string(block.name) + " block with args: " + std::to_string(tokens.size()));
+    if (validDirective->validate != nullptr && validDirective->validate(tokens) == false) {
+        parseSuccessful = false;
+        return;
     }
 
     block.directives[key] = tokens;

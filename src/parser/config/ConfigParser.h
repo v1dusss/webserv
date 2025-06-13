@@ -7,6 +7,7 @@
 #include <fstream>
 #include "config/config.h"
 #include "ConfigBlock.h"
+#include <optional>
 
 class ConfigParser {
 public:
@@ -35,8 +36,10 @@ private:
             LIST,
         }type;
 
-        int max_arg = 1;
-        int min_arg = 1;
+        size_t min_arg = 1;
+        size_t max_arg = 1;
+
+        std::function<bool(const std::vector<std::string>&)> validate = nullptr;
     };
 
     std::vector<Directive> httpDirectives;
@@ -44,10 +47,10 @@ private:
     std::vector<Directive> locationDirectives;
     std::vector<Directive> validDirectivePrefixes;
 
-    [[nodiscard]] bool isValidDirective(const Directive& directive, const std::string& blockType) const;
+    std::optional<Directive> getValidDirective(const std::string key, const std::string& blockType) const;
     bool validateDigitsOnly(const std::string& value, const std::string& directive);
-    bool validateListenValue(const std::string& value);
-
+    bool validateErrorPage(const std::vector<std::string> &tokens);
+    bool validateListenValue(const std::vector<std::string> &tokens);
 
     [[nodiscard]] ServerConfig parseServerBlock(const ConfigBlock& block) const;
 
