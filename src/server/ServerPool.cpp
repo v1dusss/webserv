@@ -21,6 +21,7 @@ std::atomic<bool> ServerPool::running{false};
 std::unordered_map<int, std::shared_ptr<ClientConnection> > ServerPool::clients;
 std::vector<ServerConfig> ServerPool::configs;
 std::time_t ServerPool::startTime = 0;
+HttpConfig ServerPool::httpConfig;
 
 void ServerPool::registerClient(int clientFd, const sockaddr_in &clientAddr, const Server *connectedServer) {
     clients[clientFd] = std::make_shared<ClientConnection>(clientFd, clientAddr, connectedServer);
@@ -107,6 +108,7 @@ bool ServerPool::loadConfig(const std::string &configFile) {
         return false;
     }
 
+    httpConfig = parser.getHttpConfig();
     configs = parser.getServerConfigs();
 
     for (const auto &serverConfig: configs) {
@@ -211,4 +213,8 @@ int ServerPool::getClientCount() {
 
 std::time_t ServerPool::getStartTime() {
     return startTime;
+}
+
+HttpConfig& ServerPool::getHttpConfig() {
+    return httpConfig;
 }

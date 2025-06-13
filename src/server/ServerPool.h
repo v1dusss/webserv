@@ -20,6 +20,7 @@ private:
     static std::unordered_map<int, std::shared_ptr<ClientConnection> > clients;
     static std::vector<ServerConfig> configs;
     static std::time_t startTime;
+    static HttpConfig httpConfig;
 
 public:
     static void registerClient(int clientFd, const sockaddr_in &clientAddr, const Server *connectedServer);
@@ -35,6 +36,8 @@ public:
     static int getClientCount();
 
     static std::time_t getStartTime();
+
+    static HttpConfig& getHttpConfig();
 
 private:
     static void serverLoop();
