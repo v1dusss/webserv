@@ -145,11 +145,6 @@ bool HttpParser::parseHeaders() {
                         return false;
                     }
                     contentLength = std::stoul(contentLengthStr);
-                    if (contentLength > clientConnection->config.client_max_body_size) {
-                        state = ParseState::ERROR;
-                        errorCode = HttpResponse::StatusCode::CONTENT_TOO_LARGE;
-                        return false;
-                    }
                 } catch (...) {
                     state = ParseState::ERROR;
                     return false;
@@ -233,6 +228,7 @@ bool HttpParser::parseBody() {
         Logger::log(LogLevel::ERROR, "tried contentLength: " + std::to_string(contentLength) +
                                      " client_max_body_size: " + std::to_string(client_max_body_size));
         state = ParseState::ERROR;
+        errorCode = HttpResponse::StatusCode::CONTENT_TOO_LARGE;
         return false;
     }
 
