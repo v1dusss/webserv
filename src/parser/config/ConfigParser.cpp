@@ -552,6 +552,10 @@ bool ConfigParser::parseBlock(std::ifstream &file, ConfigBlock &block) {
                             return false;
                         }
                     }
+                } else if (!tokens.empty()) {
+                    reportError("Invalid block header: " + blockHeader + " - expected no parameters for " + blockType + " block");
+                    parseSuccessful = false;
+                    return false;
                 }
 
                 if (!tokens.empty()) {
