@@ -146,21 +146,6 @@ ConfigParser::ConfigParser() : rootBlock{"root", {}, {}}, currentLine(0), curren
             .max_arg = 2,
         }
     };
-
-    for (const auto &directive: httpDirectives) {
-        Logger::log(LogLevel::DEBUG, "Added HTTP directive: " + directive.name + " with type: " + std::to_string(directive.type) +
-                     ", min args: " + std::to_string(directive.min_arg) + ", max args: " + std::to_string(directive.max_arg));
-    }
-
-    for (const auto &directive: serverDirectives) {
-        Logger::log(LogLevel::DEBUG, "Added Server directive: " + directive.name + " with type: " + std::to_string(directive.type) +
-                     ", min args: " + std::to_string(directive.min_arg) + ", max args: " + std::to_string(directive.max_arg));
-    }
-
-    for (const auto &directive: locationDirectives) {
-        Logger::log(LogLevel::DEBUG, "Added Location directive: " + directive.name + " with type: " + std::to_string(directive.type) +
-                     ", min args: " + std::to_string(directive.min_arg) + ", max args: " + std::to_string(directive.max_arg));
-    }
 }
 
 bool ConfigParser::parse(const std::string &filename) {
@@ -628,7 +613,7 @@ void ConfigParser::parseDirective(const std::string &line, ConfigBlock &block) {
             return;
         }
     }
-    Logger::log(LogLevel::DEBUG, "Parsing directive: " + key + " in the " + std::string(block.name) + " block with args: " + std::to_string(tokens.size()));
+
     if (validDirective->validate != nullptr && validDirective->validate(tokens) == false) {
         parseSuccessful = false;
         return;
