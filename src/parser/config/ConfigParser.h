@@ -7,6 +7,7 @@
 #include <fstream>
 #include "config/config.h"
 #include "ConfigBlock.h"
+#include <optional>
 
 class ConfigParser {
 public:
@@ -24,15 +25,32 @@ private:
     std::string currentFilename;
     bool parseSuccessful;
 
-    std::vector<std::string> httpDirectives;
-    std::vector<std::string> serverDirectives;
-    std::vector<std::string> locationDirectives;
-    std::vector<std::string> validDirectivePrefixes;
+    struct Directive {
+        std::string name;
 
-    [[nodiscard]] bool isValidDirective(const std::string& directive, const std::string& blockType) const;
+        enum {
+            SIZE,
+            TIME,
+            COUNT,
+            TOGGLE,
+            LIST,
+        }type;
+
+        size_t min_arg = 1;
+        size_t max_arg = 1;
+
+        std::function<bool(const std::vector<std::string>&)> validate = nullptr;
+    };
+
+    std::vector<Directive> httpDirectives;
+    std::vector<Directive> serverDirectives;
+    std::vector<Directive> locationDirectives;
+    std::vector<Directive> validDirectivePrefixes;
+
+    std::optional<Directive> getValidDirective(const std::string key, const std::string& blockType) const;
     bool validateDigitsOnly(const std::string& value, const std::string& directive);
-    bool validateListenValue(const std::string& value);
-
+    bool validateErrorPage(const std::vector<std::string> &tokens);
+    bool validateListenValue(const std::vector<std::string> &tokens);
 
     [[nodiscard]] ServerConfig parseServerBlock(const ConfigBlock& block) const;
 

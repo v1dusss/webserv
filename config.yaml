@@ -5,15 +5,6 @@ http{
    client_max_header_count 10;
 
     server {
-    listen        127.0.0.1:8080;
-    server_name   api.localhost;
-
-    internal_api on;
-  }
-  
-
-    
-    server {
     listen                 0.0.0.0:8080;
     server_name            test.localhost;
     client_max_body_size   200MB;
@@ -29,7 +20,6 @@ http{
     index index.html;
     autoindex off;
   }
-    
     # Directory listing
     location /list {
     root ./www/list;
@@ -39,9 +29,8 @@ http{
     
     # Gallery
     location /upload {
-
         root             ./www/upload;
-        index            index.html list.py;
+        index            index.html;
         allowed_methods  GET PUT DELETE POST;
         cgi             .py /usr/bin/python3;
     }
