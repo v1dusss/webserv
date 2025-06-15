@@ -167,7 +167,8 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
 
         const std::string readBuffer = request->body->getReadBuffer();
         if (!readBuffer.empty()) {
-            const ssize_t written = write(fd, readBuffer.data(), readBuffer.length());
+            const ssize_t written = write(fd, readBuffer.data(),
+                                          std::min(readBuffer.length(), static_cast<size_t>(60000)));
             bytesWrittenToCgi += written;
             request->body->cleanReadBuffer(written);
         }
@@ -223,12 +224,12 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
 
 
         if (events & POLLHUP) {
-         Logger::log(LogLevel::ERROR, "CGI process error reading");
-         const HttpResponse response = HttpResponse::html(HttpResponse::StatusCode::OK,
-                                                          "CGI Error: Could not parse output");
-         client->setResponse(response);
-         return true;
-     }
+            Logger::log(LogLevel::ERROR, "CGI process error reading");
+            const HttpResponse response = HttpResponse::html(HttpResponse::StatusCode::OK,
+                                                             "CGI Error: Could not parse output");
+            client->setResponse(response);
+            return true;
+        }
 
         return false;
     });
