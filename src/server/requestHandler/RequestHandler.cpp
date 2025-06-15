@@ -135,7 +135,6 @@ void RequestHandler::validateTargetPath() {
         return;
     }
 
-
     const RouteConfig route = matchedRoute.value();
     if (route.index.empty() && serverConfig.index.empty())
         return;
@@ -143,9 +142,7 @@ void RequestHandler::validateTargetPath() {
     const std::string indexFilePath = std::filesystem::path(routePath) / (!route.index.empty()
                                                                               ? route.index
                                                                               : serverConfig.index);
-    hasValidIndexFile = access(indexFilePath.c_str(), R_OK) == 0 && std::filesystem::exists(indexFilePath) &&
-                        std::filesystem::is_regular_file(indexFilePath);
-
+    hasValidIndexFile = std::filesystem::is_regular_file(indexFilePath);
 
     this->indexFilePath = indexFilePath;
 }

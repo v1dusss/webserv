@@ -3,6 +3,7 @@
 //
 
 #include "FdHandler.h"
+#include <common/Logger.h>
 
 std::vector<pollfd> FdHandler::pollfds;
 std::unordered_map<int, std::function<bool(int, short)> > FdHandler::fdCallbacks;
@@ -60,9 +61,13 @@ void FdHandler::pollFds() {
                 continue;
             }
 
-            if (fdCallbacks[it->fd](it->fd, it->revents)) {
-                it = removeFd(it->fd);
-                continue;
+            try {
+                if (fdCallbacks[it->fd](it->fd, it->revents)) {
+                    it = removeFd(it->fd);
+                    continue;
+                }
+            }catch (std::exception &e) {
+                Logger::log(LogLevel::ERROR, e.what());
             }
         }
         ++it;
