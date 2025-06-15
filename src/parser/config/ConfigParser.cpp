@@ -24,6 +24,10 @@ ConfigParser::ConfigParser() : rootBlock{"root", {}, {}}, currentLine(0), curren
         {
             .name = "client_max_header_count",
             .type = Directive::COUNT,
+        },
+        {
+            .name = "max_request_line_size",
+            .type = Directive::SIZE,
         }
     };
 
@@ -173,24 +177,21 @@ bool ConfigParser::parse(const std::string &filename) {
     return result && parseSuccessful;
 }
 
-std::optional<ConfigParser::Directive> ConfigParser::getValidDirective(const std::string key, const std::string& blockType) const {
+std::optional<ConfigParser::Directive> ConfigParser::getValidDirective(const std::string key,
+                                                                       const std::string &blockType) const {
     if (blockType == "http") {
         for (const auto &directive: httpDirectives) {
             if (directive.name == key) {
                 return std::make_optional(directive);
             }
         }
-    }
-
-    else if (blockType == "server") {
+    } else if (blockType == "server") {
         for (const auto &directive: serverDirectives) {
             if (directive.name == key) {
                 return std::make_optional(directive);
             }
         }
-    }
-
-    else if (blockType == "location") {
+    } else if (blockType == "location") {
         for (const auto &directive: locationDirectives) {
             if (directive.name == key) {
                 return std::make_optional(directive);
@@ -226,7 +227,7 @@ std::vector<ServerConfig> ConfigParser::getServerConfigs() const {
 HttpConfig ConfigParser::getHttpConfig() const {
     for (const auto &child: rootBlock.children) {
         if (child.name == "http") {
-            return(parseHttpBlock(child));
+            return (parseHttpBlock(child));
         }
     }
 
@@ -314,8 +315,7 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
     return config;
 }
 
-HttpConfig ConfigParser::parseHttpBlock(const ConfigBlock& block) const
-{
+HttpConfig ConfigParser::parseHttpBlock(const ConfigBlock &block) const {
     HttpConfig httpConfig;
     ClientHeaderConfig headerConfig;
 
@@ -412,7 +412,9 @@ void ConfigParser::parseErrorPages(const std::vector<std::string> &tokens,
 
 bool ConfigParser::validateErrorPage(const std::vector<std::string> &tokens) {
     if (tokens.size() != 2) {
-        Logger::log(LogLevel::ERROR, "Invalid error_page directive: " + tokens[0] + " - expected format: error_page <status_code> <path>");
+        Logger::log(LogLevel::ERROR,
+                    "Invalid error_page directive: " + tokens[0] +
+                    " - expected format: error_page <status_code> <path>");
         return false;
     }
 
@@ -432,7 +434,9 @@ bool ConfigParser::validateErrorPage(const std::vector<std::string> &tokens) {
 
 bool ConfigParser::validateListenValue(const std::vector<std::string> &tokens) {
     if (tokens.size() != 1) {
-        Logger::log(LogLevel::ERROR, "Invalid listen directive: " + tokens[0] + " - expected format: listen <port> or listen <host>:<port>");
+        Logger::log(LogLevel::ERROR,
+                    "Invalid listen directive: " + tokens[0] +
+                    " - expected format: listen <port> or listen <host>:<port>");
         return false;
     }
 
@@ -538,7 +542,9 @@ bool ConfigParser::parseBlock(std::ifstream &file, ConfigBlock &block) {
                         }
                     }
                 } else if (!tokens.empty()) {
-                    reportError("Invalid block header: " + blockHeader + " - expected no parameters for " + blockType + " block");
+                    reportError(
+                        "Invalid block header: " + blockHeader + " - expected no parameters for " + blockType +
+                        " block");
                     parseSuccessful = false;
                     return false;
                 }
@@ -586,24 +592,24 @@ void ConfigParser::parseDirective(const std::string &line, ConfigBlock &block) {
 
     if (tokens.size() > validDirective->max_arg) {
         reportError("Too many arguments for directive: " + key + ", currently " + std::to_string(tokens.size()) +
-                     ", expected max " + std::to_string(validDirective->max_arg));
+                    ", expected max " + std::to_string(validDirective->max_arg));
         parseSuccessful = false;
         return;
     } else if (tokens.size() < validDirective->min_arg) {
         reportError("Not enough arguments for directive: " + key + ", currently " + std::to_string(tokens.size()) +
-                     ", expected at least " + std::to_string(validDirective->min_arg));
+                    ", expected at least " + std::to_string(validDirective->min_arg));
         parseSuccessful = false;
         return;
     }
 
-    if ((validDirective->type == Directive::SIZE)) {
+    if (validDirective->type == Directive::SIZE) {
         const std::regex sizeRegex("^\\d+(\\.\\d+)?([kmgt]b?|[kmgt]i?bytes|bytes)?$", std::regex::icase);
         if (!std::regex_match(tokens[0], sizeRegex)) {
             reportError("Invalid value for " + key + ": " + tokens[0]);
             parseSuccessful = false;
             return;
         }
-    } else if ((validDirective->type == Directive::COUNT || validDirective->type == Directive::TIME)) {
+    } else if (validDirective->type == Directive::COUNT || validDirective->type == Directive::TIME) {
         if (!validateDigitsOnly(tokens[0], key))
             return;
     } else if (validDirective->type == Directive::TOGGLE) {
