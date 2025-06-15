@@ -1,70 +1,11 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Directory Listing</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Document</title>
 </head>
-<body class="min-h-screen flex flex-col bg-gray-50">
-  <main class="flex-grow container mx-auto px-16 py-16 flex flex-col items-center justify-center">
-    <h2 class="text-4xl font-extrabold text-gray-900 mb-2">Directory Listing</h2>
-    <p class="text-lg text-gray-600 mb-8 text-center">
-      Below is the list of files and directories in the current directory.
-    </p>
-    <table class="min-w-full text-sm divide-y divide-gray-300 shadow bg-white rounded-lg overflow-hidden">
-      <thead class="bg-gray-100">
-        <tr>
-          <th class="text-left px-6 py-3 font-semibold">Name</th>
-          <th class="text-left px-6 py-3 font-semibold">Last Modified</th>
-          <th class="text-left px-6 py-3 font-semibold">Size</th>
-        </tr>
-      </thead>
-      <tbody id="file-table" class="divide-y divide-gray-200"></tbody>
-    </table>
-    <a href="/" class="mt-12 inline-block text-indigo-600 hover:underline text-lg">← Back to Home</a>
-  </main>
-
-  <script>
-    function formatFileSize(bytes) {
-      if (bytes === 0) return "0 Bytes";
-      const units = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(1024));
-      return `${parseFloat((bytes / Math.pow(1024, i)).toFixed(2))} ${units[i]}`;
-    }
-
-    fetch("/cgi/list.py")
-      .then(async res => {
-        const data = await res.json();
-        if (!res.ok || data.error) {
-          throw new Error(data.error || "Unknown error");
-        }
-        return data;
-      })
-      .then(data => {
-        const table = document.getElementById("file-table");
-        table.innerHTML = "";
-        data.forEach(entry => {
-          const size = entry.type === "file" ? formatFileSize(entry.size) : "-";
-          table.innerHTML += `
-            <tr>
-              <td class="px-6 py-4"><a href="/list/${entry.name}" class="text-indigo-600 hover:underline">${entry.name}</a></td>
-              <td class="px-6 py-4 text-gray-500">${entry.modified}</td>
-              <td class="px-6 py-4 text-gray-500">${size}</td>
-            </tr>`;
-        });
-      })
-      .catch(error => {
-        // Show a friendly error message instead of the table
-        const table = document.getElementById("file-table");
-        table.innerHTML = `
-          <tr>
-            <td colspan="3" class="px-6 py-8 text-center text-red-600 text-lg font-semibold">
-              Oops, something went wrong.
-            </td>
-          </tr>
-        `;
-      });
-  </script>
-
+<body>
+<h1>List test</h1>
 </body>
 </html>
