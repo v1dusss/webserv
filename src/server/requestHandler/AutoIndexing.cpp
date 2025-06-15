@@ -17,7 +17,7 @@
 
 
 static std::string formatSize(off_t sizeInBytes) {
-    const char* units[] = { "Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" };
+    const char *units[] = {"Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"};
     const int maxUnitIndex = sizeof(units) / sizeof(units[0]) - 1;
 
     if (sizeInBytes < 0) {
@@ -34,7 +34,7 @@ static std::string formatSize(off_t sizeInBytes) {
         ++unitIndex;
     }
 
-std::ostringstream stream;
+    std::ostringstream stream;
     stream << std::fixed << std::setprecision(2);
     stream << size;
 
@@ -101,7 +101,8 @@ HttpResponse RequestHandler::handleAutoIndex(const std::string &path) {
     html << "    <p class=\"text-lg text-gray-600 mb-8 text-center\">\n";
     html << "      Below is the list of files and directories in the current directory.\n";
     html << "    </p>\n";
-    html << "    <table class=\"min-w-full text-sm divide-y divide-gray-300 shadow bg-white rounded-lg overflow-hidden\">\n";
+    html <<
+            "    <table class=\"min-w-full text-sm divide-y divide-gray-300 shadow bg-white rounded-lg overflow-hidden\">\n";
     html << "      <thead class=\"bg-gray-100\">\n";
     html << "        <tr>\n";
     html << "          <th class=\"text-left px-6 py-3 font-semibold\">Name</th>\n";
@@ -126,7 +127,8 @@ HttpResponse RequestHandler::handleAutoIndex(const std::string &path) {
 
         html << "      <tbody class=\"divide-y divide-gray-200\">\n";
         html << "      <tr>";
-        html << "  <td class=\"px-6 py-4\"><a href=\"" << name << "\" class=\"text-indigo-600 hover:underline\">"<< name <<"</a></td>";
+        html << "  <td class=\"px-6 py-4\"><a href=\"" << request->getPath() << "/" << name <<
+                "\" class=\"text-indigo-600 hover:underline\">" << name << "</a></td>";
         html << "  <td class=\"px-6 py-4 text-gray-500\">" << timebuf << "</td>";
         html << "  <td class=\"px-6 py-4 text-gray-500\">" << sizeStr.str() << "</td>";
         html << "  </tr>\n";
