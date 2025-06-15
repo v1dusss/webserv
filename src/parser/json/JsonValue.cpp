@@ -21,10 +21,13 @@ JsonValue::JsonValue() : value(nullptr), type(JsonValueType::Null) {
 JsonValue::JsonValue(bool val) : value(val), type(JsonValueType::Boolean) {
 }
 
-JsonValue::JsonValue(int val) : value(static_cast<double>(val)), type(JsonValueType::Number) {
+JsonValue::JsonValue(int val) : value(static_cast<ssize_t>(val)), type(JsonValueType::Number) {
 }
 
-JsonValue::JsonValue(double val) : value(val), type(JsonValueType::Number) {
+JsonValue::JsonValue(double val) : value(static_cast<ssize_t>(val)), type(JsonValueType::Number) {
+}
+
+JsonValue::JsonValue(ssize_t val) : value(val), type(JsonValueType::Number) {
 }
 
 JsonValue::JsonValue(const std::string &val) : value(val), type(JsonValueType::String) {
@@ -53,10 +56,10 @@ bool JsonValue::asBoolean() const {
     return std::get<bool>(value);
 }
 
-double JsonValue::asNumber() const {
+ssize_t JsonValue::asNumber() const {
     if (!isNumber())
         throw JsonParseError("JSON value is not a number");
-    return std::get<double>(value);
+    return std::get<ssize_t>(value);
 }
 
 std::string JsonValue::asString() const {
@@ -118,9 +121,7 @@ std::string JsonValue::toString() const {
         case JsonValueType::Boolean:
             return std::get<bool>(value) ? "true" : "false";
         case JsonValueType::Number: {
-            auto num = std::get<double>(value);
-            if (std::floor(num) == num)
-                return std::to_string(static_cast<long long>(num));
+            auto num = std::get<ssize_t>(value);
             return std::to_string(num);
         }
         case JsonValueType::String: {
@@ -142,7 +143,7 @@ std::string JsonValue::toString() const {
                     case '\t': result += "\\t";
                         break;
                     default:
-                        if ( c < 32) {
+                        if (c < 32) {
                             char buf[8];
                             snprintf(buf, sizeof(buf), "\\u%04x", c);
                             result += buf;

@@ -11,6 +11,7 @@
 #include <sys/sysinfo.h>
 #endif
 #include <server/ServerPool.h>
+#include <server/handler/MetricHandler.h>
 #include <sys/statvfs.h>
 
 HttpResponse metrics(std::shared_ptr<HttpRequest> request) {
@@ -24,6 +25,12 @@ HttpResponse metrics(std::shared_ptr<HttpRequest> request) {
 
     int uptimeSeconds = std::time(nullptr) - ServerPool::getStartTime();
     jsonObj["uptime"] = std::make_shared<JsonValue>(uptimeSeconds);
+
+    jsonObj["last_update"] = std::make_shared<JsonValue>(MetricHandler::getLastResetTime());
+
+    for (const auto&[fst, snd] : MetricHandler::getAllFullMetric())
+        jsonObj[fst] = std::make_shared<JsonValue>(static_cast<ssize_t>(snd));
+
 
     auto metricsObj = std::make_shared<JsonValue>(jsonObj);
 

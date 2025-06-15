@@ -30,13 +30,15 @@ public:
     using JsonObject = std::map<std::string, std::shared_ptr<JsonValue> >;
 
 private:
-    std::variant<std::nullptr_t, bool, double, std::string, JsonArray, JsonObject> value;
+    std::variant<std::nullptr_t, bool, ssize_t, std::string, JsonArray, JsonObject> value;
     JsonValueType type;
 
 public:
     JsonValue();
 
     JsonValue(bool value);
+
+    JsonValue(ssize_t value);
 
     JsonValue(int value);
 
@@ -66,7 +68,7 @@ public:
 
     bool asBoolean() const;
 
-    double asNumber() const;
+    ssize_t asNumber() const;
 
     std::string asString() const;
 
