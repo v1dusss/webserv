@@ -2,14 +2,15 @@ http{
 
    client_header_timeout 2;
    client_max_header_size 1MB;
-   client_max_header_count 10;
+   client_max_header_count 20;
 
     server {
     listen                 0.0.0.0:8080;
     server_name            test.localhost;
     client_max_body_size   200MB;
     client_max_header_size 10000;
-    keepalive_timeout      2;
+    client_max_header_count 20;  
+  keepalive_timeout      2;
     client_header_timeout  5;
     client_body_timeout    20;
     keepalive_requests     2;
@@ -17,7 +18,7 @@ http{
     # Home page
     location / {
     root ./www;
-    index test.html;
+    index index.html;
     autoindex off;
   }
     # Directory listing
@@ -30,14 +31,14 @@ http{
     # Gallery
     location /upload {
         root             ./www/upload;
-        index            test.html;
+        index            index.html;
         allowed_methods  GET PUT DELETE POST;
         cgi             .py /usr/bin/python3;
     }
 
     location /dashboard {
       root ./www/dashboard;
-      index test.html;
+      index index.html;
       autoindex off;
     }
     
