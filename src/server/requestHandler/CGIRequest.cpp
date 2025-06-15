@@ -208,7 +208,7 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
                     response.setHeader(header.first, header.second);
             response.enableChunkedEncoding(result.body);
 
-            client->setResponse(response);
+            setResponse(response);
             return true;
         }
 
@@ -218,7 +218,7 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
             Logger::log(LogLevel::ERROR, "CGI process error parsing error");
             const HttpResponse response = HttpResponse::html(HttpResponse::StatusCode::INTERNAL_SERVER_ERROR,
                                                              "CGI Error: Could not parse output");
-            client->setResponse(response);
+            setResponse(response);
             return true;
         }
 
@@ -227,7 +227,7 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
             Logger::log(LogLevel::ERROR, "CGI process error reading");
             const HttpResponse response = HttpResponse::html(HttpResponse::StatusCode::OK,
                                                              "CGI Error: Could not parse output");
-            client->setResponse(response);
+            setResponse(response);
             return true;
         }
 

@@ -97,9 +97,16 @@ void ClientConnection::handleInput() {
         Logger::log(LogLevel::INFO, "Request Parsed");
 
 
-        delete requestHandler;
-        requestHandler = new RequestHandler(this, request, config);
-        requestHandler->execute();
+        try {
+            delete requestHandler;
+            requestHandler = new RequestHandler(this, request, config);
+            requestHandler->execute();
+        } catch (std::exception &e) {
+            Logger::log(LogLevel::ERROR, "Error handling request: " + std::string(e.what()));
+            const HttpResponse response = HttpResponse::html(HttpResponse::StatusCode::INTERNAL_SERVER_ERROR);
+            setResponse(RequestHandler::handleCustomErrorPage(response, config, std::nullopt));
+        }
+
         parser.reset();
         debugBuffer.clear();
         return;
@@ -144,7 +151,7 @@ void ClientConnection::handleFileOutput() {
 
     std::shared_ptr<SmartBuffer> body = response->getBody();
     // TODO: fix magic number number should probably be higher
-    body->read(1024);
+    body->read(30000);
 
     const std::string readBuffer = body->getReadBuffer();
 

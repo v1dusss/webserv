@@ -81,6 +81,8 @@ private:
 
     bool isCgiRequest();
 
+    void setResponse(const HttpResponse &response) const;
+
     [[nodiscard]] std::string getFilePath() const;
 
     [[nodiscard]] HttpResponse handleGet();

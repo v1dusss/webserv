@@ -143,9 +143,9 @@ void RequestHandler::validateTargetPath() {
     const std::string indexFilePath = std::filesystem::path(routePath) / (!route.index.empty()
                                                                               ? route.index
                                                                               : serverConfig.index);
+    hasValidIndexFile = access(indexFilePath.c_str(), R_OK) == 0 && std::filesystem::exists(indexFilePath) &&
+                        std::filesystem::is_regular_file(indexFilePath);
 
-    hasValidIndexFile = std::filesystem::exists(indexFilePath) && std::filesystem::is_regular_file(indexFilePath) &&
-                        access(indexFilePath.c_str(), R_OK) == 0;
 
     this->indexFilePath = indexFilePath;
 }
@@ -155,8 +155,6 @@ bool RequestHandler::isCgiRequest() {
         return false;
 
     const std::string filePath = getFilePath();
-
-
     const std::string fileExtension = getFileExtension(filePath);
     if (fileExtension.empty())
         return false;
@@ -175,7 +173,7 @@ bool RequestHandler::isCgiRequest() {
 void RequestHandler::execute() {
     const auto response = handleRequest();
     if (response.has_value()) {
-        client->setResponse(handleCustomErrorPage(response.value(), serverConfig, matchedRoute));
+        setResponse(response.value());
     }
 }
 
@@ -205,16 +203,21 @@ std::optional<HttpResponse> RequestHandler::handleRequest() {
         return response;
     }
 
-    validateTargetPath();
+    try {
+        validateTargetPath();
+    } catch (std::exception &e) {
+        Logger::log(LogLevel::ERROR, "Error validating target path: " + std::string(e.what()));
+        return HttpResponse::html(HttpResponse::StatusCode::FORBIDDEN);
+    }
 
     if (isCgiRequest()) {
         Logger::log(LogLevel::DEBUG, "request is a CGI request");
-        if (!validateCgiEnvironment()) {
+        if (!validateCgiEnvironment())
             return HttpResponse::html(HttpResponse::StatusCode::INTERNAL_SERVER_ERROR,
                                       "CGI Error: Invalid CGI environment");
-        }
         return handleCgi();
     }
+
 
     switch (request->method) {
         case GET:
@@ -242,7 +245,7 @@ HttpResponse RequestHandler::handleCustomErrorPage(HttpResponse original, Server
         return original;
 
 
-    if (!std::filesystem::is_regular_file(errorPagePath) || access(errorPagePath.c_str(), R_OK) != 0) {
+    if (access(errorPagePath.c_str(), R_OK) != 0 || !std::filesystem::is_regular_file(errorPagePath)) {
         Logger::log(LogLevel::ERROR, "error page has an invalid path: " + errorPagePath);
         return original;
     }
@@ -251,31 +254,6 @@ HttpResponse RequestHandler::handleCustomErrorPage(HttpResponse original, Server
         Logger::log(LogLevel::ERROR, "error page does not exist: " + errorPagePath);
         return original;
     }
-
-    /*
-    pollfd pfd{};
-    pfd.fd = fd;
-    pfd.events = POLLIN;
-
-    if (const int poll_result = poll(&pfd, 1, READ_FILE_TIMEOUT); poll_result <= 0) {
-        if (poll_result == 0)
-            Logger::log(LogLevel::ERROR, "Timeout reading error page: " + errorPagePath);
-        else
-            Logger::log(LogLevel::ERROR, "Poll failed for error page: " + errorPagePath);
-        close(fd);
-        return original;
-    }
-
-
-    std::ostringstream ss;
-    char buffer[4096];
-    ssize_t bytes_read;
-    while ((bytes_read = read(fd, buffer, sizeof(buffer))) > 0) {
-        ss.write(buffer, bytes_read);
-    }
-    close(fd);
-    const std::string body = ss.str();
-    */
 
     HttpResponse newResponse(HttpResponse::StatusCode::OK);
     newResponse.enableChunkedEncoding(std::make_shared<SmartBuffer>(fd));
@@ -289,4 +267,8 @@ std::string RequestHandler::getFilePath() const {
     if (hasValidIndexFile)
         return this->indexFilePath;
     return this->routePath;
+}
+
+void RequestHandler::setResponse(const HttpResponse &response) const {
+    this->client->setResponse(handleCustomErrorPage(response, serverConfig, matchedRoute));
 }
