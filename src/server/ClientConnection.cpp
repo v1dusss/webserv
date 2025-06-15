@@ -19,6 +19,7 @@
 #include <fcntl.h>
 
 #include "ServerPool.h"
+#include "handler/MetricHandler.h"
 
 
 ClientConnection::ClientConnection(const int clientFd,
@@ -45,6 +46,7 @@ ClientConnection::ClientConnection(const int clientFd,
             this->handleOutput();
         return false;
     });
+    MetricHandler::incrementMetric("new_connections", 1);
 }
 
 ClientConnection::~ClientConnection() {
@@ -59,6 +61,7 @@ ClientConnection::~ClientConnection() {
     }
     delete requestHandler;
     requestHandler = nullptr;
+    MetricHandler::incrementMetric("disconnects", 1);
 }
 
 void ClientConnection::handleInput() {
@@ -83,6 +86,7 @@ void ClientConnection::handleInput() {
 
     // so it doasn't timeout while reading the request
     lastPackageSend = 0;
+    MetricHandler::incrementMetric("bytes_received", bytesRead);
 
 
     //std::cout << "Received data from client fd: " << fd << " size: " << bytesRead << std::endl;
@@ -95,7 +99,7 @@ void ClientConnection::handleInput() {
         keepAlive = request->getHeader("Connection") == "keep-alive";
 
         Logger::log(LogLevel::INFO, "Request Parsed");
-
+        MetricHandler::incrementMetric("requests", 1);
 
         try {
             delete requestHandler;
@@ -144,6 +148,7 @@ void ClientConnection::handleFileOutput() {
             clearResponse();
             return;
         }
+        MetricHandler::incrementMetric("bytes_send", header.length());
         response.value().alreadySendHeader = true;
         return;
     }
@@ -166,6 +171,7 @@ void ClientConnection::handleFileOutput() {
             clearResponse();
             return;
         }
+        MetricHandler::incrementMetric("bytes_send", chunkHeaderStr.length());
 
 
         ssize_t bytesWritten = send(fd, readBuffer.c_str(), readBuffer.length(), MSG_NOSIGNAL);
@@ -175,6 +181,8 @@ void ClientConnection::handleFileOutput() {
             clearResponse();
             return;
         }
+        MetricHandler::incrementMetric("bytes_send", bytesWritten);
+
 
         body->cleanReadBuffer(bytesWritten);
 
@@ -183,6 +191,7 @@ void ClientConnection::handleFileOutput() {
             Logger::log(LogLevel::ERROR, "Failed to write chunk trailing CRLF to client");
             clearResponse();
         }
+        MetricHandler::incrementMetric("bytes_send", 2);
     }
 
 
@@ -190,6 +199,7 @@ void ClientConnection::handleFileOutput() {
         if (send(fd, "0\r\n\r\n", 5, MSG_NOSIGNAL) < 0)
             Logger::log(LogLevel::ERROR, "Failed to write final chunk to client");
         lastPackageSend = std::time(nullptr);
+        MetricHandler::incrementMetric("responses", 1);
         Logger::log(LogLevel::INFO, "Client response sent");
         clearResponse();
     }

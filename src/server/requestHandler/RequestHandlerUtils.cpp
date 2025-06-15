@@ -20,7 +20,25 @@ static std::map<std::string, std::string> mimeTypes = {
     {".jpg", "image/jpeg"},
     {".jpeg", "image/jpeg"},
     {".gif", "image/gif"},
-    {".svg", "image/svg+xml"}
+    {".svg", "image/svg+xml"},
+    {".pdf", "application/pdf"},
+    {".xml", "application/xml"},
+    {".zip", "application/zip"},
+    {".gz", "application/gzip"},
+    {".tar", "application/x-tar"},
+    {".ico", "image/x-icon"},
+    {".mp3", "audio/mpeg"},
+    {".wav", "audio/wav"},
+    {".mp4", "video/mp4"},
+    {".webm", "video/webm"},
+    {".woff", "font/woff"},
+    {".woff2", "font/woff2"},
+    {".ttf", "font/ttf"},
+    {".otf", "font/otf"},
+    {".webp", "image/webp"},
+    {".doc", "application/msword"},
+    {".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+    {".csv", "text/csv"}
 };
 
 std::string RequestHandler::getFileExtension(const std::string &path) {

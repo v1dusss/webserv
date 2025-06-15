@@ -13,8 +13,9 @@
 #include <algorithm>
 #include <parser/config/ConfigParser.h>
 
-#include "CallbackHandler.h"
+#include "handler/CallbackHandler.h"
 #include "FdHandler.h"
+#include "handler/MetricHandler.h"
 
 std::vector<std::shared_ptr<Server> > ServerPool::servers;
 std::atomic<bool> ServerPool::running{false};
@@ -157,6 +158,7 @@ void ServerPool::serverLoop() {
         closeConnections();
         FdHandler::pollFds();
         CallbackHandler::executeCallbacks();
+        MetricHandler::resetMetrics();
     }
     cleanUp();
 }
@@ -215,6 +217,6 @@ std::time_t ServerPool::getStartTime() {
     return startTime;
 }
 
-HttpConfig& ServerPool::getHttpConfig() {
+HttpConfig &ServerPool::getHttpConfig() {
     return httpConfig;
 }
