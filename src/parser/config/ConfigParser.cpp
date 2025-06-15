@@ -294,7 +294,7 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
     config.client_max_body_size = block.getSizeValue("client_max_body_size", 1 * 1024 * 1024);
     config.headerConfig.client_max_header_size = block.getSizeValue("client_max_header_size", 8192);
     config.headerConfig.client_header_timeout = block.getSizeValue("client_header_timeout", 60);
-    config.headerConfig.client_max_header_count = block.getSizeValue("client_max_header_count", 10);
+    config.headerConfig.client_max_header_count = block.getSizeValue("client_max_header_count", 100);
     config.client_body_timeout = block.getSizeValue("client_body_timeout", 60);
     config.keepalive_timeout = block.getSizeValue("keepalive_timeout", 65);
     config.keepalive_requests = block.getSizeValue("keepalive_requests", 100);
@@ -321,7 +321,7 @@ HttpConfig ConfigParser::parseHttpBlock(const ConfigBlock &block) const {
 
     headerConfig.client_header_timeout = block.getSizeValue("client_header_timeout", 60);
     headerConfig.client_max_header_size = block.getSizeValue("client_max_header_size", 8192);
-    headerConfig.client_max_header_count = block.getSizeValue("client_max_header_count", 20);
+    headerConfig.client_max_header_count = block.getSizeValue("client_max_header_count", 100);
 
     httpConfig.headerConfig = headerConfig;
     httpConfig.max_request_line_size = block.getSizeValue("max_request_line_size", 8000);
