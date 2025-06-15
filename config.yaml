@@ -10,7 +10,7 @@ http{
     client_max_body_size   200MB;
     client_max_header_size 10000;
     client_max_header_count 20;  
-  keepalive_timeout      2;
+    keepalive_timeout      2;
     client_header_timeout  5;
     client_body_timeout    20;
     keepalive_requests     2;
@@ -49,6 +49,11 @@ http{
     autoindex on;
     index list.py;
     cgi .py /usr/bin/python3;
+  }
+  
+  location /autoindex {
+    root ./;
+    autoindex on;
   }
   }
 }
