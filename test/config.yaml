@@ -23,5 +23,9 @@ http {
     index index.php;
     cgi .php /bin/php-cgi;
   }
+  
+    location /static {
+       root ./test/www;
+  }
   }
 }

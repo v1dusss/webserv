@@ -59,7 +59,7 @@ std::optional<HttpResponse> RequestHandler::handlePostTestFile() {
             const ssize_t writen = write(fd, readBuffer.data(), readBuffer.length());
             if (writen == -1) {
                 Logger::log(LogLevel::ERROR, "Failed to write to file: " + std::to_string(fd) + ": " + strerror(errno));
-                client->setResponse(HttpResponse::html(HttpResponse::INTERNAL_SERVER_ERROR,
+                setResponse(HttpResponse::html(HttpResponse::INTERNAL_SERVER_ERROR,
                                                        "Failed to write to file"));
                 close(fileWriteFd);
                 fileWriteFd = -1;
@@ -69,7 +69,7 @@ std::optional<HttpResponse> RequestHandler::handlePostTestFile() {
         }
 
         if (request->body->getReadPos() >= request->body->getSize()) {
-            client->setResponse(HttpResponse::html(HttpResponse::StatusCode::CREATED,
+            setResponse(HttpResponse::html(HttpResponse::StatusCode::CREATED,
                                                    "201 Created: " + filename + " file uploaded successfully"));
             close(fileWriteFd);
             fileWriteFd = -1;
@@ -111,10 +111,10 @@ std::optional<HttpResponse> RequestHandler::handlePostMultipart(const std::strin
             }
 
             if (state->uploadedFiles == 0) {
-                client->setResponse(HttpResponse::html(HttpResponse::StatusCode::BAD_REQUEST,
+                setResponse(HttpResponse::html(HttpResponse::StatusCode::BAD_REQUEST,
                                                        "No files found in request"));
             } else {
-                client->setResponse(HttpResponse::html(HttpResponse::StatusCode::CREATED,
+                setResponse(HttpResponse::html(HttpResponse::StatusCode::CREATED,
                                                        "201 Created: " + std::to_string(state->uploadedFiles) +
                                                        " file(s) uploaded successfully"));
             }

@@ -17,27 +17,27 @@ http{
     # Home page
     location / {
     root ./www;
-    index index.html;
+    index test.html;
     autoindex off;
   }
     # Directory listing
     location /list {
     root ./www/list;
-    index index.html;
+    index test.html;
     autoindex on;
   }
     
     # Gallery
     location /upload {
         root             ./www/upload;
-        index            index.html;
+        index            test.html;
         allowed_methods  GET PUT DELETE POST;
         cgi             .py /usr/bin/python3;
     }
 
     location /dashboard {
       root ./www/dashboard;
-      index index.html;
+      index test.html;
       autoindex off;
     }
     

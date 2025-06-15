@@ -290,7 +290,7 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
     config.server_names = block.getDirective("server_name");
 
     config.root = block.getStringValue("root", "/var/www/html");
-    config.index = block.getStringValue("index", "index.html");
+    config.index = block.getStringValue("index", "test.html");
     config.client_max_body_size = block.getSizeValue("client_max_body_size", 1 * 1024 * 1024);
     config.headerConfig.client_max_header_size = block.getSizeValue("client_max_header_size", 8192);
     config.headerConfig.client_header_timeout = block.getSizeValue("client_header_timeout", 60);

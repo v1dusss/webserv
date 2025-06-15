@@ -17,7 +17,7 @@
     send_body_buffer_size 250KB;
 
     location / {
-    index www/index.html;
+    index www/test.html;
 
     allowed_methods GET;
   }
