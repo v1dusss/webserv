@@ -18,11 +18,7 @@ bool RequestHandler::validateCgiEnvironment() const {
         return false;
     }
 
-    if (!std::filesystem::exists(filePath) || !std::filesystem::is_regular_file(filePath) ||
-        access(filePath.c_str(), R_OK) != 0) {
-        Logger::log(LogLevel::ERROR, "Target CGI script not found or not readable: " + filePath);
-        return false;
-    }
+
     return true;
 }
 
@@ -77,6 +73,8 @@ void RequestHandler::configureCgiChildProcess(int input_pipe[2], int output_pipe
     env["SERVER_NAME"] = serverConfig.host;
     env["SERVER_PORT"] = std::to_string(serverConfig.port);
     env["PATH_INFO"] = request->getPath();
+    env["SCRIPT_FILENAME"] = filePath;
+    env["REDIRECT_STATUS"] = "200";
 
 
     std::vector<char *> envp;
@@ -88,7 +86,8 @@ void RequestHandler::configureCgiChildProcess(int input_pipe[2], int output_pipe
     char *const argv[] = {const_cast<char *>(cgiPath.c_str()), const_cast<char *>(filePath.c_str()), nullptr};
     execve(cgiPath.c_str(), argv, envp.data());
 
-    Logger::log(LogLevel::ERROR, "Failed to execute CGI script");
+    Logger::log(LogLevel::ERROR, "Failed to execute CGI script: " + filePath + " with interpreter: " + cgiPath);
+    Logger::log(LogLevel::ERROR, strerror(errno));
     _exit(EXIT_FAILURE);
 }
 

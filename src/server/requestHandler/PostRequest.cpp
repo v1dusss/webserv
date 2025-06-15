@@ -100,8 +100,8 @@ std::optional<HttpResponse> RequestHandler::handlePostMultipart(const std::strin
     state->parseBuffer = "";
 
     this->postRequestCallbackId = CallbackHandler::registerCallback([this, state]() {
-        // TODO: fix magic number 8192
-        request->body->read(8192);
+        // TODO: fix magic number 60000
+        request->body->read(60000);
         std::string chunk = request->body->getReadBuffer();
 
         if (chunk.empty() && request->body->getReadPos() >= request->body->getSize()) {

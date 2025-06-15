@@ -209,6 +209,10 @@ std::optional<HttpResponse> RequestHandler::handleRequest() {
 
     if (isCgiRequest()) {
         Logger::log(LogLevel::DEBUG, "request is a CGI request");
+        if (!validateCgiEnvironment()) {
+            return HttpResponse::html(HttpResponse::StatusCode::INTERNAL_SERVER_ERROR,
+                                      "CGI Error: Invalid CGI environment");
+        }
         return handleCgi();
     }
 

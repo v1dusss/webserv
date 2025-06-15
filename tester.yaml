@@ -1,3 +1,5 @@
+
+  http {
   server {
     listen 8080;
     server_name example.com;
@@ -36,5 +38,6 @@
     root ./YoupiBanane;
     cgi .bla ./cgi_tester;
     index youpi.bad_extension;
+  }
   }
   }

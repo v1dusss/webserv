@@ -63,8 +63,8 @@ ClientConnection::~ClientConnection() {
 
 void ClientConnection::handleInput() {
     // TODO: fix magic number
-    char buffer[40001];
-    const ssize_t bytesRead = read(fd, buffer, 40000);
+    char buffer[60001];
+    const ssize_t bytesRead = read(fd, buffer, 60000);
     if (bytesRead < 0) {
         Logger::log(LogLevel::ERROR, "Failed to read from client fd: " + std::to_string(fd));
         Logger::log(LogLevel::ERROR, strerror(errno));

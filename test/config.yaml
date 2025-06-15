@@ -1,15 +1,27 @@
 http {
   max_request_line_size 103;
-  client_max_header_count 1;
+  client_max_header_count 10;
 
   server {
-    listen 127.0.0.1:8080;
+    listen 8080;
   
     client_max_header_size 1.1kb;
     client_max_header_count 20;
+    client_max_body_size 32gb;
 
     location / {
       return 200 "Hello, World!";
     }
+  
+  location /upload {
+        allowed_methods POST;
+        root ./test/uploads;
+  }
+  
+  location /php {
+    root ./test/php;
+    index index.php;
+    cgi .php /bin/php-cgi;
+  }
   }
 }
