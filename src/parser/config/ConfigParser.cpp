@@ -10,6 +10,7 @@
 #include <parser/http/HttpParser.h>
 #include <sys/unistd.h>
 #include <filesystem>
+#include <server/requestHandler/InternalApi.h>
 
 ConfigParser::ConfigParser() : rootBlock{"root", {}, {}}, currentLine(0), currentFilename(""), parseSuccessful(true) {
     httpDirectives = {
@@ -308,6 +309,10 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
         if (child.name == "location") {
             config.routes.push_back(parseRouteBlock(child, config));
         }
+    }
+
+    if (block.getStringValue("internal_api", "off") == "on") {
+        InternalApi::registerRoutes(config);
     }
 
     printconfig(config);
