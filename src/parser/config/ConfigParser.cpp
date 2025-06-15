@@ -321,10 +321,10 @@ HttpConfig ConfigParser::parseHttpBlock(const ConfigBlock &block) const {
 
     headerConfig.client_header_timeout = block.getSizeValue("client_header_timeout", 60);
     headerConfig.client_max_header_size = block.getSizeValue("client_max_header_size", 8192);
-    headerConfig.client_max_header_count = block.getSizeValue("client_max_header_count", 10);
+    headerConfig.client_max_header_count = block.getSizeValue("client_max_header_count", 20);
 
     httpConfig.headerConfig = headerConfig;
-    httpConfig.max_request_line_size = block.getSizeValue("max_request_line_size", 50);
+    httpConfig.max_request_line_size = block.getSizeValue("max_request_line_size", 8000);
 
     return httpConfig;
 }
