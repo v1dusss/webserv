@@ -5,6 +5,13 @@ http{
    client_max_header_count 20;
 
     server {
+    listen 0.0.0.0:8080;
+    server_name api.localhost;
+  
+   internal_api on;
+  }
+
+    server {
     listen                 0.0.0.0:8080;
     server_name            test.localhost;
     client_max_body_size   200MB;
