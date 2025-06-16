@@ -35,6 +35,7 @@ public:
         BAD_REQUEST = 400,
         FORBIDDEN = 403,
         NOT_FOUND = 404,
+        REQUEST_TIMEOUT = 408,
         CONFLICT = 409,
         CONTENT_TOO_LARGE = 413,
         REQUEST_URI_TOO_LONG = 414,
@@ -42,6 +43,7 @@ public:
         METHOD_NOT_ALLOWED = 405,
         INTERNAL_SERVER_ERROR = 500,
         NOT_IMPLEMENTED = 501,
+        GATEWAY_TIMEOUT = 504,
     };
 
     HttpResponse() = delete;

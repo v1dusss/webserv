@@ -185,20 +185,25 @@ void ServerPool::closeConnections() {
         if (client->parser.headerStart != 0 &&
             currentTime - client->parser.headerStart > static_cast<long>(client->config.headerConfig.
                 client_header_timeout)) {
-            clientsToClose.push_back(fd);
-            Logger::log(LogLevel::INFO, "Client connection header timed out");
+            client->setResponse(RequestHandler::handleCustomErrorPage(
+                HttpResponse::html(HttpResponse::StatusCode::REQUEST_TIMEOUT), client->config, std::nullopt));
+            client->keepAlive = false;
             continue;
         }
 
         if (client->parser.getState() == ParseState::BODY && client->parser.bodyStart != 0 &&
             currentTime - client->parser.bodyStart > static_cast<long>(client->config.client_body_timeout)) {
-            clientsToClose.push_back(fd);
+            client->setResponse(RequestHandler::handleCustomErrorPage(
+                HttpResponse::html(HttpResponse::StatusCode::REQUEST_TIMEOUT), client->config, std::nullopt));
+            client->keepAlive = false;
             Logger::log(LogLevel::INFO, "Client connection body timed out");
         }
 
         if (client->cgiProcessStart != 0 &&
             currentTime - client->cgiProcessStart > static_cast<long>(client->config.cgi_timeout)) {
-            clientsToClose.push_back(fd);
+            client->setResponse(RequestHandler::handleCustomErrorPage(
+                HttpResponse::html(HttpResponse::StatusCode::GATEWAY_TIMEOUT), client->config, std::nullopt));
+            client->keepAlive = false;
             Logger::log(LogLevel::INFO, "Client connection CGI process timed out");
         }
     }

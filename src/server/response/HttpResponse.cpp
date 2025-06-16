@@ -78,6 +78,7 @@ std::string HttpResponse::getStatusMessage(const int code) {
         case FOUND: return "Found";
         case BAD_REQUEST: return "Bad Request";
         case NOT_FOUND: return "Not Found";
+        case REQUEST_TIMEOUT: return "Request Timeout";
         case CONTENT_TOO_LARGE: return "Content Too Large";
         case METHOD_NOT_ALLOWED: return "Method Not Allowed";
         case INTERNAL_SERVER_ERROR: return "Internal Server Error";
@@ -85,6 +86,8 @@ std::string HttpResponse::getStatusMessage(const int code) {
         case NOT_IMPLEMENTED: return "Not Implemented";
         case FORBIDDEN: return "Forbidden";
         case CONFLICT: return "Conflict";
+        case UNSUPPORTED_MEDIA_TYPE: return "Unsupported Media Type";
+        case GATEWAY_TIMEOUT: return "Gateway Timeout";
         default: return "Unknown";
     }
 }

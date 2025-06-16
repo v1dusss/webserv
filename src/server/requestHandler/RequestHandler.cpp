@@ -31,8 +31,8 @@ RequestHandler::RequestHandler(ClientConnection *connection, const std::shared_p
                                ServerConfig &serverConfig): request(request), client(connection),
                                                             serverConfig(serverConfig) {
     Logger::log(LogLevel::DEBUG,
-                                 " Port: " + std::to_string(ntohs(connection->clientAddr.sin_port)) + " request: " +
-                                 request->getMethodString() + " at " + request->uri);
+                " Port: " + std::to_string(ntohs(connection->clientAddr.sin_port)) + " request: " +
+                request->getMethodString() + " at " + request->uri);
 
     findRoute();
     setRoutePath();
