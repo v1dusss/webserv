@@ -8,6 +8,7 @@
 #include <string>
 #include <unordered_map>
 #include <iostream>
+#include <ctime>
 
 #define RESET_INTERVAL 10
 
