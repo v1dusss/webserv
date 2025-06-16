@@ -74,6 +74,7 @@ void RequestHandler::configureCgiChildProcess(int input_pipe[2], int output_pipe
     env["SERVER_PORT"] = std::to_string(serverConfig.port);
     env["PATH_INFO"] = request->getPath();
     env["SCRIPT_FILENAME"] = filePath;
+    env["SCRIPT_NAME"] = request->getPath();
     env["REDIRECT_STATUS"] = "200";
 
 
@@ -200,12 +201,13 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
             cleanupCgiProcess(pid);
             const auto result = cgiParser.getResult();
             HttpResponse response(HttpResponse::StatusCode::OK);
-            for (const auto &header: result.headers)
+            for (const auto &header: result.headers) {
                 if (header.first == "Status") {
                     const int statusCode = std::stoi(header.second.substr(0, 3));
                     response.setStatus(statusCode);
                 } else if (!header.first.empty())
                     response.setHeader(header.first, header.second);
+            }
             response.enableChunkedEncoding(result.body);
 
             setResponse(response);
