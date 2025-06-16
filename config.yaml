@@ -4,12 +4,12 @@ http{
    client_max_header_size 1MB;
    client_max_header_count 20;
 
-    server {
-    listen 0.0.0.0:8080;
-    server_name api.localhost;
+  #  server {
+  #  listen 0.0.0.0:8080;
+  #  server_name api.localhost;
   
-   internal_api on;
-  }
+  # internal_api on;
+  #}
 
     server {
     listen                 0.0.0.0:8080;

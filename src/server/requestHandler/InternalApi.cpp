@@ -13,10 +13,11 @@
 #include <server/ServerPool.h>
 #include <server/handler/MetricHandler.h>
 #include <sys/statvfs.h>
+#include <common/Logger.h>
 
 HttpResponse metrics(std::shared_ptr<HttpRequest> request) {
     (void) request;
-    std::cout << "Internal API: Metrics endpoint accessed" << std::endl;
+    Logger::log(LogLevel::DEBUG, "Internal API: Metrics endpoint accessed");
     HttpResponse response(200);
     response.setHeader("Content-Type", "application/json");
 

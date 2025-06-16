@@ -142,7 +142,7 @@ void ClientConnection::handleOutput() {
 void ClientConnection::handleFileOutput() {
     if (!response.value().alreadySendHeader) {
         const std::string header = response.value().toHeaderString();
-        std::cout << header << std::endl;
+        Logger::log(LogLevel::DEBUG, "Sending response header: " + header);
         if (send(fd, header.c_str(), header.length(), MSG_NOSIGNAL) < 0) {
             Logger::log(LogLevel::ERROR, "Failed to write header to client");
             clearResponse();

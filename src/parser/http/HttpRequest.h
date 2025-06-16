@@ -11,6 +11,7 @@
 #include <iostream>
 #include <server/buffer/SmartBuffer.h>
 #include <memory>
+#include <common/Logger.h>
 
 class HttpRequest {
 public:
@@ -62,12 +63,13 @@ public:
     }
 
     void printRequest() const {
-        std::cout << "Method: " << method << "\n"
-                << "URI: " << uri << "\n"
-                << "Version: " << version << "\n"
-                << "Headers:\n";
+        Logger::log(LogLevel::DEBUG, "Method: " + method);
+        Logger::log(LogLevel::DEBUG, "URI: " + uri);
+        Logger::log(LogLevel::DEBUG, "Version: " + version);
+        Logger::log(LogLevel::DEBUG, "Headers:");
+
         for (const auto &header: headers) {
-            std::cout << header.first << ": " << header.second << "\n";
+            Logger::log(LogLevel::DEBUG, header.first + ": " + header.second);
         }
     }
 };

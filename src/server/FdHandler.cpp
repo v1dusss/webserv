@@ -39,15 +39,15 @@ void FdHandler::pollFds() {
 
     const int ret = poll(pollfds.data(), pollfds.size(), 100);
     if (ret < 0) {
-        std::cerr << "Poll error: " << strerror(errno) << std::endl;
+        Logger::log(LogLevel::ERROR, "Poll error: " + std::string(strerror(errno)));
         return;
     }
 
     auto it = pollfds.begin();
     while (it != pollfds.end()) {
         if (it->revents & POLLERR) {
-            std::cerr << "Poll error on fd: " << it->fd << std::endl;
-            std::cerr << errno << ": " << strerror(errno) << std::endl;
+            Logger::log(LogLevel::ERROR, "Poll error on fd: " + std::to_string(it->fd));
+            Logger::log(LogLevel::ERROR, "Error: " + std::string(strerror(errno)));
             it = removeFd(it->fd);
             continue;
         }
