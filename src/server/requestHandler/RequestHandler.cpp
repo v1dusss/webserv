@@ -30,9 +30,7 @@ RequestHandler::RequestHandler(ClientConnection *connection, const std::shared_p
 
                                ServerConfig &serverConfig): request(request), client(connection),
                                                             serverConfig(serverConfig) {
-    char ipStr[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &(connection->clientAddr.sin_addr), ipStr, INET_ADDRSTRLEN);
-    Logger::log(LogLevel::DEBUG, "IP: " + std::string(ipStr) +
+    Logger::log(LogLevel::DEBUG,
                                  " Port: " + std::to_string(ntohs(connection->clientAddr.sin_port)) + " request: " +
                                  request->getMethodString() + " at " + request->uri);
 
