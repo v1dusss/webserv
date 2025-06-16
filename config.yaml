@@ -3,12 +3,12 @@ http{
    client_header_timeout 2;
    client_max_header_size 1MB;
 
-    server {
-    listen 0.0.0.0:8080;
-    server_name api.localhost;
+  #  server {
+  #  listen 0.0.0.0:8080;
+  #  server_name api.localhost;
   
-   internal_api on;
-  }
+  # internal_api on;
+  #}
 
     server {
     listen                 0.0.0.0:8080;

@@ -89,13 +89,16 @@ void ServerPool::matchVirtualServer(ClientConnection *client, const std::string 
 
     if (wildcardPrefixMatch) {
         client->setConfig(*wildcardPrefixMatch);
-        std::cout << "Matched wildcard prefix: " << wildcardPrefixMatch->host << std::endl;
+        Logger::log(LogLevel::INFO,
+                    "Matched wildcard prefix: " + wildcardPrefixMatch->host);
     } else if (wildcardSuffixMatch) {
         client->setConfig(*wildcardSuffixMatch);
-        std::cout << "Matched wildcard suffix: " << wildcardSuffixMatch->host << std::endl;
+        Logger::log(LogLevel::INFO,
+                    "Matched wildcard suffix: " + wildcardSuffixMatch->host);
     } else if (defaultServer) {
         client->setConfig(*defaultServer);
-        std::cout << "Using default server: " << defaultServer->host << std::endl;
+        Logger::log(LogLevel::INFO,
+                    "Using default server: " + defaultServer->host);
     }
 }
 
@@ -127,7 +130,7 @@ bool ServerPool::loadConfig(const std::string &configFile) {
 
 void ServerPool::start() {
     if (running.load()) {
-        std::cout << "Server pool is already running." << std::endl;
+        Logger::log(LogLevel::INFO, "Server pool is already running.");
         return;
     }
 

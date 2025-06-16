@@ -137,7 +137,8 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
 
     cgiInputFd = input_pipe[1];
 
-    std::cout << "request->totalBodySize: " << request->totalBodySize << " " << request->body->getSize() << std::endl;
+    Logger::log(LogLevel::DEBUG, "request->totalBodySize: " + std::to_string(request->totalBodySize) +
+                                  " request->body->getSize(): " + std::to_string(request->body->getSize()));
 
     if (fcntl(cgiInputFd, F_SETFL, O_NONBLOCK) == -1) {
         perror("fcntl F_SETFL");
@@ -149,7 +150,7 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
         (void) events;
 
         if (events & POLLHUP) {
-            std::cout << "CGI process closed writing" << std::endl;
+            Logger::log(LogLevel::DEBUG, "CGI process closed writing");
             return true;
         }
 
@@ -161,7 +162,7 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
         request->body->read(30000);
 
         if (static_cast<size_t>(bytesWrittenToCgi) >= request->totalBodySize) {
-            std::cout << "Finished writing to CGI process" << std::endl;
+            Logger::log(LogLevel::DEBUG, "Finished writing to CGI process");
             close(fd);
             return true;
         }

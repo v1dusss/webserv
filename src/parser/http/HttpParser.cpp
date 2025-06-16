@@ -283,8 +283,7 @@ bool HttpParser::parseChunkedBody() {
                 chunkSize = std::stoul(sizeHex, nullptr, 16);
                 hasChunkSize = true;
             } catch (...) {
-                Logger::log(LogLevel::ERROR, "Invalid chunk size format");
-                std::cout << "Error: " << sizeHex << std::endl;
+                Logger::log(LogLevel::ERROR, "Invalid chunk size format: " + sizeHex);
                 state = ParseState::ERROR;
                 return false;
             }

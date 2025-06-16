@@ -98,15 +98,15 @@ void SmartBuffer::switchToFile() {
         return;
 
     size = 0;
-    std::cout << "switching to file" << std::endl;
+    Logger::log(LogLevel::DEBUG, "Switching SmartBuffer to file mode");
 
     tmpFileName = TEMP_DIR_NAME "/smartbuffer_" + std::to_string(tmpFileCount++);
     fd = open(tmpFileName.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0666);
     if (fd < 0) {
-        std::cerr << "Failed to create temporary file: " << tmpFileName << std::endl;
+        Logger::log(LogLevel::ERROR, "Failed to create temporary file: " + tmpFileName);
         return;
     }
-    std::cout << "created temporary file " << tmpFileName << std::endl;
+    Logger::log(LogLevel::DEBUG, "Created temporary file: " + tmpFileName);
 
     writeBuffer.append(buffer);
     buffer.clear();
