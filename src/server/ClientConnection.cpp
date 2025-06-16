@@ -70,10 +70,7 @@ void ClientConnection::handleInput() {
     const ssize_t bytesRead = read(fd, buffer, 60000);
     if (bytesRead < 0) {
         Logger::log(LogLevel::ERROR, "Failed to read from client fd: " + std::to_string(fd));
-        Logger::log(LogLevel::ERROR, strerror(errno));
-
-        Logger::log(LogLevel::ERROR, "should close client fd: " + std::to_string(shouldClose));
-
+        shouldClose = true;
         return;
     }
 
@@ -97,6 +94,7 @@ void ClientConnection::handleInput() {
     if (parser.parse(buffer, bytesRead)) {
         const auto request = parser.getRequest();
         keepAlive = request->getHeader("Connection") == "keep-alive";
+        request->printRequest();
 
         Logger::log(LogLevel::INFO, "Request Parsed");
         MetricHandler::incrementMetric("requests", 1);
@@ -207,6 +205,7 @@ void ClientConnection::handleFileOutput() {
 
 
 void ClientConnection::clearResponse() {
+    cgiProcessStart = 0;
     response.reset();
     if (!keepAlive || requestCount > config.
         keepalive_requests) {
@@ -218,6 +217,7 @@ void ClientConnection::clearResponse() {
 }
 
 void ClientConnection::setResponse(const HttpResponse &response) {
+    cgiProcessStart = 0;
     this->response = response;
     parser.reset();
     requestCount++;
