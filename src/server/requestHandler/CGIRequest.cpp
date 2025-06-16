@@ -73,6 +73,9 @@ void RequestHandler::configureCgiChildProcess(int input_pipe[2], int output_pipe
     env["SERVER_NAME"] = serverConfig.host;
     env["SERVER_PORT"] = std::to_string(serverConfig.port);
     env["PATH_INFO"] = request->getPath();
+    env["SCRIPT_NAME"] = request->getPath();
+    env["REQUEST_URI"] = request->getUri();
+    env["SCRIPT_FILENAME"] = filePath;
 
 
     std::vector<char *> envp;
@@ -82,25 +85,48 @@ void RequestHandler::configureCgiChildProcess(int input_pipe[2], int output_pipe
     }
     envp.push_back(nullptr);
 
-    char *const argv[] = {const_cast<char *>(cgiPath.c_str()), const_cast<char *>(filePath.c_str()), nullptr};
+    std::filesystem::path path = filePath;
+    std::string parentPath = path.parent_path().string();
+
+    chdir(parentPath.c_str());
+
+    std::string scriptFileName = std::filesystem::path(filePath).filename().string();
+
+    char *const argv[] = {const_cast<char *>(cgiPath.c_str()), const_cast<char *>(scriptFileName.c_str()), nullptr};
     execve(cgiPath.c_str(), argv, envp.data());
 
-    Logger::log(LogLevel::ERROR, "Failed to execute CGI script: " + filePath + " with interpreter: " + cgiPath);
+    Logger::log(LogLevel::ERROR, "Failed to execute CGI script: " + scriptFileName + " with interpreter: " + cgiPath);
     Logger::log(LogLevel::ERROR, strerror(errno));
     _exit(EXIT_FAILURE);
 }
 
-static void cleanupCgiProcess(const pid_t pid) {
+void RequestHandler::cleanupCgiProcess(const pid_t pid) const {
     int status;
     const pid_t result = waitpid(pid, &status, WNOHANG);
 
+    std::cout << "CGI process cleanup for PID: " << pid << std::endl;
+
     if (result == 0) {
+        std::cout << pid << " exited with status " << WEXITSTATUS(status) << std::endl;
+        std::cout << "CGI process is still running, sending SIGTERM" << std::endl;
         kill(pid, SIGTERM);
         usleep(100000);
         waitpid(pid, &status, WNOHANG);
+        return;
+    }
+    if (WIFEXITED(status)) {
+        if (const int exitCode = WEXITSTATUS(status); exitCode != 0) {
+            Logger::log(LogLevel::ERROR, "CGI process exited with code: " + std::to_string(exitCode));
+            const HttpResponse response = HttpResponse::html(HttpResponse::StatusCode::INTERNAL_SERVER_ERROR,
+                                                             "CGI Error: Process exited with code " + std::to_string(
+                                                                 exitCode));
+            setResponse(response);
+            return;
+        }
+
+        Logger::log(LogLevel::DEBUG, "CGI process exited successfully");
     }
 }
-
 
 std::optional<HttpResponse> RequestHandler::handleCgi() {
     int input_pipe[2]; // Parent -> Child
@@ -188,7 +214,6 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
     FdHandler::addFd(output_pipe[0], POLLIN | POLLHUP, [pid, this](int fd, short events) {
         (void) events;
 
-
         ssize_t bytesRead = 0;
         char buffer[60000];
         bytesRead = read(fd, buffer, sizeof(buffer) - 1);
@@ -199,7 +224,6 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
         }
         if ((cgiParser.parse(buffer, bytesRead)) || bytesRead == 0) {
             close(fd);
-            cleanupCgiProcess(pid);
             const auto result = cgiParser.getResult();
             HttpResponse response(HttpResponse::StatusCode::OK);
             for (const auto &header: result.headers) {
@@ -210,8 +234,8 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
                     response.setHeader(header.first, header.second);
             }
             response.enableChunkedEncoding(result.body);
-
             setResponse(response);
+            cleanupCgiProcess(pid);
             return true;
         }
 

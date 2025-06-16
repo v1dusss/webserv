@@ -57,6 +57,10 @@ public:
         return uri;
     }
 
+    [[nodiscard]] std::string getUri() const {
+        return uri;
+    }
+
     [[nodiscard]] std::string getHeader(const std::string &name) const {
         auto it = headers.find(name);
         return it != headers.end() ? it->second : "";

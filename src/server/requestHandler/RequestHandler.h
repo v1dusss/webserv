@@ -99,6 +99,8 @@ private:
 
     [[nodiscard]] HttpResponse handleDelete() const;
 
+    void cleanupCgiProcess(pid_t pid) const;
+
     [[nodiscard]] std::optional<HttpResponse> handleCgi();
 
     HttpResponse handleAutoIndex(const std::string &path);
