@@ -6,8 +6,9 @@
     keepalive_timeout 140;
     client_header_timeout 10;
     client_max_header_count 50;
-    client_body_timeout 100;
+    client_body_timeout 150;
     keepalive_requests 100;
+   cgi_timeout 60;
     
     
     root ./;
@@ -37,8 +38,15 @@
     location /directory{
     allowed_methods GET POST;
     root ./YoupiBanane;
-    cgi .bla ./cgi_tester;
+    cgi .bla /Users/emilebert/CLionProjects/webserv/cgi_tester;
+  #  cgi .bla ./cgi_tester;
     index youpi.bad_extension;
   }
   }
+  
+   server {
+      listen 8080;
+      server_name api.localhost;
+      internal_api on;
+    }
   }

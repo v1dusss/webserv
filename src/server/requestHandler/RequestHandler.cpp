@@ -55,7 +55,7 @@ RequestHandler::~RequestHandler() {
         fileWriteFd = -1;
     }
     if (cgiProcessId != -1) {
-        kill(cgiProcessId, SIGINT);
+        cleanupCgiProcess(cgiProcessId);
     }
     if (postRequestCallbackId != -1) {
         CallbackHandler::unregisterCallback(postRequestCallbackId);

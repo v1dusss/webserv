@@ -104,18 +104,15 @@ void RequestHandler::cleanupCgiProcess(const pid_t pid) const {
     int status;
     const pid_t result = waitpid(pid, &status, WNOHANG);
 
-    std::cout << "CGI process cleanup for PID: " << pid << std::endl;
-
     if (result == 0) {
         std::cout << pid << " exited with status " << WEXITSTATUS(status) << std::endl;
         std::cout << "CGI process is still running, sending SIGTERM" << std::endl;
         kill(pid, SIGTERM);
-        usleep(100000);
-        waitpid(pid, &status, WNOHANG);
         return;
     }
+
     if (WIFEXITED(status)) {
-        if (const int exitCode = WEXITSTATUS(status); exitCode != 0) {
+        if (const int exitCode = WEXITSTATUS(status); exitCode == 1) {
             Logger::log(LogLevel::ERROR, "CGI process exited with code: " + std::to_string(exitCode));
             const HttpResponse response = HttpResponse::html(HttpResponse::StatusCode::INTERNAL_SERVER_ERROR,
                                                              "CGI Error: Process exited with code " + std::to_string(
