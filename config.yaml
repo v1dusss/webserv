@@ -12,7 +12,7 @@ http{
 
     server {
     listen                 0.0.0.0:8080;
-    server_name            test.localhost;
+    server_name            localhost;
     client_max_body_size   200MB;
     client_max_header_size 10000;
     keepalive_timeout      2;

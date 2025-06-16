@@ -45,7 +45,7 @@ void RequestHandler::configureCgiChildProcess(int input_pipe[2], int output_pipe
     close(output_pipe[1]);
 
     std::unordered_map<std::string, std::string> env;
-
+    std::string scriptFileName = std::filesystem::path(filePath).filename().string();
 
     for (const auto &header: request->headers) {
         std::string name = header.first;
@@ -75,7 +75,8 @@ void RequestHandler::configureCgiChildProcess(int input_pipe[2], int output_pipe
     env["PATH_INFO"] = request->getPath();
     env["SCRIPT_NAME"] = request->getPath();
     env["REQUEST_URI"] = request->getUri();
-    env["SCRIPT_FILENAME"] = filePath;
+    env["SCRIPT_FILENAME"] = scriptFileName;
+    env["REDIRECT_STATUS"] = "200";
 
 
     std::vector<char *> envp;
@@ -90,7 +91,6 @@ void RequestHandler::configureCgiChildProcess(int input_pipe[2], int output_pipe
 
     chdir(parentPath.c_str());
 
-    std::string scriptFileName = std::filesystem::path(filePath).filename().string();
 
     char *const argv[] = {const_cast<char *>(cgiPath.c_str()), const_cast<char *>(scriptFileName.c_str()), nullptr};
     execve(cgiPath.c_str(), argv, envp.data());
