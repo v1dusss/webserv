@@ -5,6 +5,8 @@
 #include "HttpResponse.h"
 #include <iostream>
 #include <utility>
+#include <parser/http/HttpParser.h>
+
 #include "NotFoundImage.h"
 
 HttpResponse::HttpResponse(const int statusCode)
@@ -73,6 +75,7 @@ std::string HttpResponse::getStatusMessage(const int code) {
         case CREATED: return "Created";
         case NO_CONTENT: return "No Content";
         case MOVED_PERMANENTLY: return "Moved Permanently";
+        case FOUND: return "Found";
         case BAD_REQUEST: return "Bad Request";
         case NOT_FOUND: return "Not Found";
         case CONTENT_TOO_LARGE: return "Content Too Large";

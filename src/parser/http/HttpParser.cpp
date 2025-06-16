@@ -30,6 +30,28 @@ HttpParser::~HttpParser() {
     reset();
 }
 
+std::string HttpParser::decodeString(const std::string &input) {
+    std::string decoded;
+    decoded.reserve(input.size());
+    for (size_t i = 0; i < input.size(); ++i) {
+        if (input[i] == '%' && i + 2 < input.size()) {
+            int value;
+            std::istringstream iss(input.substr(i + 1, 2));
+            if (iss >> std::hex >> value) {
+                decoded += static_cast<char>(value);
+                i += 2;
+            } else {
+                decoded += input[i];
+            }
+        } else if (input[i] == '+') {
+            decoded += ' ';
+        } else {
+            decoded += input[i];
+        }
+    }
+    return decoded;
+}
+
 bool HttpParser::parse(const char *data, const size_t length) {
     if (state == ParseState::COMPLETE || state == ParseState::ERROR)
         return false;
@@ -121,7 +143,6 @@ bool HttpParser::parseRequestLine() {
 bool HttpParser::parseHeaders() {
     size_t max_header_count;
     size_t client_max_header_size;
-    size_t headerCount = 0;
 
     while (true) {
         max_header_count = clientConnection->config.headerConfig.client_max_header_count;
@@ -175,7 +196,7 @@ bool HttpParser::parseHeaders() {
             return false;
         }
 
-        if (++headerCount > max_header_count) {
+        if (++request->headerCount > max_header_count) {
             Logger::log(LogLevel::ERROR, "Too many headers in request");
             state = ParseState::ERROR;
             return false;

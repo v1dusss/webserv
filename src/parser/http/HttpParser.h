@@ -48,6 +48,8 @@ public:
 
     ~HttpParser();
 
+    static std::string decodeString(const std::string &input);
+
     bool parseRequestLine();
 
     bool parseHeaders();

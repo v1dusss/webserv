@@ -20,6 +20,7 @@ public:
     std::unordered_map<std::string, std::string> headers;
     std::shared_ptr<SmartBuffer> body;
     size_t totalBodySize = 0;
+    size_t headerCount = 0;
 
     HttpRequest() : method(GET) {
         body = std::make_shared<SmartBuffer>();
