@@ -11,14 +11,16 @@ try:
     entries = []
     for item in os.listdir(directory):
         path = os.path.join(directory, item)
-        stat = os.stat(path)
-        info = {
-            "name": item + ("/" if os.path.isdir(path) else ""),
-            "type": "directory" if os.path.isdir(path) else "file",
-            "size": stat.st_size if os.path.isfile(path) else None,
-            "modified": datetime.datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M')
-        }
-        entries.append(info)
+        # Check if the item is a file and has an image extension
+        if os.path.isfile(path) and item.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
+            stat = os.stat(path)
+            info = {
+                "name": item,
+                "type": "file",
+                "size": stat.st_size,
+                "modified": datetime.datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M')
+            }
+            entries.append(info)
     print(json.dumps(entries))
 
 except Exception as e:
