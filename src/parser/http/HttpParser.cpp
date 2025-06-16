@@ -132,7 +132,7 @@ bool HttpParser::parseRequestLine() {
     }
 
     request->method = method.value();
-    request->uri = uri;
+    request->uri = decodeString(uri);
     request->version = version;
 
     state = ParseState::HEADERS;
