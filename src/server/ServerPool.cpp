@@ -195,6 +195,12 @@ void ServerPool::closeConnections() {
             clientsToClose.push_back(fd);
             Logger::log(LogLevel::INFO, "Client connection body timed out");
         }
+
+        if (client->cgiProcessStart != 0 &&
+            currentTime - client->cgiProcessStart > static_cast<long>(client->config.cgi_timeout)) {
+            clientsToClose.push_back(fd);
+            Logger::log(LogLevel::INFO, "Client connection CGI process timed out");
+        }
     }
 
     for (int fd: clientsToClose) {

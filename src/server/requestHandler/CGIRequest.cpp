@@ -73,9 +73,6 @@ void RequestHandler::configureCgiChildProcess(int input_pipe[2], int output_pipe
     env["SERVER_NAME"] = serverConfig.host;
     env["SERVER_PORT"] = std::to_string(serverConfig.port);
     env["PATH_INFO"] = request->getPath();
-    env["SCRIPT_FILENAME"] = filePath;
-    env["SCRIPT_NAME"] = request->getPath();
-    env["REDIRECT_STATUS"] = "200";
 
 
     std::vector<char *> envp;
@@ -84,6 +81,7 @@ void RequestHandler::configureCgiChildProcess(int input_pipe[2], int output_pipe
         envp.push_back(strdup(envVar.data()));
     }
     envp.push_back(nullptr);
+
     char *const argv[] = {const_cast<char *>(cgiPath.c_str()), const_cast<char *>(filePath.c_str()), nullptr};
     execve(cgiPath.c_str(), argv, envp.data());
 
@@ -138,12 +136,14 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
     cgiInputFd = input_pipe[1];
 
     Logger::log(LogLevel::DEBUG, "request->totalBodySize: " + std::to_string(request->totalBodySize) +
-                                  " request->body->getSize(): " + std::to_string(request->body->getSize()));
+                                 " request->body->getSize(): " + std::to_string(request->body->getSize()));
 
     if (fcntl(cgiInputFd, F_SETFL, O_NONBLOCK) == -1) {
         perror("fcntl F_SETFL");
         return 1;
     }
+
+    client->cgiProcessStart = std::time(nullptr);
 
     FdHandler::addFd(cgiInputFd, POLLOUT | POLLHUP, [this](const int fd, const short events) {
         (void) fd;

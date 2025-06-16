@@ -28,6 +28,7 @@ public:
     bool keepAlive = false;
     bool shouldClose = false;
     const Server *connectedServer;
+    std::time_t cgiProcessStart = 0;
     ServerConfig config;
 
 private:

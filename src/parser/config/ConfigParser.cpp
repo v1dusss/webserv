@@ -63,6 +63,10 @@ ConfigParser::ConfigParser() : rootBlock{"root", {}, {}}, currentLine(0), curren
             .type = Directive::TIME,
         },
         {
+            .name = "cgi_timeout",
+            .type = Directive::TIME,
+        },
+        {
             .name = "body_buffer_size",
             .type = Directive::SIZE,
         },
@@ -296,6 +300,7 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
     config.headerConfig.client_max_header_size = block.getSizeValue("client_max_header_size", 8192);
     config.headerConfig.client_header_timeout = block.getSizeValue("client_header_timeout", 60);
     config.headerConfig.client_max_header_count = block.getSizeValue("client_max_header_count", 100);
+    config.cgi_timeout = block.getSizeValue("cgi_timeout", 5);
     config.client_body_timeout = block.getSizeValue("client_body_timeout", 60);
     config.keepalive_timeout = block.getSizeValue("keepalive_timeout", 65);
     config.keepalive_requests = block.getSizeValue("keepalive_requests", 100);

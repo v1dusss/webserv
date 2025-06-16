@@ -22,6 +22,7 @@ http {
     root ./test/php;
     index index.php;
     cgi .php /bin/php-cgi;
+    cgi .js /Users/emilebert/.nvm/versions/node/v20.19.2/bin/node;
   }
   
     location /static {
