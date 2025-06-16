@@ -63,7 +63,7 @@ public:
     }
 
     void printRequest() const {
-        Logger::log(LogLevel::DEBUG, "Method: " + method);
+        Logger::log(LogLevel::DEBUG, "Method: " + getMethodString());
         Logger::log(LogLevel::DEBUG, "URI: " + uri);
         Logger::log(LogLevel::DEBUG, "Version: " + version);
         Logger::log(LogLevel::DEBUG, "Headers:");
