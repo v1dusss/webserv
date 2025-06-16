@@ -85,12 +85,6 @@ void ClientConnection::handleInput() {
     lastPackageSend = 0;
     MetricHandler::incrementMetric("bytes_received", bytesRead);
 
-
-    //std::cout << "Received data from client fd: " << fd << " size: " << bytesRead << std::endl;
-    //std::cout << buffer << std::endl;
-
-    // std::cout << "-------------------------" << std::endl;
-
     if (parser.parse(buffer, bytesRead)) {
         const auto request = parser.getRequest();
         keepAlive = request->getHeader("Connection") == "keep-alive";
@@ -154,7 +148,7 @@ void ClientConnection::handleFileOutput() {
 
     std::shared_ptr<SmartBuffer> body = response->getBody();
     // TODO: fix magic number number should probably be higher
-    body->read(30000);
+    body->read(4000);
 
     const std::string readBuffer = body->getReadBuffer();
 
