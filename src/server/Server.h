@@ -46,6 +46,8 @@ public:
 
 private:
     void handleNewConnections() const;
+
+    static in_addr_t custom_inet_addr(const char *ip_address);
 };
 
 

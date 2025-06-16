@@ -40,8 +40,7 @@ bool Server::createSocket() {
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_addr.s_addr = INADDR_ANY;
     serverAddr.sin_port = htons(port);
-    serverAddr.sin_addr.s_addr = inet_addr(host.c_str());
-
+    serverAddr.sin_addr.s_addr = custom_inet_addr(host.c_str());
 
     if (bind(serverFd, reinterpret_cast<struct sockaddr *>(&serverAddr), sizeof(serverAddr)) < 0)
         return false;
@@ -92,4 +91,33 @@ void Server::stop() {
         serverFd = -1;
         Logger::log(LogLevel::INFO, "Server stopped");
     }
+}
+
+in_addr_t Server::custom_inet_addr(const char* ip_address) {
+    if (!ip_address) return INADDR_NONE;
+
+    unsigned int octets[4] = {0};
+    int currentOctet = 0;
+    int currentValue = 0;
+    bool hasDigit = false;
+
+    for (const char* ptr = ip_address; *ptr != '\0'; ++ptr) {
+        if (*ptr >= '0' && *ptr <= '9') {
+            currentValue = currentValue * 10 + (*ptr - '0');
+            if (currentValue > 255) return INADDR_NONE;
+            hasDigit = true;
+        } else if (*ptr == '.') {
+            if (!hasDigit || currentOctet >= 3) return INADDR_NONE;
+            octets[currentOctet++] = currentValue;
+            currentValue = 0;
+            hasDigit = false;
+        } else {
+            return INADDR_NONE;
+        }
+    }
+
+    if (!hasDigit || currentOctet != 3) return INADDR_NONE;
+    octets[3] = currentValue;
+
+    return htonl((octets[0] << 24) | (octets[1] << 16) | (octets[2] << 8) | octets[3]);
 }
