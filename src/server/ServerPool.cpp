@@ -109,6 +109,11 @@ bool ServerPool::loadConfig(const std::string &configFile) {
 
     configs = parser.getServerConfigs();
 
+    if (configs.empty()) {
+        Logger::log(LogLevel::ERROR, "No valid server configurations found in the file: " + configFile);
+        return false;
+    }
+
     for (const auto &serverConfig: configs) {
         auto server = std::make_shared<Server>(serverConfig.port, serverConfig.host, serverConfig);
         if (!server->createSocket()) {

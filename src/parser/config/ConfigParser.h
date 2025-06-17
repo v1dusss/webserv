@@ -41,6 +41,10 @@ private:
 
     [[nodiscard]] HttpConfig parseHttpBlock(const ConfigBlock& block) const;
 
+    bool isValidServerConfigs(const std::vector<ServerConfig> &configs) const;
+
+    bool hasDuplicateServerNames(const std::vector<std::string> &names1, const std::vector<std::string> &names2) const;
+
     bool parseBlock(std::ifstream& file, ConfigBlock& block);
 
     void parseDirective(const std::string& line, ConfigBlock& block);

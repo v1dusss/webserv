@@ -211,6 +211,44 @@ bool ConfigParser::validateDigitsOnly(const std::string &value, const std::strin
     return true;
 }
 
+bool ConfigParser::isValidServerConfigs(const std::vector<ServerConfig> &configs) const {
+    if (configs.empty()) {
+        Logger::log(LogLevel::ERROR, "No server configurations found.");
+        return false;
+    }
+
+    for (size_t i = 0; i < configs.size(); ++i) {
+        for (size_t j = i + 1; j < configs.size(); ++j) {
+            if (configs[i].port != configs[j].port) {
+                continue;
+            }
+
+            if (configs[i].server_names.empty() && configs[j].server_names.empty()) {
+                reportError("Invalid configuration: Servers on port " +
+                            std::to_string(configs[i].port) + " have no server names.");
+                return false;
+            }
+
+            if (hasDuplicateServerNames(configs[i].server_names, configs[j].server_names)) {
+                reportError("Invalid configuration: Servers on port " +
+                            std::to_string(configs[i].port) + " have duplicate server names.");
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+bool ConfigParser::hasDuplicateServerNames(const std::vector<std::string> &names1, const std::vector<std::string> &names2) const {
+    for (const std::string &name1 : names1) {
+        if (std::find(names2.begin(), names2.end(), name1) != names2.end()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 std::vector<ServerConfig> ConfigParser::getServerConfigs() const {
     std::vector<ServerConfig> servers;
 
@@ -218,6 +256,14 @@ std::vector<ServerConfig> ConfigParser::getServerConfigs() const {
         if (child.name == "server") {
             servers.push_back(parseServerBlock(child));
         }
+    }
+
+    if (!isValidServerConfigs(servers)) {
+        return {};
+    }
+
+    for (auto server: servers) {
+        printServerConfig(server);
     }
 
     return servers;
@@ -450,7 +496,7 @@ bool ConfigParser::validateErrorPage(const std::vector<std::string> &tokens) {
 
 bool ConfigParser::validateListenValue(const std::vector<std::string> &tokens) {
     if (tokens.size() != 1) {
-        Logger::log(LogLevel::ERROR, "Invalid listen directive: " + tokens[0] + " - expected format: listen <port> or listen <host>:<port>");
+        reportError("Invalid listen directive: " + tokens[0] + " - expected format: listen <port> or listen <host>:<port>");
         return false;
     }
 
@@ -464,7 +510,24 @@ bool ConfigParser::validateListenValue(const std::vector<std::string> &tokens) {
 
     std::string port = listenValue.substr(colonPos + 1);
     Logger::log(LogLevel::DEBUG, "listenValue: " + listenValue + ", port: " + port);
-    return validateDigitsOnly(port, "listen");
+
+    if (!validateDigitsOnly(port, "listen")) {
+        return false;
+    }
+
+    int portNum;
+    if (!tryParseInt(port, portNum)) {
+        reportError("Invalid port number in listen directive: " + port);
+        return false;
+    }
+
+    if (portNum < 0 || portNum > 65535) {
+        reportError("Invalid port number: " + std::to_string(portNum) + " - must be between 0 and 65535");
+        return false;
+    }
+
+    return true;
+
 }
 
 
