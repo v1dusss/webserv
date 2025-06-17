@@ -357,7 +357,7 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
     config.send_body_buffer_size = block.getSizeValue(getValidDirective("send_body_buffer_size", block.name), 8192);
     config.body_buffer_size = block.getSizeValue(getValidDirective("body_buffer_size", block.name), 8192);
     config.internal_api = (block.getStringValue(getValidDirective("internal_api", block.name), "off") == "on");
-    config.cgi_timeout = block.getSizeValue(getValidDirective("cgi_timeout", 5));
+    config.cgi_timeout = block.getSizeValue(getValidDirective("cgi_timeout", block.name), 5);
 
     const auto errorPages = block.getDirective("error_page");
     parseErrorPages(errorPages, config.error_pages);
@@ -371,8 +371,6 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
     if (config.internal_api) {
         InternalApi::registerRoutes(config);
     }
-
-    printconfig(config);
 
     return config;
 }
@@ -693,7 +691,7 @@ void ConfigParser::parseDirective(const std::string &line, ConfigBlock &block) {
         return;
     }
 
-    if ((validDirective->type == Directive::SIZE)) {
+    if (validDirective->type == Directive::SIZE) {
         const std::regex sizeRegex("^\\d+(\\.\\d+)?([kmgt]b?|[kmgt]i?bytes|bytes)?$", std::regex::icase);
         if (!std::regex_match(tokens[0], sizeRegex)) {
             reportError("Invalid value for " + key + ": " + tokens[0]);
