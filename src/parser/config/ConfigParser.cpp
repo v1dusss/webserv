@@ -400,7 +400,7 @@ HttpConfig ConfigParser::parseHttpBlock(const ConfigBlock& block) const
     headerConfig.client_max_header_count = block.getSizeValue(getValidDirective("client_max_header_count", block.name), 10);
 
     httpConfig.headerConfig = headerConfig;
-    httpConfig.max_request_line_size = block.getSizeValue(getValidDirective("max_request_line_size", block.name), 50);
+    httpConfig.max_request_line_size = block.getSizeValue(getValidDirective("max_request_line_size", block.name), 1024);
 
     printHttpConfig(httpConfig);
 
