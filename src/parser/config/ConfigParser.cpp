@@ -233,7 +233,7 @@ HttpConfig ConfigParser::getHttpConfig() const {
     return HttpConfig(); // to return nothing
 }
 
-void printconfig(ServerConfig config) {
+void ConfigParser::printServerConfig(ServerConfig config)const {
     std::cout << std::endl;
     std::cout << "----------------------------------------" << std::endl;
     std::cout << std::endl;
@@ -312,12 +312,10 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
         }
     }
 
-    printconfig(config);
-
     return config;
 }
 
-void printconfig(HttpConfig httpConfig) {
+void ConfigParser::printHttpConfig(HttpConfig httpConfig) const {
     std::cout << std::endl;
     std::cout << "----------------------------------------" << std::endl;
     std::cout << std::endl;
@@ -344,7 +342,7 @@ HttpConfig ConfigParser::parseHttpBlock(const ConfigBlock& block) const
     httpConfig.headerConfig = headerConfig;
     httpConfig.max_request_line_size = block.getSizeValue(getValidDirective("max_request_line_size", block.name), 50);
 
-    printconfig(httpConfig);
+    printHttpConfig(httpConfig);
 
     return httpConfig;
 }

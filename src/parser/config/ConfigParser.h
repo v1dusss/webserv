@@ -56,6 +56,10 @@ private:
     void reportError(const std::string& message) const;
 
     void parseErrorPages(const std::vector<std::string> &tokens, std::map<int, std::string> &error_pages) const;
+
+    void printServerConfig(ServerConfig config) const;
+
+    void printHttpConfig(HttpConfig httpConfig) const;
 };
 
 #endif // CONFIG_PARSER_H
