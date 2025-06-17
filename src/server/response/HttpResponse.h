@@ -11,6 +11,7 @@
 #include <sstream>
 #include <server/buffer/SmartBuffer.h>
 #include <memory>
+#include <vector>
 
 class HttpResponse {
 private:

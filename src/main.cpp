@@ -45,7 +45,7 @@ int main(const int argc, char **argv) {
         return 1;
     }
 
-    //::signal(SIGPIPE, SIG_IGN);
+    signal(SIGPIPE, SIG_IGN);
 
     std::cout << "start pid: " << getpid() << std::endl;
 

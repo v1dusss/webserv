@@ -21,6 +21,12 @@
 
 #include "ServerPool.h"
 #include "handler/MetricHandler.h"
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <cstring>
+#include <sys/types.h>
+
+
 
 
 ClientConnection::ClientConnection(const int clientFd,
@@ -36,6 +42,9 @@ ClientConnection::ClientConnection(const int clientFd,
     config.headerConfig.client_max_header_count = ServerPool::getHttpConfig().headerConfig.client_max_header_count;
     config.body_buffer_size = 8192;
     config.client_max_body_size = 1 * 1024 * 1024; // 1 MB
+
+    int opt = 1;
+    setsockopt(clientFd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 
     FdHandler::addFd(clientFd, POLLIN | POLLOUT, [this](const int fd, const short events) {
         (void) fd;

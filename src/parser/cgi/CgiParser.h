@@ -12,6 +12,7 @@
 #include <memory>
 #include <cstdio>
 #include <server/buffer/SmartBuffer.h>
+#include <vector>
 
 enum class CgiParseState {
     HEADERS,
