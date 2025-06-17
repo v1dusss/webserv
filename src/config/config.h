@@ -6,7 +6,7 @@
 /*   By: eebert <eebert@student.42heilbronn.de>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/01 13:19:13 by eebert            #+#    #+#             */
-/*   Updated: 2025/06/16 19:05:25 by eebert           ###   ########.fr       */
+/*   Updated: 2025/06/12 15:39:10 by eebert           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,6 +83,7 @@ typedef struct {
     size_t keepalive_timeout; // In seconds
     size_t cgi_timeout; // In seconds
     size_t keepalive_requests; // Max requests per connection
+    bool internal_api; // Enable internal API
 } ServerConfig;
 
 typedef struct {

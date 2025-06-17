@@ -182,21 +182,24 @@ bool ConfigParser::parse(const std::string &filename) {
     return result && parseSuccessful;
 }
 
-std::optional<ConfigParser::Directive> ConfigParser::getValidDirective(const std::string key,
-                                                                       const std::string &blockType) const {
+std::optional<Directive> ConfigParser::getValidDirective(const std::string key, const std::string& blockType) const {
     if (blockType == "http") {
         for (const auto &directive: httpDirectives) {
             if (directive.name == key) {
                 return std::make_optional(directive);
             }
         }
-    } else if (blockType == "server") {
+    }
+
+    else if (blockType == "server") {
         for (const auto &directive: serverDirectives) {
             if (directive.name == key) {
                 return std::make_optional(directive);
             }
         }
-    } else if (blockType == "location") {
+    }
+
+    else if (blockType == "location") {
         for (const auto &directive: locationDirectives) {
             if (directive.name == key) {
                 return std::make_optional(directive);
@@ -217,6 +220,44 @@ bool ConfigParser::validateDigitsOnly(const std::string &value, const std::strin
     return true;
 }
 
+bool ConfigParser::isValidServerConfigs(const std::vector<ServerConfig> &configs) const {
+    if (configs.empty()) {
+        Logger::log(LogLevel::ERROR, "No server configurations found.");
+        return false;
+    }
+
+    for (size_t i = 0; i < configs.size(); ++i) {
+        for (size_t j = i + 1; j < configs.size(); ++j) {
+            if (configs[i].port != configs[j].port || configs[i].host != configs[j].host) {
+                continue;
+            }
+
+            if (configs[i].server_names.empty() && configs[j].server_names.empty()) {
+                reportError("Invalid configuration: Servers on port " +
+                            std::to_string(configs[i].port) + " have no server names.");
+                return false;
+            }
+
+            if (hasDuplicateServerNames(configs[i].server_names, configs[j].server_names)) {
+                reportError("Invalid configuration: Servers on port " +
+                            std::to_string(configs[i].port) + " have duplicate server names.");
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+bool ConfigParser::hasDuplicateServerNames(const std::vector<std::string> &names1, const std::vector<std::string> &names2) const {
+    for (const std::string &name1 : names1) {
+        if (std::find(names2.begin(), names2.end(), name1) != names2.end()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 std::vector<ServerConfig> ConfigParser::getServerConfigs() const {
     std::vector<ServerConfig> servers;
 
@@ -226,20 +267,28 @@ std::vector<ServerConfig> ConfigParser::getServerConfigs() const {
         }
     }
 
+    if (!isValidServerConfigs(servers)) {
+        return {};
+    }
+
+    for (auto server: servers) {
+        printServerConfig(server);
+    }
+
     return servers;
 }
 
 HttpConfig ConfigParser::getHttpConfig() const {
     for (const auto &child: rootBlock.children) {
         if (child.name == "http") {
-            return (parseHttpBlock(child));
+            return(parseHttpBlock(child));
         }
     }
 
     return HttpConfig(); // to return nothing
 }
 
-void printconfig(ServerConfig config) {
+void ConfigParser::printServerConfig(ServerConfig config)const {
     std::cout << std::endl;
     std::cout << "----------------------------------------" << std::endl;
     std::cout << std::endl;
@@ -255,12 +304,14 @@ void printconfig(ServerConfig config) {
     std::cout << "  Index: " << config.index << std::endl;
     std::cout << "  Client Max Body Size: " << config.client_max_body_size << std::endl;
     std::cout << "  Client Max Header Size: " << config.headerConfig.client_max_header_size << std::endl;
+    std::cout << "  Client Max Header Count: " << config.headerConfig.client_max_header_count << std::endl;
     std::cout << "  Client Header Timeout: " << config.headerConfig.client_header_timeout << std::endl;
     std::cout << "  Client Body Timeout: " << config.client_body_timeout << std::endl;
     std::cout << "  Keepalive Timeout: " << config.keepalive_timeout << std::endl;
     std::cout << "  Keepalive Requests: " << config.keepalive_requests << std::endl;
     std::cout << "  Send Body Buffer Size: " << config.send_body_buffer_size << std::endl;
     std::cout << "  Body Buffer Size: " << config.body_buffer_size << std::endl;
+    std::cout << "  Internal API: " << (config.internal_api ? "on" : "off") << std::endl;
     std::cout << "  Error Pages: " << std::endl;
     for (const auto &errorPage: config.error_pages) {
         std::cout << "\t" << errorPage.first << ": " << errorPage.second << std::endl;
@@ -294,18 +345,19 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
 
     config.server_names = block.getDirective("server_name");
 
-    config.root = block.getStringValue("root", "/var/www/html");
-    config.index = block.getStringValue("index", "test.html");
-    config.client_max_body_size = block.getSizeValue("client_max_body_size", 1 * 1024 * 1024);
-    config.headerConfig.client_max_header_size = block.getSizeValue("client_max_header_size", 8192);
-    config.headerConfig.client_header_timeout = block.getSizeValue("client_header_timeout", 60);
-    config.headerConfig.client_max_header_count = block.getSizeValue("client_max_header_count", 100);
-    config.cgi_timeout = block.getSizeValue("cgi_timeout", 5);
-    config.client_body_timeout = block.getSizeValue("client_body_timeout", 60);
-    config.keepalive_timeout = block.getSizeValue("keepalive_timeout", 65);
-    config.keepalive_requests = block.getSizeValue("keepalive_requests", 100);
-    config.send_body_buffer_size = block.getSizeValue("send_body_buffer_size", 8192);
-    config.body_buffer_size = block.getSizeValue("body_buffer_size", 8192);
+    config.root = block.getStringValue(getValidDirective("root", block.name), "/var/www/html");
+    config.index = block.getStringValue(getValidDirective("index", block.name), "index.html");
+    config.client_max_body_size = block.getSizeValue(getValidDirective("client_max_body_size", block.name), 1 * 1024 * 1024);
+    config.headerConfig.client_max_header_size = block.getSizeValue(getValidDirective("client_max_header_size", block.name), 8192);
+    config.headerConfig.client_header_timeout = block.getSizeValue(getValidDirective("client_header_timeout", block.name), 60);
+    config.headerConfig.client_max_header_count = block.getSizeValue(getValidDirective("client_max_header_count", block.name), 10);
+    config.client_body_timeout = block.getSizeValue(getValidDirective("client_body_timeout", block.name), 60);
+    config.keepalive_timeout = block.getSizeValue(getValidDirective("keepalive_timeout", block.name), 65);
+    config.keepalive_requests = block.getSizeValue(getValidDirective("keepalive_requests", block.name), 100);
+    config.send_body_buffer_size = block.getSizeValue(getValidDirective("send_body_buffer_size", block.name), 8192);
+    config.body_buffer_size = block.getSizeValue(getValidDirective("body_buffer_size", block.name), 8192);
+    config.internal_api = (block.getStringValue(getValidDirective("internal_api", block.name), "off") == "on");
+    config.cgi_timeout = block.getSizeValue(getValidDirective("cgi_timeout", 5));
 
     const auto errorPages = block.getDirective("error_page");
     parseErrorPages(errorPages, config.error_pages);
@@ -316,7 +368,7 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
         }
     }
 
-    if (block.getStringValue("internal_api", "off") == "on") {
+    if (config.internal_api) {
         InternalApi::registerRoutes(config);
     }
 
@@ -325,16 +377,34 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
     return config;
 }
 
-HttpConfig ConfigParser::parseHttpBlock(const ConfigBlock &block) const {
+void ConfigParser::printHttpConfig(HttpConfig httpConfig) const {
+    std::cout << std::endl;
+    std::cout << "----------------------------------------" << std::endl;
+    std::cout << std::endl;
+
+    std::cout << YELLOW BOLD << "HttpConfig:" << RESET << std::endl;
+    std::cout << "  Client Header Timeout: " << httpConfig.headerConfig.client_header_timeout << std::endl;
+    std::cout << "  Client Max Header Size: " << httpConfig.headerConfig.client_max_header_size << std::endl;
+    std::cout << "  Client Max Header Count: " << httpConfig.headerConfig.client_max_header_count << std::endl;
+
+    std::cout << std::endl;
+    std::cout << "----------------------------------------" << std::endl;
+    std::cout << std::endl;
+}
+
+HttpConfig ConfigParser::parseHttpBlock(const ConfigBlock& block) const
+{
     HttpConfig httpConfig;
     ClientHeaderConfig headerConfig;
 
-    headerConfig.client_header_timeout = block.getSizeValue("client_header_timeout", 60);
-    headerConfig.client_max_header_size = block.getSizeValue("client_max_header_size", 8192);
-    headerConfig.client_max_header_count = block.getSizeValue("client_max_header_count", 100);
+    headerConfig.client_header_timeout = block.getSizeValue(getValidDirective("client_header_timeout", block.name), 60);
+    headerConfig.client_max_header_size = block.getSizeValue(getValidDirective("client_max_header_size", block.name), 8192);
+    headerConfig.client_max_header_count = block.getSizeValue(getValidDirective("client_max_header_count", block.name), 10);
 
     httpConfig.headerConfig = headerConfig;
-    httpConfig.max_request_line_size = block.getSizeValue("max_request_line_size", 8000);
+    httpConfig.max_request_line_size = block.getSizeValue(getValidDirective("max_request_line_size", block.name), 50);
+
+    printHttpConfig(httpConfig);
 
     return httpConfig;
 }
@@ -365,11 +435,11 @@ RouteConfig ConfigParser::parseRouteBlock(const ConfigBlock &block, const Server
     else
         route.location = params[1];
 
-    route.root = block.getStringValue("root", serverConfig.root);
-    route.index = block.getStringValue("index", serverConfig.index);
-    route.autoindex = (block.getStringValue("autoindex", "off") == "on");
-    route.alias = block.getStringValue("alias");
-    route.deny_all = (block.getStringValue("deny", "") == "all");
+    route.root = block.getStringValue(getValidDirective("root", block.name), serverConfig.root);
+    route.index = block.getStringValue(getValidDirective("index", block.name), serverConfig.index);
+    route.autoindex = (block.getStringValue(getValidDirective("autoindex", block.name), "off") == "on");
+    route.alias = block.getStringValue(getValidDirective("alias", block.name));
+    route.deny_all = (block.getStringValue(getValidDirective("deny", block.name), "") == "all");
 
     const auto methods = block.getDirective("allowed_methods");
     if (!methods.empty()) {
@@ -422,9 +492,7 @@ void ConfigParser::parseErrorPages(const std::vector<std::string> &tokens,
 
 bool ConfigParser::validateErrorPage(const std::vector<std::string> &tokens) {
     if (tokens.size() != 2) {
-        Logger::log(LogLevel::ERROR,
-                    "Invalid error_page directive: " + tokens[0] +
-                    " - expected format: error_page <status_code> <path>");
+        Logger::log(LogLevel::ERROR, "Invalid error_page directive: " + tokens[0] + " - expected format: error_page <status_code> <path>");
         return false;
     }
 
@@ -444,9 +512,7 @@ bool ConfigParser::validateErrorPage(const std::vector<std::string> &tokens) {
 
 bool ConfigParser::validateListenValue(const std::vector<std::string> &tokens) {
     if (tokens.size() != 1) {
-        Logger::log(LogLevel::ERROR,
-                    "Invalid listen directive: " + tokens[0] +
-                    " - expected format: listen <port> or listen <host>:<port>");
+        reportError("Invalid listen directive: " + tokens[0] + " - expected format: listen <port> or listen <host>:<port>");
         return false;
     }
 
@@ -460,7 +526,24 @@ bool ConfigParser::validateListenValue(const std::vector<std::string> &tokens) {
 
     std::string port = listenValue.substr(colonPos + 1);
     Logger::log(LogLevel::DEBUG, "listenValue: " + listenValue + ", port: " + port);
-    return validateDigitsOnly(port, "listen");
+
+    if (!validateDigitsOnly(port, "listen")) {
+        return false;
+    }
+
+    int portNum;
+    if (!tryParseInt(port, portNum)) {
+        reportError("Invalid port number in listen directive: " + port);
+        return false;
+    }
+
+    if (portNum < 0 || portNum > 65535) {
+        reportError("Invalid port number: " + std::to_string(portNum) + " - must be between 0 and 65535");
+        return false;
+    }
+
+    return true;
+
 }
 
 
@@ -552,9 +635,7 @@ bool ConfigParser::parseBlock(std::ifstream &file, ConfigBlock &block) {
                         }
                     }
                 } else if (!tokens.empty()) {
-                    reportError(
-                        "Invalid block header: " + blockHeader + " - expected no parameters for " + blockType +
-                        " block");
+                    reportError("Invalid block header: " + blockHeader + " - expected no parameters for " + blockType + " block");
                     parseSuccessful = false;
                     return false;
                 }
@@ -602,24 +683,24 @@ void ConfigParser::parseDirective(const std::string &line, ConfigBlock &block) {
 
     if (tokens.size() > validDirective->max_arg) {
         reportError("Too many arguments for directive: " + key + ", currently " + std::to_string(tokens.size()) +
-                    ", expected max " + std::to_string(validDirective->max_arg));
+                     ", expected max " + std::to_string(validDirective->max_arg));
         parseSuccessful = false;
         return;
     } else if (tokens.size() < validDirective->min_arg) {
         reportError("Not enough arguments for directive: " + key + ", currently " + std::to_string(tokens.size()) +
-                    ", expected at least " + std::to_string(validDirective->min_arg));
+                     ", expected at least " + std::to_string(validDirective->min_arg));
         parseSuccessful = false;
         return;
     }
 
-    if (validDirective->type == Directive::SIZE) {
+    if ((validDirective->type == Directive::SIZE)) {
         const std::regex sizeRegex("^\\d+(\\.\\d+)?([kmgt]b?|[kmgt]i?bytes|bytes)?$", std::regex::icase);
         if (!std::regex_match(tokens[0], sizeRegex)) {
             reportError("Invalid value for " + key + ": " + tokens[0]);
             parseSuccessful = false;
             return;
         }
-    } else if (validDirective->type == Directive::COUNT || validDirective->type == Directive::TIME) {
+    } else if ((validDirective->type == Directive::COUNT || validDirective->type == Directive::TIME)) {
         if (!validateDigitsOnly(tokens[0], key))
             return;
     } else if (validDirective->type == Directive::TOGGLE) {

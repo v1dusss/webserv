@@ -5,9 +5,9 @@
 #include <vector>
 #include <map>
 #include <fstream>
+#include <optional>
 #include "config/config.h"
 #include "ConfigBlock.h"
-#include <optional>
 
 class ConfigParser {
 public:
@@ -25,23 +25,6 @@ private:
     std::string currentFilename;
     bool parseSuccessful;
 
-    struct Directive {
-        std::string name;
-
-        enum {
-            SIZE,
-            TIME,
-            COUNT,
-            TOGGLE,
-            LIST,
-        }type;
-
-        size_t min_arg = 1;
-        size_t max_arg = 1;
-
-        std::function<bool(const std::vector<std::string>&)> validate = nullptr;
-    };
-
     std::vector<Directive> httpDirectives;
     std::vector<Directive> serverDirectives;
     std::vector<Directive> locationDirectives;
@@ -58,6 +41,10 @@ private:
 
     [[nodiscard]] HttpConfig parseHttpBlock(const ConfigBlock& block) const;
 
+    bool isValidServerConfigs(const std::vector<ServerConfig> &configs) const;
+
+    bool hasDuplicateServerNames(const std::vector<std::string> &names1, const std::vector<std::string> &names2) const;
+
     bool parseBlock(std::ifstream& file, ConfigBlock& block);
 
     void parseDirective(const std::string& line, ConfigBlock& block);
@@ -73,6 +60,10 @@ private:
     void reportError(const std::string& message) const;
 
     void parseErrorPages(const std::vector<std::string> &tokens, std::map<int, std::string> &error_pages) const;
+
+    void printServerConfig(ServerConfig config) const;
+
+    void printHttpConfig(HttpConfig httpConfig) const;
 };
 
 #endif // CONFIG_PARSER_H
