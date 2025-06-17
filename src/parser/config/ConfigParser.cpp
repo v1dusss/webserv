@@ -720,13 +720,15 @@ void ConfigParser::parseDirective(const std::string &line, ConfigBlock &block) {
 std::vector<std::string> ConfigParser::tokenize(const std::string &str) {
     std::vector<std::string> tokens;
     std::string token;
-    bool inQuotes = false;
+    bool inSingleQuotes = false;
+    bool inDoubleQuotes = false;
 
     for (char c: str) {
-        if (c == '"') {
-            inQuotes = !inQuotes;
-            token += c;
-        } else if ((c == ' ' || c == '\t') && !inQuotes) {
+        if (c == '"' && !inSingleQuotes) {
+            inDoubleQuotes = !inDoubleQuotes;
+        } else if (c == '\'' && !inDoubleQuotes) {
+            inSingleQuotes = !inSingleQuotes;
+        } else if ((c == ' ' || c == '\t') && !inSingleQuotes && !inDoubleQuotes) {
             if (!token.empty()) {
                 tokens.push_back(token);
                 token.clear();
