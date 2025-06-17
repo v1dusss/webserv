@@ -71,6 +71,7 @@ clean:
 	@echo "$(RED)$(NAME) object files removed!"
 
 fclean: clean
+	@rm -f .sessions.bin
 	@rm -f $(NAME)
 	@echo "$(RED)$(NAME) removed!"
 
