@@ -46,7 +46,8 @@ std::optional<HttpResponse> RequestHandler::handlePostTestFile() {
     const std::string filename = "test_file_" + std::to_string(std::time(nullptr)) + ".txt";
     const std::filesystem::path fullPath = std::filesystem::path(routePath) / filename;
 
-    fileWriteFd = open(fullPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    fileWriteFd = open(fullPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC,
+                          S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
     if (fileWriteFd == -1) {
         return HttpResponse::html(HttpResponse::StatusCode::INTERNAL_SERVER_ERROR,
                                   "Could not open file for writing");
@@ -188,7 +189,7 @@ void RequestHandler::processMultipartBuffer(std::shared_ptr<MultipartParseState>
                 state->fileNames.push_back(filename);
 
                 state->fileWriteFd = open(fullPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC,
-                                          S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+                                    S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 
                 std::string absolutePath = absolute(fullPath).lexically_normal().string();
                 std::cout << "uploaded file path: " << absolutePath << client->sessionId << std::endl;
