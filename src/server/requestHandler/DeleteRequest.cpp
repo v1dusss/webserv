@@ -21,7 +21,7 @@ HttpResponse RequestHandler::handleDelete() const {
 
 
 
-    if (access(routePath.c_str(), W_OK | X_OK) != 0)
+    if (access(routePath.c_str(), W_OK) != 0)
         return HttpResponse::html(HttpResponse::StatusCode::FORBIDDEN,
                                         "No write permission");
 
