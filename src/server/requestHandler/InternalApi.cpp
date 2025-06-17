@@ -37,6 +37,7 @@ HttpResponse metrics(std::shared_ptr<HttpRequest> request) {
 
     std::stringstream ss;
     response.setBody(metricsObj->toString());
+    response.setHeader("Access-Control-Allow-Origin", "*");
     return response;
 }
 
