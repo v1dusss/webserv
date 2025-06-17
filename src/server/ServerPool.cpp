@@ -11,6 +11,8 @@
 #include <cerrno>
 #include <cstring>
 #include <algorithm>
+#include <webserv.h>
+#include <common/SessionManager.h>
 #include <parser/config/ConfigParser.h>
 
 #include "handler/CallbackHandler.h"
@@ -134,6 +136,7 @@ void ServerPool::start() {
         return;
     }
 
+    SessionManager::deserialize(SESSION_SAVE_FILE);
     startTime = std::time(nullptr);
 
     int startedServers = 0;
@@ -220,6 +223,7 @@ void ServerPool::cleanUp() {
     clients.clear();
     configs.clear();
     servers.clear();
+    SessionManager::serialize(SESSION_SAVE_FILE);
     Logger::log(LogLevel::INFO, "Server pool cleaned up.");
 }
 
