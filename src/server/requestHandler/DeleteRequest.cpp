@@ -14,6 +14,7 @@ HttpResponse RequestHandler::handleDelete() const {
     if (stat(routePath.c_str(), &fileStat) != 0 || S_ISDIR(fileStat.st_mode))
         return HttpResponse::html(HttpResponse::NOT_FOUND);
 
+    client->sessionId = SessionManager::getSessionId(request->getHeader("Cookie"), client->isNewSession);
     const std::string absolutePath = std::filesystem::absolute(routePath).lexically_normal().string();
     if (!SessionManager::ownsFile(client->sessionId, absolutePath))
         return HttpResponse::html(HttpResponse::StatusCode::FORBIDDEN,
@@ -27,6 +28,7 @@ HttpResponse RequestHandler::handleDelete() const {
 
     try {
         std::filesystem::remove(routePath);
+        SessionManager::removeFile(client->sessionId, absolutePath);
     }catch (...) {
         return HttpResponse::html(HttpResponse::StatusCode::INTERNAL_SERVER_ERROR);
 
