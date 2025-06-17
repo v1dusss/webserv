@@ -8,7 +8,7 @@ RUN apt-get update && \
     php-cgi \
     php-mysql \
     bash \
-    valgrind
+    python3
 
 WORKDIR /app
 COPY . /app
