@@ -28,6 +28,44 @@
     </div>
   </div>
 
+  <div class="bg-white p-4 rounded-lg shadow mt-6">
+    <h2 class="text-xl font-semibold mb-2">Webserv Metrics</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div>
+        <h3 class="font-semibold">Connection Count</h3>
+        <canvas id="connectionCountChart" class="w-full h-32"></canvas>
+      </div>
+      <div>
+        <h3 class="font-semibold">Bytes Received</h3>
+        <canvas id="bytesReceivedChart" class="w-full h-32"></canvas>
+      </div>
+      <div>
+        <h3 class="font-semibold">Bytes Sent</h3>
+        <canvas id="bytesSentChart" class="w-full h-32"></canvas>
+      </div>
+      <div>
+        <h3 class="font-semibold">Disconnects</h3>
+        <canvas id="disconnectsChart" class="w-full h-32"></canvas>
+      </div>
+      <div>
+        <h3 class="font-semibold">New Connections</h3>
+        <canvas id="newConnectionsChart" class="w-full h-32"></canvas>
+      </div>
+      <div>
+        <h3 class="font-semibold">Requests</h3>
+        <canvas id="requestsChart" class="w-full h-32"></canvas>
+      </div>
+      <div>
+        <h3 class="font-semibold">Responses</h3>
+        <canvas id="responsesChart" class="w-full h-32"></canvas>
+      </div>
+      <div>
+        <h3 class="font-semibold">Uptime</h3>
+        <canvas id="uptimeChart" class="w-full h-32"></canvas>
+      </div>
+    </div>
+  </div>
+
   <a href="/" class="mt-12 inline-block text-indigo-600 hover:underline text-lg">← Back to Home</a>
 
   <script src="dashboard.js"></script>
