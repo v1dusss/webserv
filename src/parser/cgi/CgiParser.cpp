@@ -67,8 +67,12 @@ bool CgiParser::parseHeaders() {
             return true;
         }
 
+
         if (std::regex_match(line, matches, headerRegex)) {
-            result.headers[matches[1]] = matches[2];
+            if (matches[1] == "Set-Cookie") {
+                result.setCookies.push_back(matches[2]);
+            } else
+                result.headers[matches[1]] = matches[2];
         }
     }
     return false;

@@ -230,6 +230,8 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
                 } else if (!header.first.empty())
                     response.setHeader(header.first, header.second);
             }
+            for (const auto& cookie: result.setCookies)
+                response.addSetCookie(cookie);
             response.enableChunkedEncoding(result.body);
             setResponse(response);
             cleanupCgiProcess(pid);

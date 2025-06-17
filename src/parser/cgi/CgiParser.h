@@ -25,6 +25,7 @@ public:
     struct CgiResult {
         std::map<std::string, std::string> headers;
         std::shared_ptr<SmartBuffer> body;
+        std::vector<std::string> setCookies;
     };
 
 private:
