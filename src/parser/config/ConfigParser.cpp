@@ -219,7 +219,7 @@ bool ConfigParser::isValidServerConfigs(const std::vector<ServerConfig> &configs
 
     for (size_t i = 0; i < configs.size(); ++i) {
         for (size_t j = i + 1; j < configs.size(); ++j) {
-            if (configs[i].port != configs[j].port) {
+            if (configs[i].port != configs[j].port || configs[i].host != configs[j].host) {
                 continue;
             }
 
