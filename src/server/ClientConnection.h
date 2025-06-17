@@ -29,6 +29,8 @@ public:
     bool shouldClose = false;
     const Server *connectedServer;
     std::time_t cgiProcessStart = 0;
+    std::string sessionId;
+    bool isNewSession = false;
     ServerConfig config;
 
 private:
@@ -49,7 +51,7 @@ public:
 
     void handleFileOutput();
 
-    void setResponse(const HttpResponse &response);
+    void setResponse(HttpResponse response);
 
     void clearResponse();
 

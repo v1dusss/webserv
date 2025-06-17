@@ -65,6 +65,9 @@ std::string HttpResponse::toHeaderString() const {
         response << fst << ": " << snd << "\r\n";
     }
 
+    for (const auto& cookie : setCookies)
+        response << "Set-Cookie: " << cookie << "\r\n";
+
     response << "\r\n";
     return response.str();
 }
@@ -142,4 +145,20 @@ std::shared_ptr<SmartBuffer> HttpResponse::getBody() const {
 
 std::unordered_map<std::string, std::string> HttpResponse::getHeaders() const {
     return headers;
+}
+
+bool HttpResponse::hasHeader(const std::string &name) const {
+    return headers.find(name) != headers.end();
+}
+
+std::string HttpResponse::getHeader(const std::string &name) const {
+    auto it = headers.find(name);
+    if (it != headers.end()) {
+        return it->second;
+    }
+    return "";
+}
+
+void HttpResponse::addSetCookie(const std::string &cookie) {
+    setCookies.push_back(cookie);
 }

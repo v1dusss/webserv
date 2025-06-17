@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <common/SessionManager.h>
 
 #include "ServerPool.h"
 #include "handler/MetricHandler.h"
@@ -92,6 +93,8 @@ void ClientConnection::handleInput() {
 
         Logger::log(LogLevel::INFO, "Request Parsed");
         MetricHandler::incrementMetric("requests", 1);
+
+        sessionId = SessionManager::getSessionId(request->getHeader("Cookie"), isNewSession);
 
         try {
             delete requestHandler;
@@ -210,7 +213,12 @@ void ClientConnection::clearResponse() {
     requestHandler = nullptr;
 }
 
-void ClientConnection::setResponse(const HttpResponse &response) {
+void ClientConnection::setResponse(HttpResponse response) {
+    if (isNewSession) {
+        const std::string cookie = " sessionId=" + sessionId + "; Path=/; HttpOnly";
+        response.addSetCookie(cookie);
+    }
+
     cgiProcessStart = 0;
     this->response = response;
     parser.reset();

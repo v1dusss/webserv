@@ -18,6 +18,7 @@ private:
     std::string statusMessage;
     std::unordered_map<std::string, std::string> headers;
     std::shared_ptr<SmartBuffer> body;
+    std::vector<std::string> setCookies;
     bool chunkedEncoding;;
 
 public:
@@ -72,6 +73,12 @@ public:
     [[nodiscard]] bool isChunkedEncoding() const;
 
     [[nodiscard]] std::unordered_map<std::string, std::string> getHeaders() const;
+
+    [[nodiscard]] bool hasHeader(const std::string &name) const;
+
+    [[nodiscard]] std::string getHeader(const std::string &name) const;
+
+    void addSetCookie(const std::string &cookie);
 
 private:
     static void createNotFoundPage(std::stringstream &ss);

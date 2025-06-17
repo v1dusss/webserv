@@ -29,5 +29,4 @@ http {
        root ./test/www;
   }
   }
-
 }

@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <sys/poll.h>
 #include <fcntl.h>
+#include <common/SessionManager.h>
 #include <server/handler/CallbackHandler.h>
 
 std::optional<HttpResponse> RequestHandler::handlePost() {
@@ -50,6 +51,10 @@ std::optional<HttpResponse> RequestHandler::handlePostTestFile() {
         return HttpResponse::html(HttpResponse::StatusCode::INTERNAL_SERVER_ERROR,
                                   "Could not open file for writing");
     }
+
+    const std::string absolutePath = absolute(fullPath).lexically_normal().string();
+    std::cout << "uploaded file path: " << absolutePath << std::endl;
+    SessionManager::addUploadedFile(client->sessionId, absolutePath);
     FdHandler::addFd(fileWriteFd,POLLOUT, [this, filename](const int fd, const short events) {
         (void) events;
         request->body->read(60000);
@@ -184,6 +189,10 @@ void RequestHandler::processMultipartBuffer(std::shared_ptr<MultipartParseState>
 
                 state->fileWriteFd = open(fullPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC,
                                           S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+
+                std::string absolutePath = absolute(fullPath).lexically_normal().string();
+                std::cout << "uploaded file path: " << absolutePath << client->sessionId << std::endl;
+                SessionManager::addUploadedFile(client->sessionId, absolutePath);
                 if (state->fileWriteFd == -1) {
                     Logger::log(LogLevel::ERROR, "Failed to open file for writing: " + filename);
                     state->currentState = MultipartParseStateEnum::LOOKING_FOR_BOUNDARY;
