@@ -145,7 +145,7 @@ void ServerPool::start() {
 
     Logger::log(LogLevel::INFO, "Server pool started.");
     Logger::log(LogLevel::INFO,
-                std::to_string(startedServers) + " servers started from " + std::to_string(servers.size()) +
+                std::to_string(startedServers) + " server socket/s are listening from " + std::to_string(configs.size()) +
                 " configured servers.");
     running.store(true);
     serverLoop();
