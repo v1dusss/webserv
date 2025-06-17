@@ -15,10 +15,10 @@ http{
     server_name            localhost;
     client_max_body_size   200MB;
     client_max_header_size 10000;
-    keepalive_timeout      2;
+    keepalive_timeout      10;
     client_header_timeout  5;
     client_body_timeout    20;
-    keepalive_requests     2;
+    keepalive_requests     10;
     
     # Home page
     location / {

@@ -7,7 +7,8 @@ RUN apt-get update && \
     php \
     php-cgi \
     php-mysql \
-    bash
+    bash \
+    valgrind
 
 WORKDIR /app
 COPY . /app
