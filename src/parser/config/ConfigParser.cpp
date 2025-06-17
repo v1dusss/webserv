@@ -350,7 +350,7 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
     config.client_max_body_size = block.getSizeValue(getValidDirective("client_max_body_size", block.name), 1 * 1024 * 1024);
     config.headerConfig.client_max_header_size = block.getSizeValue(getValidDirective("client_max_header_size", block.name), 8192);
     config.headerConfig.client_header_timeout = block.getSizeValue(getValidDirective("client_header_timeout", block.name), 60);
-    config.headerConfig.client_max_header_count = block.getSizeValue(getValidDirective("client_max_header_count", block.name), 10);
+    config.headerConfig.client_max_header_count = block.getSizeValue(getValidDirective("client_max_header_count", block.name), 100);
     config.client_body_timeout = block.getSizeValue(getValidDirective("client_body_timeout", block.name), 60);
     config.keepalive_timeout = block.getSizeValue(getValidDirective("keepalive_timeout", block.name), 65);
     config.keepalive_requests = block.getSizeValue(getValidDirective("keepalive_requests", block.name), 100);
@@ -397,7 +397,7 @@ HttpConfig ConfigParser::parseHttpBlock(const ConfigBlock& block) const
 
     headerConfig.client_header_timeout = block.getSizeValue(getValidDirective("client_header_timeout", block.name), 60);
     headerConfig.client_max_header_size = block.getSizeValue(getValidDirective("client_max_header_size", block.name), 8192);
-    headerConfig.client_max_header_count = block.getSizeValue(getValidDirective("client_max_header_count", block.name), 10);
+    headerConfig.client_max_header_count = block.getSizeValue(getValidDirective("client_max_header_count", block.name), 100);
 
     httpConfig.headerConfig = headerConfig;
     httpConfig.max_request_line_size = block.getSizeValue(getValidDirective("max_request_line_size", block.name), 1024);

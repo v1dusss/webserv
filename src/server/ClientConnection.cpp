@@ -103,8 +103,6 @@ void ClientConnection::handleInput() {
         Logger::log(LogLevel::INFO, "Request Parsed");
         MetricHandler::incrementMetric("requests", 1);
 
-        sessionId = SessionManager::getSessionId(request->getHeader("Cookie"), isNewSession);
-
         try {
             delete requestHandler;
             requestHandler = new RequestHandler(this, request, config);

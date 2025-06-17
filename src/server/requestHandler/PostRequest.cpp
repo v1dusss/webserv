@@ -54,7 +54,7 @@ std::optional<HttpResponse> RequestHandler::handlePostTestFile() {
     }
 
     const std::string absolutePath = absolute(fullPath).lexically_normal().string();
-    std::cout << "uploaded file path: " << absolutePath << std::endl;
+    client->sessionId = SessionManager::getSessionId(request->getHeader("Cookie"), client->isNewSession);
     SessionManager::addUploadedFile(client->sessionId, absolutePath);
     FdHandler::addFd(fileWriteFd,POLLOUT, [this, filename](const int fd, const short events) {
         (void) events;
@@ -192,7 +192,7 @@ void RequestHandler::processMultipartBuffer(std::shared_ptr<MultipartParseState>
                                     S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 
                 std::string absolutePath = absolute(fullPath).lexically_normal().string();
-                std::cout << "uploaded file path: " << absolutePath << client->sessionId << std::endl;
+                client->sessionId = SessionManager::getSessionId(request->getHeader("Cookie"), client->isNewSession);
                 SessionManager::addUploadedFile(client->sessionId, absolutePath);
                 if (state->fileWriteFd == -1) {
                     Logger::log(LogLevel::ERROR, "Failed to open file for writing: " + filename);
