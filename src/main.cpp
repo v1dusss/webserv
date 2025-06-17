@@ -47,8 +47,6 @@ int main(const int argc, char **argv) {
 
     signal(SIGPIPE, SIG_IGN);
 
-    std::cout << "start pid: " << getpid() << std::endl;
-
     createTempDir();
     if (!ServerPool::loadConfig(argv[1]))
         return 1;
