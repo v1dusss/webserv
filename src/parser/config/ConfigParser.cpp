@@ -305,7 +305,7 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
 
     const auto errorPages = block.getDirective("error_page");
     parseErrorPages(errorPages, config.error_pages);
-
+    
     for (const auto &child: block.children) {
         if (child.name == "location") {
             config.routes.push_back(parseRouteBlock(child, config));
@@ -315,6 +315,21 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
     printconfig(config);
 
     return config;
+}
+
+void printconfig(HttpConfig httpConfig) {
+    std::cout << std::endl;
+    std::cout << "----------------------------------------" << std::endl;
+    std::cout << std::endl;
+
+    std::cout << YELLOW BOLD << "HttpConfig:" << RESET << std::endl;
+    std::cout << "  Client Header Timeout: " << httpConfig.headerConfig.client_header_timeout << std::endl;
+    std::cout << "  Client Max Header Size: " << httpConfig.headerConfig.client_max_header_size << std::endl;
+    std::cout << "  Client Max Header Count: " << httpConfig.headerConfig.client_max_header_count << std::endl;
+
+    std::cout << std::endl;
+    std::cout << "----------------------------------------" << std::endl;
+    std::cout << std::endl;
 }
 
 HttpConfig ConfigParser::parseHttpBlock(const ConfigBlock& block) const
@@ -327,7 +342,9 @@ HttpConfig ConfigParser::parseHttpBlock(const ConfigBlock& block) const
     headerConfig.client_max_header_count = block.getSizeValue(getValidDirective("client_max_header_count", block.name), 10);
 
     httpConfig.headerConfig = headerConfig;
-    httpConfig.max_request_line_size = block.getSizeValue("max_request_line_size", 50);
+    httpConfig.max_request_line_size = block.getSizeValue(getValidDirective("max_request_line_size", block.name), 50);
+
+    printconfig(httpConfig);
 
     return httpConfig;
 }
