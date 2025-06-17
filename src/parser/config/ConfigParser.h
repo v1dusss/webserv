@@ -5,9 +5,9 @@
 #include <vector>
 #include <map>
 #include <fstream>
+#include <optional>
 #include "config/config.h"
 #include "ConfigBlock.h"
-#include <optional>
 
 class ConfigParser {
 public:
@@ -24,23 +24,6 @@ private:
     int currentLine;
     std::string currentFilename;
     bool parseSuccessful;
-
-    struct Directive {
-        std::string name;
-
-        enum {
-            SIZE,
-            TIME,
-            COUNT,
-            TOGGLE,
-            LIST,
-        }type;
-
-        size_t min_arg = 1;
-        size_t max_arg = 1;
-
-        std::function<bool(const std::vector<std::string>&)> validate = nullptr;
-    };
 
     std::vector<Directive> httpDirectives;
     std::vector<Directive> serverDirectives;

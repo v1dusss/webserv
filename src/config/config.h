@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   config.h                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eebert <eebert@student.42heilbronn.de>     +#+  +:+       +#+        */
+/*   By: vsivanat <vsivanat@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/01 13:19:13 by eebert            #+#    #+#             */
-/*   Updated: 2025/06/12 15:39:10 by eebert           ###   ########.fr       */
+/*   Updated: 2025/06/17 14:57:56 by vsivanat         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,6 +83,7 @@ typedef struct {
     size_t body_buffer_size;
     size_t keepalive_timeout; // In seconds
     size_t keepalive_requests; // Max requests per connection
+    bool internal_api; // Enable internal API
 } ServerConfig;
 
 typedef struct {

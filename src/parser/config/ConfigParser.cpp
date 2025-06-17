@@ -173,7 +173,7 @@ bool ConfigParser::parse(const std::string &filename) {
     return result && parseSuccessful;
 }
 
-std::optional<ConfigParser::Directive> ConfigParser::getValidDirective(const std::string key, const std::string& blockType) const {
+std::optional<Directive> ConfigParser::getValidDirective(const std::string key, const std::string& blockType) const {
     if (blockType == "http") {
         for (const auto &directive: httpDirectives) {
             if (directive.name == key) {
@@ -249,12 +249,14 @@ void printconfig(ServerConfig config) {
     std::cout << "  Index: " << config.index << std::endl;
     std::cout << "  Client Max Body Size: " << config.client_max_body_size << std::endl;
     std::cout << "  Client Max Header Size: " << config.headerConfig.client_max_header_size << std::endl;
+    std::cout << "  Client Max Header Count: " << config.headerConfig.client_max_header_count << std::endl;
     std::cout << "  Client Header Timeout: " << config.headerConfig.client_header_timeout << std::endl;
     std::cout << "  Client Body Timeout: " << config.client_body_timeout << std::endl;
     std::cout << "  Keepalive Timeout: " << config.keepalive_timeout << std::endl;
     std::cout << "  Keepalive Requests: " << config.keepalive_requests << std::endl;
     std::cout << "  Send Body Buffer Size: " << config.send_body_buffer_size << std::endl;
     std::cout << "  Body Buffer Size: " << config.body_buffer_size << std::endl;
+    std::cout << "  Internal API: " << (config.internal_api ? "on" : "off") << std::endl;
     std::cout << "  Error Pages: " << std::endl;
     for (const auto &errorPage: config.error_pages) {
         std::cout << "\t" << errorPage.first << ": " << errorPage.second << std::endl;
@@ -288,17 +290,18 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
 
     config.server_names = block.getDirective("server_name");
 
-    config.root = block.getStringValue("root", "/var/www/html");
-    config.index = block.getStringValue("index", "index.html");
-    config.client_max_body_size = block.getSizeValue("client_max_body_size", 1 * 1024 * 1024);
-    config.headerConfig.client_max_header_size = block.getSizeValue("client_max_header_size", 8192);
-    config.headerConfig.client_header_timeout = block.getSizeValue("client_header_timeout", 60);
-    config.headerConfig.client_max_header_count = block.getSizeValue("client_max_header_count", 10);
-    config.client_body_timeout = block.getSizeValue("client_body_timeout", 60);
-    config.keepalive_timeout = block.getSizeValue("keepalive_timeout", 65);
-    config.keepalive_requests = block.getSizeValue("keepalive_requests", 100);
-    config.send_body_buffer_size = block.getSizeValue("send_body_buffer_size", 8192);
-    config.body_buffer_size = block.getSizeValue("body_buffer_size", 8192);
+    config.root = block.getStringValue(getValidDirective("root", block.name), "/var/www/html");
+    config.index = block.getStringValue(getValidDirective("index", block.name), "index.html");
+    config.client_max_body_size = block.getSizeValue(getValidDirective("client_max_body_size", block.name), 1 * 1024 * 1024);
+    config.headerConfig.client_max_header_size = block.getSizeValue(getValidDirective("client_max_header_size", block.name), 8192);
+    config.headerConfig.client_header_timeout = block.getSizeValue(getValidDirective("client_header_timeout", block.name), 60);
+    config.headerConfig.client_max_header_count = block.getSizeValue(getValidDirective("client_max_header_count", block.name), 10);
+    config.client_body_timeout = block.getSizeValue(getValidDirective("client_body_timeout", block.name), 60);
+    config.keepalive_timeout = block.getSizeValue(getValidDirective("keepalive_timeout", block.name), 65);
+    config.keepalive_requests = block.getSizeValue(getValidDirective("keepalive_requests", block.name), 100);
+    config.send_body_buffer_size = block.getSizeValue(getValidDirective("send_body_buffer_size", block.name), 8192);
+    config.body_buffer_size = block.getSizeValue(getValidDirective("body_buffer_size", block.name), 8192);
+    config.internal_api = (block.getStringValue(getValidDirective("internal_api", block.name), "off") == "on");
 
     const auto errorPages = block.getDirective("error_page");
     parseErrorPages(errorPages, config.error_pages);
@@ -319,9 +322,9 @@ HttpConfig ConfigParser::parseHttpBlock(const ConfigBlock& block) const
     HttpConfig httpConfig;
     ClientHeaderConfig headerConfig;
 
-    headerConfig.client_header_timeout = block.getSizeValue("client_header_timeout", 60);
-    headerConfig.client_max_header_size = block.getSizeValue("client_max_header_size", 8192);
-    headerConfig.client_max_header_count = block.getSizeValue("client_max_header_count", 10);
+    headerConfig.client_header_timeout = block.getSizeValue(getValidDirective("client_header_timeout", block.name), 60);
+    headerConfig.client_max_header_size = block.getSizeValue(getValidDirective("client_max_header_size", block.name), 8192);
+    headerConfig.client_max_header_count = block.getSizeValue(getValidDirective("client_max_header_count", block.name), 10);
 
     httpConfig.headerConfig = headerConfig;
     httpConfig.max_request_line_size = block.getSizeValue("max_request_line_size", 50);
@@ -355,11 +358,11 @@ RouteConfig ConfigParser::parseRouteBlock(const ConfigBlock &block, const Server
     else
         route.location = params[1];
 
-    route.root = block.getStringValue("root", serverConfig.root);
-    route.index = block.getStringValue("index", serverConfig.index);
-    route.autoindex = (block.getStringValue("autoindex", "off") == "on");
-    route.alias = block.getStringValue("alias");
-    route.deny_all = (block.getStringValue("deny", "") == "all");
+    route.root = block.getStringValue(getValidDirective("root", block.name), serverConfig.root);
+    route.index = block.getStringValue(getValidDirective("index", block.name), serverConfig.index);
+    route.autoindex = (block.getStringValue(getValidDirective("autoindex", block.name), "off") == "on");
+    route.alias = block.getStringValue(getValidDirective("alias", block.name));
+    route.deny_all = (block.getStringValue(getValidDirective("deny", block.name), "") == "all");
 
     const auto methods = block.getDirective("allowed_methods");
     if (!methods.empty()) {

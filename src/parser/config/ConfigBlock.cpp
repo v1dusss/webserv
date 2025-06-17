@@ -12,13 +12,15 @@ std::vector<std::string> ConfigBlock::getDirective(const std::string &key) const
     return it != directives.end() ? it->second : std::vector<std::string>{};
 }
 
-std::string ConfigBlock::getStringValue(const std::string &key, const std::string &defaultValue) const {
-    auto values = getDirective(key);
+std::string ConfigBlock::getStringValue(std::optional<Directive> directive, const std::string &defaultValue) const {
+    if (!directive.has_value()) return defaultValue;
+    auto values = getDirective(directive->name);
     return values.empty() ? defaultValue : values[0];
 }
 
-int ConfigBlock::getIntValue(const std::string &key, int defaultValue) const {
-    auto values = getDirective(key);
+int ConfigBlock::getIntValue(std::optional<Directive> directive, int defaultValue) const {
+    if (!directive.has_value()) return defaultValue;
+    auto values = getDirective(directive->name);
     if (values.empty()) return defaultValue;
     try {
         return std::stoi(values[0]);
@@ -27,8 +29,9 @@ int ConfigBlock::getIntValue(const std::string &key, int defaultValue) const {
     }
 }
 
-size_t ConfigBlock::getSizeValue(const std::string &key, size_t defaultValue) const {
-    const auto values = getDirective(key);
+size_t ConfigBlock::getSizeValue(std::optional<Directive> directive, size_t defaultValue) const {
+    if (!directive.has_value()) return defaultValue;
+    const auto values = getDirective(directive->name);
     double multiplier = 1;
     std::string numberPart;
     std::string suffixPart;
@@ -42,7 +45,7 @@ size_t ConfigBlock::getSizeValue(const std::string &key, size_t defaultValue) co
     };
 
     if (values.empty()) return defaultValue;
-    if (key == "client_max_body_size" || key == "client_max_header_size" || key == "body_buffer_size" || key == "send_body_buffer_size") {
+    if (directive->type == Directive::SIZE) {
         std::string str = values[0];
         std::transform(str.begin(), str.end(), str.begin(), ::tolower);
 
@@ -52,7 +55,7 @@ size_t ConfigBlock::getSizeValue(const std::string &key, size_t defaultValue) co
 
         numberPart = str.substr(0, i);
         suffixPart = str.substr(i);
-    }else {
+    } else {
         numberPart = values[0];
         suffixPart = "";
     }
