@@ -1,5 +1,8 @@
 
+
 # Webserv
+
+
 This project is about writing our own HTTP/1.1-compliant web server in C++, with non-blocking I/O and support for various web server features. It is part of the 42 School curriculum and follows strict coding standards.
 
 ## Features
