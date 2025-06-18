@@ -80,7 +80,13 @@ re: fclean all
 debug: CFLAGS += -DDEBUG_MODE=1
 debug: re
 
-.PHONY: all clean fclean re
+docker:
+	docker compose up
+
+docker_clean:
+	docker compose down
+
+.PHONY: all clean fclean re debug
 
 RED     := $(shell tput setaf 1)
 GREEN   := $(shell tput setaf 2)
