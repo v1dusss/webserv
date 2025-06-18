@@ -27,7 +27,7 @@ cd webserv
 Start the server
 
 ```bash
-make docker
+make
 ./webserv config.yaml
 ```
 
