@@ -34,7 +34,7 @@ SmartBuffer::SmartBuffer(const int fd): fd(fd) {
 SmartBuffer::~SmartBuffer() {
     unregisterCallback();
     if (isFile && fd >= 0) {
-        Logger::log(LogLevel::INFO, "Closing file descriptor: " + std::to_string(fd));
+        Logger::log(LogLevel::DEBUG, "Closing file descriptor: " + std::to_string(fd));
         if (close(fd) < 0)
             Logger::log(LogLevel::ERROR,
                         "Failed to close file descriptor: " + std::to_string(fd) + ": " + strerror(errno));
@@ -43,7 +43,7 @@ SmartBuffer::~SmartBuffer() {
 
     if (!tmpFileName.empty() && std::filesystem::exists(tmpFileName)) {
         try {
-            Logger::log(LogLevel::INFO, "Removing temporary file: " + tmpFileName);
+            Logger::log(LogLevel::DEBUG, "Removing temporary file: " + tmpFileName);
             std::filesystem::remove(tmpFileName);
         } catch (const std::filesystem::filesystem_error &e) {
             Logger::log(LogLevel::ERROR, "Failed to remove temporary file: " + tmpFileName + ": " + e.what());
