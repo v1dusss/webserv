@@ -151,6 +151,12 @@ void ServerPool::start() {
         }
     }
 
+    if (startedServers == 0) {
+        Logger::log(LogLevel::ERROR, "Server pool could not be started.");
+        cleanUp();
+        return;
+    }
+
     Logger::log(LogLevel::INFO, "Server pool started.");
     Logger::log(LogLevel::INFO,
                 std::to_string(startedServers) + " server socket/s are listening from " + std::to_string(configs.size()) +
