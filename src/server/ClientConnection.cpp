@@ -101,7 +101,7 @@ void ClientConnection::handleInput() {
         keepAlive = request->getHeader("Connection") == "keep-alive";
         request->printRequest();
 
-        Logger::log(LogLevel::INFO, "Request Parsed");
+        Logger::log(LogLevel::DEBUG, "Request Parsed");
         MetricHandler::incrementMetric("requests", 1);
 
         try {
@@ -146,6 +146,7 @@ void ClientConnection::handleFileOutput() {
     if (!response.value().alreadySendHeader) {
         const std::string header = response.value().toHeaderString();
         Logger::log(LogLevel::DEBUG, "Sending response header: " + header);
+        Logger::log(LogLevel::INFO, "status code: " + std::to_string(response->getStatus()));
         if (send(fd, header.c_str(), header.length(), MSG_NOSIGNAL) <= 0) {
             Logger::log(LogLevel::ERROR, "Failed to write header to client");
             clearResponse();

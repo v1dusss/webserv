@@ -15,7 +15,7 @@
 #include "response/HttpResponse.h"
 
 Server::Server(const int port, std::string host, const ServerConfig &config) : port(port), host(host), config(config) {
-    Logger::log(LogLevel::INFO, "Server created with config: " + host + ":" + std::to_string(port));
+    Logger::log(LogLevel::DEBUG, "Server created with config: " + host + ":" + std::to_string(port));
 }
 
 Server::~Server() {
@@ -50,7 +50,7 @@ bool Server::createSocket() {
 
 bool Server::listen() const {
     if (::listen(serverFd, 5024) < 0) {
-        Logger::log(LogLevel::ERROR, "Failed to listen on socket");
+        Logger::log(LogLevel::DEBUG, "Failed to listen on socket");
         return false;
     }
 
@@ -89,7 +89,7 @@ void Server::stop() {
 
         close(serverFd);
         serverFd = -1;
-        Logger::log(LogLevel::INFO, "Server stopped");
+        Logger::log(LogLevel::DEBUG, "Server stopped");
     }
 }
 

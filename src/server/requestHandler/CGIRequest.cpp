@@ -149,7 +149,7 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
     if (pid == 0) {
         configureCgiChildProcess(input_pipe, output_pipe);
     }
-    Logger::log(LogLevel::INFO, "CGI started with PID: " + std::to_string(pid));
+    Logger::log(LogLevel::DEBUG, "CGI started with PID: " + std::to_string(pid));
 
     cgiProcessId = pid;
 
