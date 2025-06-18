@@ -194,6 +194,11 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
         if (!readBuffer.empty()) {
             const ssize_t written = write(fd, readBuffer.data(),
                                           std::min(readBuffer.length(), static_cast<size_t>(60000)));
+            if (written <= 0) {
+                Logger::log(LogLevel::ERROR, "Failed to write to CGI process: " + std::to_string(errno));
+                close(fd);
+                return true;
+            }
             bytesWrittenToCgi += written;
             request->body->cleanReadBuffer(written);
         }

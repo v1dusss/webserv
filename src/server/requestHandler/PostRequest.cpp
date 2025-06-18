@@ -63,7 +63,8 @@ std::optional<HttpResponse> RequestHandler::handlePostTestFile() {
         const std::string readBuffer = request->body->getReadBuffer();
         if (!readBuffer.empty()) {
             const ssize_t writen = write(fd, readBuffer.data(), readBuffer.length());
-            if (writen == -1) {
+
+            if (writen <= 0) {
                 Logger::log(LogLevel::ERROR, "Failed to write to file: " + std::to_string(fd) + ": " + strerror(errno));
                 setResponse(HttpResponse::html(HttpResponse::INTERNAL_SERVER_ERROR,
                                                        "Failed to write to file"));
@@ -209,7 +210,7 @@ void RequestHandler::processMultipartBuffer(std::shared_ptr<MultipartParseState>
                 if (nextBoundaryPos == std::string::npos) {
                     size_t safeLength = state->parseBuffer.size() - state->boundary.size();
                     if (safeLength > 0) {
-                        if (write(state->fileWriteFd, state->parseBuffer.data(), safeLength) == -1) {
+                        if (write(state->fileWriteFd, state->parseBuffer.data(), safeLength) <= 0) {
                             Logger::log(LogLevel::ERROR, "Failed to write to file: " +
                                                          std::to_string(state->fileWriteFd) + ": " + strerror(errno));
                         }
@@ -231,7 +232,7 @@ void RequestHandler::processMultipartBuffer(std::shared_ptr<MultipartParseState>
 
                     poll(&pfd, 1, 0);
                     if (pfd.revents & POLLOUT) {
-                        if (write(state->fileWriteFd, state->parseBuffer.data(), contentEnd) == -1) {
+                        if (write(state->fileWriteFd, state->parseBuffer.data(), contentEnd) <= 0) {
                             Logger::log(LogLevel::ERROR, "Failed to write to file: " +
                                                          std::to_string(state->fileWriteFd) + ": " + strerror(errno));
                         }
