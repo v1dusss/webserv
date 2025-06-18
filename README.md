@@ -37,7 +37,7 @@ The server is configured using a custom nginx-style configuration file.
 
 ### Simple Example
 
-```config.yml
+```nginx
  http{
     client_max_header_count 100;
     client_max_header_size 1MB;
@@ -54,8 +54,6 @@ The server is configured using a custom nginx-style configuration file.
   }
   }
 ```
-
-
 
 ## Authors
 
