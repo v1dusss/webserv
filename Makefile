@@ -77,6 +77,9 @@ fclean: clean
 
 re: fclean all
 
+debug: CFLAGS += -DDEBUG_MODE=1
+debug: re
+
 .PHONY: all clean fclean re
 
 RED     := $(shell tput setaf 1)
