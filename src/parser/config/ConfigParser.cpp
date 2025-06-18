@@ -346,7 +346,7 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
     config.keepalive_timeout = block.getSizeValue(getValidDirective("keepalive_timeout", block.name), 65);
     config.keepalive_requests = block.getSizeValue(getValidDirective("keepalive_requests", block.name), 100);
     config.internal_api = (block.getStringValue(getValidDirective("internal_api", block.name), "off") == "on");
-    config.cgi_timeout = block.getSizeValue(getValidDirective("cgi_timeout", block.name), 5);
+    config.cgi_timeout = block.getSizeValue(getValidDirective("cgi_timeout", block.name), 20);
 
     const auto errorPages = block.getDirective("error_page");
     parseErrorPages(errorPages, config.error_pages);
