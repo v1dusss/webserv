@@ -78,8 +78,6 @@ typedef struct {
     // Connection settings
     size_t client_body_timeout; // In seconds
     size_t client_max_body_size; // In bytes
-    size_t send_body_buffer_size;
-    size_t body_buffer_size;
     size_t keepalive_timeout; // In seconds
     size_t cgi_timeout; // In seconds
     size_t keepalive_requests; // Max requests per connection

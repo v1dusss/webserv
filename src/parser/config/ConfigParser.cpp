@@ -67,14 +67,6 @@ ConfigParser::ConfigParser() : rootBlock{"root", {}, {}}, currentLine(0), curren
             .type = Directive::TIME,
         },
         {
-            .name = "body_buffer_size",
-            .type = Directive::SIZE,
-        },
-        {
-            .name = "send_body_buffer_size",
-            .type = Directive::SIZE,
-        },
-        {
             .name = "client_header_timeout",
             .type = Directive::TIME,
         },
@@ -309,8 +301,7 @@ void ConfigParser::printServerConfig(ServerConfig config)const {
     std::cout << "  Client Body Timeout: " << config.client_body_timeout << std::endl;
     std::cout << "  Keepalive Timeout: " << config.keepalive_timeout << std::endl;
     std::cout << "  Keepalive Requests: " << config.keepalive_requests << std::endl;
-    std::cout << "  Send Body Buffer Size: " << config.send_body_buffer_size << std::endl;
-    std::cout << "  Body Buffer Size: " << config.body_buffer_size << std::endl;
+    std::cout << "  cgi_timeout: " << config.cgi_timeout << std::endl;
     std::cout << "  Internal API: " << (config.internal_api ? "on" : "off") << std::endl;
     std::cout << "  Error Pages: " << std::endl;
     for (const auto &errorPage: config.error_pages) {
@@ -354,8 +345,6 @@ ServerConfig ConfigParser::parseServerBlock(const ConfigBlock &block) const {
     config.client_body_timeout = block.getSizeValue(getValidDirective("client_body_timeout", block.name), 60);
     config.keepalive_timeout = block.getSizeValue(getValidDirective("keepalive_timeout", block.name), 65);
     config.keepalive_requests = block.getSizeValue(getValidDirective("keepalive_requests", block.name), 100);
-    config.send_body_buffer_size = block.getSizeValue(getValidDirective("send_body_buffer_size", block.name), 8192);
-    config.body_buffer_size = block.getSizeValue(getValidDirective("body_buffer_size", block.name), 8192);
     config.internal_api = (block.getStringValue(getValidDirective("internal_api", block.name), "off") == "on");
     config.cgi_timeout = block.getSizeValue(getValidDirective("cgi_timeout", block.name), 5);
 

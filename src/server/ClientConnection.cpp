@@ -147,7 +147,7 @@ void ClientConnection::handleFileOutput() {
     if (!response.value().alreadySendHeader) {
         const std::string header = response.value().toHeaderString();
         Logger::log(LogLevel::DEBUG, "Sending response header: " + header);
-        if (send(fd, header.c_str(), header.length(), MSG_NOSIGNAL) < 0) {
+        if (send(fd, header.c_str(), header.length(), MSG_NOSIGNAL) <= 0) {
             Logger::log(LogLevel::ERROR, "Failed to write header to client");
             clearResponse();
             return;
@@ -170,7 +170,7 @@ void ClientConnection::handleFileOutput() {
         const std::string chunkHeaderStr = chunkHeader.str();
 
         // Write the chunk header
-        if (send(fd, chunkHeaderStr.c_str(), chunkHeaderStr.length(), MSG_NOSIGNAL) < 0) {
+        if (send(fd, chunkHeaderStr.c_str(), chunkHeaderStr.length(), MSG_NOSIGNAL) <= 0) {
             Logger::log(LogLevel::ERROR, "Failed to write chunk header to client");
             clearResponse();
             return;
@@ -180,7 +180,7 @@ void ClientConnection::handleFileOutput() {
 
         ssize_t bytesWritten = send(fd, readBuffer.c_str(), readBuffer.length(), MSG_NOSIGNAL);
         // Write the chunk data
-        if (bytesWritten < 0) {
+        if (bytesWritten <= 0) {
             Logger::log(LogLevel::ERROR, "Failed to write chunk data to client");
             clearResponse();
             return;
@@ -191,7 +191,7 @@ void ClientConnection::handleFileOutput() {
         body->cleanReadBuffer(bytesWritten);
 
         // Write the trailing CRLF
-        if (send(fd, "\r\n", 2, MSG_NOSIGNAL) < 0) {
+        if (send(fd, "\r\n", 2, MSG_NOSIGNAL) <= 0) {
             Logger::log(LogLevel::ERROR, "Failed to write chunk trailing CRLF to client");
             clearResponse();
         }
@@ -200,7 +200,7 @@ void ClientConnection::handleFileOutput() {
 
 
     if (body->getReadPos() >= body->getSize()) {
-        if (send(fd, "0\r\n\r\n", 5, MSG_NOSIGNAL) < 0)
+        if (send(fd, "0\r\n\r\n", 5, MSG_NOSIGNAL) <= 0)
             Logger::log(LogLevel::ERROR, "Failed to write final chunk to client");
         lastPackageSend = std::time(nullptr);
         MetricHandler::incrementMetric("responses", 1);
