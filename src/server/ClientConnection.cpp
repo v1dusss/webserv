@@ -39,7 +39,6 @@ ClientConnection::ClientConnection(const int clientFd,
     config.headerConfig.client_header_timeout = ServerPool::getHttpConfig().headerConfig.client_header_timeout;
     config.headerConfig.client_max_header_size = ServerPool::getHttpConfig().headerConfig.client_max_header_size;
     config.headerConfig.client_max_header_count = ServerPool::getHttpConfig().headerConfig.client_max_header_count;
-    config.body_buffer_size = 8192;
     config.client_max_body_size = 1 * 1024 * 1024; // 1 MB
 
 #if defined(__APPLE__)
