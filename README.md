@@ -59,4 +59,4 @@ The server is configured using a custom nginx-style configuration file.
 
 - [Emil Ebert](https://github.com/Peu77)
 - [Vidus Sivanathan](https://github.com/v1dusss)
-- [Daniel Ilin)(https://github.com/ilindaniel)
+- [Daniel Ilin](https://github.com/ilindaniel)
