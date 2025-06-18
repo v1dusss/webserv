@@ -101,7 +101,7 @@ void RequestHandler::configureCgiChildProcess(int input_pipe[2], int output_pipe
 }
 
 void RequestHandler::cleanupCgiProcess(const pid_t pid) const {
-    int status;
+    int status = 0;
     const pid_t result = waitpid(pid, &status, WNOHANG);
 
     if (result == 0) {
